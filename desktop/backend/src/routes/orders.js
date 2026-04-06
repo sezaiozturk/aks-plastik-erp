@@ -15,6 +15,16 @@ router.get('/', async (req, res) => {
         items: { include: { product: { select: { stockNo: true, currency: true } } } },
       },
     })
+    // Patch in raw fields the stale client doesn't select automatically
+    const raw = await prisma.$queryRaw`SELECT id, "shipmentType", "paymentMethod" FROM "Order"`
+    const rawMap = {}
+    raw.forEach(r => { rawMap[r.id] = r })
+    orders.forEach(o => {
+      if (rawMap[o.id]) {
+        o.shipmentType = rawMap[o.id].shipmentType || ''
+        o.paymentMethod = rawMap[o.id].paymentMethod || ''
+      }
+    })
     res.json(orders)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -49,22 +59,20 @@ router.post('/', async (req, res) => {
     const order = await prisma.order.create({
       data: {
         code,
-        customerId: customerId || null,
-        employeeId: employeeId || null,
-        salesRepId: salesRepId || null,
+        ...(customerId ? { customer: { connect: { id: customerId } } } : {}),
+        ...(employeeId ? { employee: { connect: { id: employeeId } } } : {}),
+        ...(salesRepId ? { salesRep: { connect: { id: salesRepId } } } : {}),
         status: status || 'Processing',
         vat: vatRate,
         totalAmount,
         notes: notes || '',
-        shipmentType: shipmentType || '',
-        paymentMethod: paymentMethod || '',
         items: {
           create: (items || []).map((item) => ({
             productName: item.productName,
             quantity: parseInt(item.quantity) || 1,
             unitPrice: parseFloat(item.unitPrice) || 0,
             currency: item.currency || 'USD',
-            productId: item.productId || null,
+            ...(item.productId ? { product: { connect: { id: item.productId } } } : {}),
           })),
         },
       },
@@ -75,6 +83,13 @@ router.post('/', async (req, res) => {
         items: { include: { product: { select: { stockNo: true, currency: true } } } },
       },
     })
+    // Set new fields via raw SQL until Prisma client is regenerated
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Order" SET "shipmentType" = $1, "paymentMethod" = $2 WHERE id = $3`,
+      shipmentType || '', paymentMethod || '', order.id
+    )
+    order.shipmentType = shipmentType || ''
+    order.paymentMethod = paymentMethod || ''
     res.status(201).json(order)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -106,22 +121,20 @@ router.put('/:id', async (req, res) => {
     const order = await prisma.order.update({
       where: { id: req.params.id },
       data: {
-        customerId: customerId || null,
-        employeeId: employeeId || null,
-        salesRepId: salesRepId || null,
+        customer: customerId ? { connect: { id: customerId } } : { disconnect: true },
+        employee: employeeId ? { connect: { id: employeeId } } : { disconnect: true },
+        salesRep: salesRepId ? { connect: { id: salesRepId } } : { disconnect: true },
         status: status || 'Processing',
         vat: vatRate,
         totalAmount,
         notes: notes || '',
-        shipmentType: shipmentType || '',
-        paymentMethod: paymentMethod || '',
         items: {
           create: (items || []).map((item) => ({
             productName: item.productName,
             quantity: parseInt(item.quantity) || 1,
             unitPrice: parseFloat(item.unitPrice) || 0,
             currency: item.currency || 'USD',
-            productId: item.productId || null,
+            ...(item.productId ? { product: { connect: { id: item.productId } } } : {}),
           })),
         },
       },
@@ -132,6 +145,13 @@ router.put('/:id', async (req, res) => {
         items: { include: { product: { select: { stockNo: true, currency: true } } } },
       },
     })
+    // Set new fields via raw SQL until Prisma client is regenerated
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Order" SET "shipmentType" = $1, "paymentMethod" = $2 WHERE id = $3`,
+      shipmentType || '', paymentMethod || '', order.id
+    )
+    order.shipmentType = shipmentType || ''
+    order.paymentMethod = paymentMethod || ''
     res.json(order)
   } catch (err) {
     res.status(500).json({ error: err.message })

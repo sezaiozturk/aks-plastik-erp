@@ -232,7 +232,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
 // ─── Add / Edit Modal ─────────────────────────────────────────────────────────
 const SALES_DEPTS = ['Sales Manager', 'Sales Representative']
 
-function OrderModal({ title, form, setForm, onClose, onSave, errors, customers, employees, products, currentUser, salesTeam }) {
+function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, customers, employees, products, currentUser, salesTeam }) {
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
   const inputCls = (err) =>
@@ -416,7 +416,12 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, customers, 
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        {saveError && (
+          <div className="mt-4 px-3 py-2 rounded-lg bg-error/10 border border-error/30 text-xs text-error">
+            {saveError}
+          </div>
+        )}
+        <div className="flex gap-3 mt-4">
           <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">
             Cancel
           </button>
@@ -498,6 +503,7 @@ export default function Orders() {
   const [detailOrder, setDetailOrder] = useState(null)
   const [form, setForm] = useState(emptyForm())
   const [errors, setErrors] = useState({})
+  const [saveError, setSaveError] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [exportOpen, setExportOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
@@ -716,15 +722,25 @@ export default function Orders() {
   async function handleAdd() {
     const e = validate(form)
     if (Object.keys(e).length) { setErrors(e); return }
-    await addOrder({ ...form, items: form.items.filter((it) => it.productName.trim()) })
-    setShowAdd(false)
+    try {
+      setSaveError('')
+      await addOrder({ ...form, items: form.items.filter((it) => it.productName.trim()) })
+      setShowAdd(false)
+    } catch (err) {
+      setSaveError(err.message)
+    }
   }
 
   async function handleEdit() {
     const e = validate(form)
     if (Object.keys(e).length) { setErrors(e); return }
-    await updateOrder(editItem.id, { ...form, items: form.items.filter((it) => it.productName.trim()) })
-    setEditItem(null)
+    try {
+      setSaveError('')
+      await updateOrder(editItem.id, { ...form, items: form.items.filter((it) => it.productName.trim()) })
+      setEditItem(null)
+    } catch (err) {
+      setSaveError(err.message)
+    }
   }
 
   async function handleDelete() {
@@ -935,7 +951,7 @@ export default function Orders() {
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
                     </td>
-                    <td className="px-4 py-4 font-mono text-xs text-text-muted font-semibold">{o.code}</td>
+                    <td className="px-4 py-4 font-mono text-xs text-text-muted font-semibold">{o.code || '—'}</td>
                     <td className="px-4 py-4 font-medium text-on-surface">{o.customer?.name || '—'}</td>
                     <td className="px-4 py-4 text-text-muted">{o.salesRep?.name || o.employee?.name || '—'}</td>
                     <td className="px-4 py-4 font-mono text-xs text-text-muted">{stockNos || '—'}</td>
@@ -943,7 +959,7 @@ export default function Orders() {
                     <td className="px-4 py-4 text-right text-text-muted text-sm">{o.vat > 0 ? `${o.vat}%` : '—'}</td>
                     <td className="px-4 py-4 text-right font-semibold text-on-surface">
                       <span className="text-xs text-text-muted mr-1">{currency}</span>
-                      {parseFloat(o.totalAmount).toFixed(2)}
+                      {(parseFloat(o.totalAmount) || 0).toFixed(2)}
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle[o.status] || statusStyle.Draft}`}>
@@ -1006,13 +1022,13 @@ export default function Orders() {
       )}
 
       {showAdd && (
-        <OrderModal title="New Order" form={form} setForm={setForm} errors={errors}
-          onClose={() => setShowAdd(false)} onSave={handleAdd}
+        <OrderModal title="New Order" form={form} setForm={setForm} errors={errors} saveError={saveError}
+          onClose={() => { setShowAdd(false); setSaveError('') }} onSave={handleAdd}
           customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} />
       )}
       {editItem && (
-        <OrderModal title="Edit Order" form={form} setForm={setForm} errors={errors}
-          onClose={() => setEditItem(null)} onSave={handleEdit}
+        <OrderModal title="Edit Order" form={form} setForm={setForm} errors={errors} saveError={saveError}
+          onClose={() => { setEditItem(null); setSaveError('') }} onSave={handleEdit}
           customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} />
       )}
     </div>

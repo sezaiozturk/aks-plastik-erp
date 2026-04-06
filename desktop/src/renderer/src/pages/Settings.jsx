@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react'
 import { useData } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
 import Users from './Users'
+import { loadRatesConfig, saveRatesConfig, DEFAULT_RATES_URL, DEFAULT_RATES_PATH, DEFAULT_BASE } from '../hooks/useCurrencyRates'
 
 const API_URL = 'http://localhost:3001/api'
 
@@ -810,11 +812,439 @@ function MachinesTab() {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── API Tools Tab ────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'aks_api_connections'
+
+function loadConnections() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
+}
+function saveConnections(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
+}
+
+const emptyConn = () => ({
+  id: crypto.randomUUID(),
+  name: '',
+  url: '',
+  method: 'GET',
+  apiKeyHeader: 'Authorization',
+  apiKey: '',
+  extraHeaders: '',
+  description: '',
+})
+
+function CurrencyRatesConfig() {
+  const { token } = useAuth()
+  const [cfg, setCfg]         = useState(() => ({
+    url:          DEFAULT_RATES_URL,
+    ratesPath:    DEFAULT_RATES_PATH,
+    base:         DEFAULT_BASE,
+    apiKey:       '',
+    apiKeyHeader: 'Authorization',
+    ...loadRatesConfig(),
+  }))
+  const [testing, setTesting] = useState(false)
+  const [preview, setPreview] = useState(null)   // { ok, sample } | { error }
+  const [saved, setSaved]     = useState(false)
+
+  const inp = 'w-full bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition'
+
+  function getAtPath(obj, path) {
+    if (!path) return obj
+    return path.split('.').reduce((o, k) => o?.[k], obj)
+  }
+
+  async function testAndSave() {
+    setTesting(true)
+    setPreview(null)
+    setSaved(false)
+    try {
+      const headers = cfg.apiKey ? { [cfg.apiKeyHeader || 'Authorization']: cfg.apiKey } : {}
+      const res  = await fetch(cfg.url, { headers })
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`)
+      const json = await res.json()
+      const ratesObj = getAtPath(json, cfg.ratesPath)
+      if (!ratesObj || typeof ratesObj !== 'object') {
+        throw new Error(`No object found at path "${cfg.ratesPath}"`)
+      }
+      // Show a sample of the rates
+      const sample = Object.entries(ratesObj).slice(0, 8).map(([k, v]) => `${k}: ${Number(v).toFixed(4)}`).join('  ·  ')
+      setPreview({ ok: true, sample, total: Object.keys(ratesObj).length })
+      saveRatesConfig(cfg)
+      setSaved(true)
+    } catch (err) {
+      setPreview({ error: err.message })
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  return (
+    <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-5 mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="material-symbols-outlined text-primary text-xl">currency_exchange</span>
+        <div>
+          <h3 className="text-sm font-bold text-on-surface">Currency Rates Source</h3>
+          <p className="text-xs text-text-muted">Configure which API provides live exchange rates for Finance &amp; Orders pages.</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-semibold text-text-muted mb-1">API URL</label>
+          <input className={inp} value={cfg.url} onChange={e => setCfg(v => ({ ...v, url: e.target.value }))} placeholder={DEFAULT_RATES_URL} />
+          <p className="text-[10px] text-text-muted mt-0.5">Default: open.er-api.com (free, no key required)</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">JSON Path to Rates Object</label>
+            <input className={inp} value={cfg.ratesPath} onChange={e => setCfg(v => ({ ...v, ratesPath: e.target.value }))} placeholder="rates" />
+            <p className="text-[10px] text-text-muted mt-0.5">e.g. <span className="font-mono">rates</span> or <span className="font-mono">data.quotes</span></p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Base Currency</label>
+            <input className={inp} value={cfg.base} onChange={e => setCfg(v => ({ ...v, base: e.target.value.toUpperCase() }))} placeholder="USD" maxLength={5} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">API Key (if required)</label>
+            <input className={inp} value={cfg.apiKey} onChange={e => setCfg(v => ({ ...v, apiKey: e.target.value }))} placeholder="Leave blank if not needed" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">API Key Header</label>
+            <input className={inp} value={cfg.apiKeyHeader} onChange={e => setCfg(v => ({ ...v, apiKeyHeader: e.target.value }))} placeholder="Authorization" />
+          </div>
+        </div>
+
+        <button
+          onClick={testAndSave}
+          disabled={testing || !cfg.url}
+          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined text-base">{testing ? 'hourglass_empty' : 'bolt'}</span>
+          {testing ? 'Testing…' : 'Test & Save'}
+        </button>
+
+        {preview?.ok && (
+          <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 rounded-xl px-4 py-3">
+            <p className="text-xs font-semibold text-green-700 flex items-center gap-1 mb-1">
+              <span className="material-symbols-outlined text-sm">check_circle</span>
+              Connected — {preview.total} currencies available. Config saved.
+            </p>
+            <p className="text-[11px] text-green-600 font-mono">{preview.sample}</p>
+          </div>
+        )}
+        {preview?.error && (
+          <div className="bg-error/10 border border-error/30 rounded-xl px-4 py-3 text-xs text-error">
+            <span className="font-semibold">Error: </span>{preview.error}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ApiTab() {
+  const { token } = useAuth()
+  const [connections, setConnections] = useState(loadConnections)
+  const [selected, setSelected] = useState(null)   // connection id
+  const [editing, setEditing]   = useState(null)   // connection object being edited
+  const [isNew, setIsNew]       = useState(false)
+  const [queryParams, setQueryParams] = useState('')
+  const [reqBody, setReqBody]   = useState('')
+  const [result, setResult]     = useState(null)   // { status, elapsed, data, error }
+  const [loading, setLoading]   = useState(false)
+
+  const inp = 'w-full bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition'
+
+  const selectedConn = connections.find(c => c.id === selected)
+
+  function persist(list) { setConnections(list); saveConnections(list) }
+
+  function openNew() {
+    const c = emptyConn()
+    setEditing(c)
+    setIsNew(true)
+    setSelected(null)
+    setResult(null)
+  }
+
+  function openEdit(conn) {
+    setEditing({ ...conn })
+    setIsNew(false)
+    setSelected(conn.id)
+    setResult(null)
+  }
+
+  function cancelEdit() {
+    setEditing(null)
+    setIsNew(false)
+  }
+
+  function saveEdit() {
+    if (!editing.name.trim() || !editing.url.trim()) return
+    if (isNew) {
+      persist([editing, ...connections])
+      setSelected(editing.id)
+    } else {
+      persist(connections.map(c => c.id === editing.id ? editing : c))
+    }
+    setEditing(null)
+    setIsNew(false)
+  }
+
+  function deleteConn(id) {
+    persist(connections.filter(c => c.id !== id))
+    if (selected === id) { setSelected(null); setResult(null) }
+  }
+
+  async function runRequest(conn) {
+    setLoading(true)
+    setResult(null)
+    try {
+      // Build headers
+      const headers = {}
+      if (conn.apiKey) headers[conn.apiKeyHeader || 'Authorization'] = conn.apiKey
+      if (conn.extraHeaders) {
+        try {
+          Object.assign(headers, JSON.parse(conn.extraHeaders))
+        } catch { /* ignore malformed extra headers */ }
+      }
+
+      // Append query params
+      let url = conn.url
+      if (queryParams.trim()) {
+        url += (url.includes('?') ? '&' : '?') + queryParams.trim()
+      }
+
+      const body = conn.method !== 'GET' && reqBody.trim() ? reqBody.trim() : undefined
+
+      const res = await fetch(`${API_URL}/proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url, headers, method: conn.method, body }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Proxy error')
+      setResult(json)
+    } catch (err) {
+      setResult({ error: err.message })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const methodColor = { GET: 'text-green-600', POST: 'text-blue-600', PUT: 'text-amber-600', DELETE: 'text-red-500', PATCH: 'text-purple-600' }
+
+  return (
+    <div>
+      <CurrencyRatesConfig />
+      <div className="flex gap-6" style={{ minHeight: 500 }}>
+      {/* Sidebar — connection list */}
+      <div className="w-64 shrink-0">
+        <button
+          onClick={openNew}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition mb-3"
+        >
+          <span className="material-symbols-outlined text-base">add</span>
+          New Connection
+        </button>
+
+        <div className="space-y-1.5">
+          {connections.length === 0 && (
+            <p className="text-xs text-text-muted text-center py-8">No connections yet</p>
+          )}
+          {connections.map(c => (
+            <button
+              key={c.id}
+              onClick={() => { setSelected(c.id); setEditing(null); setIsNew(false); setResult(null) }}
+              className={`w-full text-left px-3 py-2.5 rounded-xl border transition ${selected === c.id && !editing ? 'border-primary bg-primary/5' : 'border-theme-border hover:bg-hover-bg'}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-bold ${methodColor[c.method] || 'text-text-muted'}`}>{c.method}</span>
+                <span className="text-sm font-semibold text-on-surface truncate">{c.name}</span>
+              </div>
+              {c.description && <p className="text-xs text-text-muted truncate mt-0.5">{c.description}</p>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main panel */}
+      <div className="flex-1 min-w-0">
+        {/* ── Edit / New form ── */}
+        {editing ? (
+          <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-5 space-y-3">
+            <h3 className="text-sm font-bold text-on-surface mb-1">{isNew ? 'New Connection' : 'Edit Connection'}</h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">Name *</label>
+                <input className={inp} value={editing.name} onChange={e => setEditing(v => ({ ...v, name: e.target.value }))} placeholder="e.g. Exchange Rates API" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">Method</label>
+                <select className={inp} value={editing.method} onChange={e => setEditing(v => ({ ...v, method: e.target.value }))}>
+                  {['GET','POST','PUT','PATCH','DELETE'].map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Base URL *</label>
+              <input className={inp} value={editing.url} onChange={e => setEditing(v => ({ ...v, url: e.target.value }))} placeholder="https://api.example.com/endpoint" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">API Key / Token</label>
+                <input className={inp} value={editing.apiKey} onChange={e => setEditing(v => ({ ...v, apiKey: e.target.value }))} placeholder="Bearer your-token or key" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">API Key Header</label>
+                <input className={inp} value={editing.apiKeyHeader} onChange={e => setEditing(v => ({ ...v, apiKeyHeader: e.target.value }))} placeholder="Authorization" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Extra Headers <span className="font-normal text-text-muted">(JSON)</span></label>
+              <input className={inp} value={editing.extraHeaders} onChange={e => setEditing(v => ({ ...v, extraHeaders: e.target.value }))} placeholder='{"X-Custom-Header": "value"}' />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Description</label>
+              <input className={inp} value={editing.description} onChange={e => setEditing(v => ({ ...v, description: e.target.value }))} placeholder="What does this API return?" />
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={cancelEdit} className="flex-1 border border-theme-border rounded-xl py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+              <button
+                onClick={saveEdit}
+                disabled={!editing.name.trim() || !editing.url.trim()}
+                className="flex-1 bg-primary text-white rounded-xl py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
+              >
+                Save Connection
+              </button>
+            </div>
+          </div>
+        ) : selectedConn ? (
+          /* ── Connection detail + runner ── */
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full bg-surface-container-high ${methodColor[selectedConn.method]}`}>{selectedConn.method}</span>
+                    <h3 className="text-base font-bold text-on-surface">{selectedConn.name}</h3>
+                  </div>
+                  <p className="font-mono text-xs text-text-muted break-all">{selectedConn.url}</p>
+                  {selectedConn.description && <p className="text-xs text-text-muted mt-1">{selectedConn.description}</p>}
+                  {selectedConn.apiKey && (
+                    <p className="text-xs text-text-muted mt-1 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">key</span>
+                      {selectedConn.apiKeyHeader}: <span className="font-mono">{'•'.repeat(Math.min(selectedConn.apiKey.length, 20))}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => openEdit(selectedConn)} className="p-2 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
+                    <span className="material-symbols-outlined text-base">edit</span>
+                  </button>
+                  <button onClick={() => deleteConn(selectedConn.id)} className="p-2 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
+                    <span className="material-symbols-outlined text-base">delete</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Request runner */}
+            <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4 space-y-3">
+              <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Run Request</h4>
+
+              <div>
+                <label className="block text-xs font-semibold text-text-muted mb-1">Query Parameters</label>
+                <input
+                  className={inp}
+                  value={queryParams}
+                  onChange={e => setQueryParams(e.target.value)}
+                  placeholder="key=value&another=value"
+                />
+              </div>
+
+              {selectedConn.method !== 'GET' && (
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Request Body (JSON)</label>
+                  <textarea
+                    rows={3}
+                    className={inp + ' font-mono text-xs'}
+                    value={reqBody}
+                    onChange={e => setReqBody(e.target.value)}
+                    placeholder='{"key": "value"}'
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={() => runRequest(selectedConn)}
+                disabled={loading}
+                className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-base">{loading ? 'hourglass_empty' : 'send'}</span>
+                {loading ? 'Fetching…' : 'Send Request'}
+              </button>
+            </div>
+
+            {/* Response */}
+            {result && (
+              <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Response</h4>
+                  {result.error ? (
+                    <span className="text-xs font-semibold text-error bg-error/10 px-2 py-0.5 rounded-full">Error</span>
+                  ) : (
+                    <>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${result.status < 300 ? 'bg-green-100 text-green-700' : result.status < 400 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+                        {result.status} {result.statusText}
+                      </span>
+                      <span className="text-xs text-text-muted">{result.elapsed}ms</span>
+                      {result.contentType && <span className="text-xs text-text-muted font-mono">{result.contentType.split(';')[0]}</span>}
+                    </>
+                  )}
+                </div>
+                <pre className="bg-surface-container-high rounded-xl p-3 text-xs font-mono text-on-surface overflow-auto max-h-96 whitespace-pre-wrap break-all">
+                  {result.error
+                    ? result.error
+                    : typeof result.data === 'string'
+                      ? result.data
+                      : JSON.stringify(result.data, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── Empty state ── */
+          <div className="flex flex-col items-center justify-center py-24 text-text-muted">
+            <span className="material-symbols-outlined text-6xl mb-4 opacity-30">api</span>
+            <p className="text-base font-medium">No connection selected</p>
+            <p className="text-sm mt-1">Create a new connection or select one from the list.</p>
+          </div>
+        )}
+      </div>
+    </div>
+    </div>
+  )
+}
+
 const TABS = [
   { key: 'users',       label: 'Users',        icon: 'manage_accounts' },
   { key: 'roles',       label: 'User Roles',   icon: 'badge' },
   { key: 'permissions', label: 'Permissions',  icon: 'lock' },
   { key: 'machines',    label: 'Machines',     icon: 'precision_manufacturing' },
+  { key: 'api',         label: 'API Tools',    icon: 'api' },
 ]
 
 export default function Settings() {
@@ -849,6 +1279,7 @@ export default function Settings() {
       {tab === 'roles'       && <UserRolesTab />}
       {tab === 'permissions' && <PermissionsTab />}
       {tab === 'machines'    && <MachinesTab />}
+      {tab === 'api'         && <ApiTab />}
     </div>
   )
 }

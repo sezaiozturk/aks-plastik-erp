@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useData } from '../context/DataContext'
+import { useCurrencyRates } from '../hooks/useCurrencyRates'
 
 const ITEMS_PER_PAGE = 15
 
@@ -135,8 +136,58 @@ function CategoryBreakdown({ records, type }) {
   )
 }
 
+// ─── Currency Ticker ─────────────────────────────────────────────────────────
+const TICKER_CURRENCIES = ['EUR', 'GBP', 'TRY', 'AED', 'SAR', 'JPY', 'CNY', 'CAD', 'AUD', 'INR']
+
+function CurrencyTicker() {
+  const { rates, base, loading, error, lastUpdated, fetchRates } = useCurrencyRates()
+
+  if (error) return (
+    <div className="flex items-center gap-2 text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2 mb-4">
+      <span className="material-symbols-outlined text-sm">error</span>
+      Exchange rates unavailable: {error}
+      <button onClick={fetchRates} className="ml-auto underline hover:no-underline">Retry</button>
+    </div>
+  )
+
+  if (loading || !rates) return (
+    <div className="flex items-center gap-2 text-xs text-text-muted mb-4 px-1">
+      <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
+      Loading exchange rates…
+    </div>
+  )
+
+  return (
+    <div className="flex items-center gap-1 mb-4 bg-surface-container-lowest border border-theme-border rounded-xl px-4 py-2 overflow-x-auto">
+      <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0 mr-2">
+        Live Rates · {base}
+      </span>
+      {TICKER_CURRENCIES.map(cur => {
+        const rate = rates[cur]
+        if (!rate) return null
+        return (
+          <div key={cur} className="flex items-center gap-1.5 shrink-0 px-3 py-0.5 rounded-lg bg-surface-container-high">
+            <span className="text-xs font-bold text-on-surface">{cur}</span>
+            <span className="text-xs text-text-muted tabular-nums">{rate.toFixed(4)}</span>
+          </div>
+        )
+      })}
+      <div className="ml-auto shrink-0 flex items-center gap-2 pl-3 border-l border-theme-border">
+        {lastUpdated && (
+          <span className="text-[10px] text-text-muted whitespace-nowrap">
+            {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+        <button onClick={fetchRates} title="Refresh rates" className="text-text-muted hover:text-primary transition">
+          <span className="material-symbols-outlined text-sm">refresh</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Modal ───────────────────────────────────────────────────────────────────
-function Modal({ title, form, setForm, onClose, onSave, errors, orders }) {
+function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, ratesBase }) {
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
   const inp = (field) =>
     `w-full bg-surface-container-lowest border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition ${errors[field] ? 'border-error' : 'border-theme-border'}`
@@ -191,6 +242,17 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders }) {
                   value={form.amount} onChange={set('amount')} placeholder="0.00" />
               </div>
               {errors.amount && <p className="text-xs text-error mt-1">{errors.amount}</p>}
+              {rates && form.currency && form.currency !== ratesBase && rates[form.currency] && (
+                <p className="text-[10px] text-text-muted mt-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">currency_exchange</span>
+                  1 {ratesBase} = {rates[form.currency].toFixed(4)} {form.currency}
+                  {form.amount > 0 && (
+                    <span className="ml-1 font-semibold text-primary">
+                      ≈ {(parseFloat(form.amount) / rates[form.currency]).toFixed(2)} {ratesBase}
+                    </span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -238,6 +300,7 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders }) {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function Finance() {
   const { financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, orders, isAdmin } = useData()
+  const { rates, base: ratesBase } = useCurrencyRates()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -363,108 +426,107 @@ export default function Finance() {
   const hasFilters = search || typeFilter !== 'all' || categoryFilter !== 'all' || dateFilter !== 'all'
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="h-full flex flex-col overflow-hidden px-5 pt-4 pb-3">
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Finance</h1>
-          <p className="text-sm text-text-muted mt-0.5">Track income, expenses and cash flow</p>
+          <h1 className="text-xl font-bold text-on-surface">Finance</h1>
+          <p className="text-xs text-text-muted mt-0.5">Track income, expenses and cash flow</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportCSV}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-border text-sm text-text-muted hover:bg-hover-bg transition">
-            <span className="material-symbols-outlined text-base">download</span>
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
+            <span className="material-symbols-outlined text-sm">download</span>
             Export CSV
           </button>
           {isAdmin && (
             <button onClick={openAdd}
-              className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
-              <span className="material-symbols-outlined text-base">add</span>
+              className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-90 transition">
+              <span className="material-symbols-outlined text-sm">add</span>
               Add Record
             </button>
           )}
         </div>
       </div>
 
+      {/* Live rates ticker */}
+      <div className="shrink-0 mb-3">
+        <CurrencyTicker />
+      </div>
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {/* Total Income */}
-        <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Total Income</span>
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-base">trending_up</span>
-            </div>
+      <div className="grid grid-cols-4 gap-3 mb-3 shrink-0">
+        <div className="bg-surface-container-lowest border border-theme-border rounded-xl p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-primary text-base">trending_up</span>
           </div>
-          <p className="text-xl font-bold text-primary">${fmt(summary.income)}</p>
-          <p className="text-xs text-text-muted mt-1">{summary.incomeCount} transactions</p>
+          <div>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">Total Income</p>
+            <p className="text-base font-bold text-primary tabular-nums">{fmt(summary.income)}</p>
+            <p className="text-[10px] text-text-muted">{summary.incomeCount} tx</p>
+          </div>
         </div>
 
-        {/* Total Expenses */}
-        <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Total Expenses</span>
-            <div className="w-8 h-8 rounded-xl bg-error/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-error text-base">trending_down</span>
-            </div>
+        <div className="bg-surface-container-lowest border border-theme-border rounded-xl p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-error text-base">trending_down</span>
           </div>
-          <p className="text-xl font-bold text-error">${fmt(summary.expense)}</p>
-          <p className="text-xs text-text-muted mt-1">{summary.expenseCount} transactions</p>
+          <div>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">Total Expenses</p>
+            <p className="text-base font-bold text-error tabular-nums">{fmt(summary.expense)}</p>
+            <p className="text-[10px] text-text-muted">{summary.expenseCount} tx</p>
+          </div>
         </div>
 
-        {/* Net Balance */}
-        <div className={`border rounded-2xl p-4 ${summary.balance >= 0 ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'}`}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Net Balance</span>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${summary.balance >= 0 ? 'bg-green-100 dark:bg-green-800/30' : 'bg-red-100 dark:bg-red-800/30'}`}>
-              <span className={`material-symbols-outlined text-base ${summary.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>account_balance</span>
-            </div>
+        <div className={`border rounded-xl p-3 flex items-center gap-3 ${summary.balance >= 0 ? 'bg-green-50 dark:bg-green-900/10 border-green-200' : 'bg-red-50 dark:bg-red-900/10 border-red-200'}`}>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${summary.balance >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+            <span className={`material-symbols-outlined text-base ${summary.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>account_balance</span>
           </div>
-          <p className={`text-xl font-bold ${summary.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600'}`}>
-            {summary.balance >= 0 ? '+' : '-'}${fmt(Math.abs(summary.balance))}
-          </p>
-          <p className="text-xs text-text-muted mt-1">All time</p>
+          <div>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">Net Balance</p>
+            <p className={`text-base font-bold tabular-nums ${summary.balance >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+              {summary.balance >= 0 ? '+' : '-'}{fmt(Math.abs(summary.balance))}
+            </p>
+            <p className="text-[10px] text-text-muted">All time</p>
+          </div>
         </div>
 
-        {/* This Month */}
-        <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">This Month</span>
-            <div className="w-8 h-8 rounded-xl bg-surface-container-high flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-surface-variant text-base">calendar_month</span>
-            </div>
+        <div className="bg-surface-container-lowest border border-theme-border rounded-xl p-3 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-on-surface-variant text-base">calendar_month</span>
           </div>
-          <p className={`text-xl font-bold ${summary.tmNet >= 0 ? 'text-primary' : 'text-error'}`}>
-            {summary.tmNet >= 0 ? '+' : '-'}${fmt(Math.abs(summary.tmNet))}
-          </p>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-xs text-primary">↑ ${fmt(summary.tmIncome)}</span>
-            <span className="text-xs text-error">↓ ${fmt(summary.tmExpense)}</span>
-            {incomeChg !== null && (
-              <span className={`text-[10px] font-semibold ${incomeChg >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {incomeChg >= 0 ? '▲' : '▼'}{Math.abs(incomeChg).toFixed(0)}% vs last mo.
-              </span>
-            )}
+          <div>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">This Month</p>
+            <p className={`text-base font-bold tabular-nums ${summary.tmNet >= 0 ? 'text-primary' : 'text-error'}`}>
+              {summary.tmNet >= 0 ? '+' : '-'}{fmt(Math.abs(summary.tmNet))}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-primary">↑{fmt(summary.tmIncome)}</span>
+              <span className="text-[10px] text-error">↓{fmt(summary.tmExpense)}</span>
+              {incomeChg !== null && (
+                <span className={`text-[10px] font-semibold ${incomeChg >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {incomeChg >= 0 ? '▲' : '▼'}{Math.abs(incomeChg).toFixed(0)}%
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="col-span-2 bg-surface-container-lowest border border-theme-border rounded-2xl p-5">
-          <h3 className="text-sm font-semibold text-on-surface mb-4">6-Month Cash Flow</h3>
+      <div className="grid grid-cols-3 gap-3 mb-3 shrink-0">
+        <div className="col-span-2 bg-surface-container-lowest border border-theme-border rounded-xl px-4 pt-3 pb-2">
+          <h3 className="text-xs font-semibold text-on-surface mb-2">6-Month Cash Flow</h3>
           <MonthlyChart records={financeRecords} />
         </div>
-
-        <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-on-surface">Top Categories</h3>
+        <div className="bg-surface-container-lowest border border-theme-border rounded-xl px-4 pt-3 pb-2">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-on-surface">Top Categories</h3>
             <div className="flex gap-0.5 bg-surface-container-high rounded-lg p-0.5">
               {['income', 'expense'].map(t => (
                 <button key={t} onClick={() => setBreakdownType(t)}
-                  className={`px-2.5 py-0.5 rounded-md text-xs font-semibold transition capitalize ${
-                    breakdownType === t ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-text-muted'
-                  }`}>
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition capitalize ${breakdownType === t ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-text-muted'}`}>
                   {t}
                 </button>
               ))}
@@ -475,42 +537,38 @@ export default function Finance() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <div className="relative flex-1 min-w-52">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
+      <div className="flex items-center gap-2 mb-2 shrink-0 flex-wrap">
+        <div className="relative flex-1 min-w-44">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-base">search</span>
           <input
-            className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
+            className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-1.5 text-xs text-on-surface outline-none focus:border-primary"
             placeholder="Search code, category, reference…"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
         </div>
-
-        <div className="flex gap-0.5 bg-surface-container-lowest border border-theme-border rounded-xl p-1">
+        <div className="flex gap-0.5 bg-surface-container-lowest border border-theme-border rounded-xl p-0.5">
           {['all', 'income', 'expense'].map(t => (
             <button key={t} onClick={() => { setTypeFilter(t); setPage(1) }}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === t ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-bg'}`}>
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === t ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-bg'}`}>
               {t}
             </button>
           ))}
         </div>
-
         <select value={dateFilter} onChange={e => { setDateFilter(e.target.value); setPage(1) }}
-          className="bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary">
+          className="bg-surface-container-lowest border border-theme-border rounded-xl px-2.5 py-1.5 text-xs text-on-surface outline-none focus:border-primary">
           <option value="all">All Time</option>
           <option value="this_month">This Month</option>
           <option value="last_month">Last Month</option>
           <option value="this_year">This Year</option>
         </select>
-
         {allCategories.length > 0 && (
           <select value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setPage(1) }}
-            className="bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary">
+            className="bg-surface-container-lowest border border-theme-border rounded-xl px-2.5 py-1.5 text-xs text-on-surface outline-none focus:border-primary">
             <option value="all">All Categories</option>
             {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
-
         {hasFilters && (
           <button onClick={() => { setSearch(''); setTypeFilter('all'); setCategoryFilter('all'); setDateFilter('all'); setPage(1) }}
             className="flex items-center gap-1 text-xs text-text-muted hover:text-error transition">
@@ -520,9 +578,9 @@ export default function Finance() {
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-surface-container-lowest rounded-2xl border border-theme-border overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border">
+      {/* Table — fills remaining space */}
+      <div className="flex-1 min-h-0 bg-surface-container-lowest rounded-xl border border-theme-border flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-theme-border shrink-0">
           <span className="text-xs text-text-muted">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
           {filtered.length > 0 && (
             <div className="flex items-center gap-3 text-xs">
@@ -538,108 +596,94 @@ export default function Finance() {
           )}
         </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-4 py-3 font-semibold">Code</th>
-              <th className="text-left px-4 py-3 font-semibold">Type</th>
-              <th className="text-left px-4 py-3 font-semibold">Category</th>
-              <th className="text-left px-4 py-3 font-semibold">Date</th>
-              <th className="text-left px-4 py-3 font-semibold">Reference</th>
-              <th className="text-left px-4 py-3 font-semibold">Description</th>
-              <th className="text-right px-4 py-3 font-semibold">Amount</th>
-              {isAdmin && <th className="px-4 py-3 w-20" />}
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.length === 0 ? (
-              <tr>
-                <td colSpan={isAdmin ? 8 : 7} className="text-center py-16 text-text-muted">
-                  <span className="material-symbols-outlined text-4xl block mb-2 opacity-30">receipt_long</span>
-                  No records found
-                </td>
+        <div className="overflow-auto flex-1">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-surface-container-lowest z-10">
+              <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-2.5 font-semibold">Code</th>
+                <th className="text-left px-4 py-2.5 font-semibold">Type</th>
+                <th className="text-left px-4 py-2.5 font-semibold">Category</th>
+                <th className="text-left px-4 py-2.5 font-semibold">Date</th>
+                <th className="text-left px-4 py-2.5 font-semibold">Reference</th>
+                <th className="text-left px-4 py-2.5 font-semibold">Description</th>
+                <th className="text-right px-4 py-2.5 font-semibold">Amount</th>
+                {isAdmin && <th className="px-4 py-2.5 w-20" />}
               </tr>
-            ) : (
-              paginated.map(r => (
-                <tr key={r.id} className="border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-text-muted">{r.code}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      r.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'
-                    }`}>
-                      <span className="material-symbols-outlined text-xs">
-                        {r.type === 'income' ? 'arrow_circle_down' : 'arrow_circle_up'}
-                      </span>
-                      {r.type === 'income' ? 'Income' : 'Expense'}
-                    </span>
+            </thead>
+            <tbody>
+              {paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-text-muted">
+                    <span className="material-symbols-outlined text-4xl block mb-2 opacity-30">receipt_long</span>
+                    No records found
                   </td>
-                  <td className="px-4 py-3 text-xs text-text-muted">{r.category}</td>
-                  <td className="px-4 py-3 text-xs text-text-muted whitespace-nowrap">{r.date}</td>
-                  <td className="px-4 py-3 text-xs text-text-muted">{r.reference || '—'}</td>
-                  <td className="px-4 py-3 text-xs text-text-muted max-w-[160px] truncate" title={r.description || ''}>
-                    {r.description || '—'}
-                  </td>
-                  <td className={`px-4 py-3 text-right font-bold tabular-nums ${r.type === 'income' ? 'text-primary' : 'text-error'}`}>
-                    {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
-                    <span className="text-[10px] font-normal text-text-muted ml-1">{r.currency || 'USD'}</span>
-                  </td>
-                  {isAdmin && (
-                    <td className="px-4 py-3">
-                      {deletingId === r.id ? (
-                        <div className="flex items-center gap-1 justify-end">
-                          <button onClick={() => handleDelete(r.id)}
-                            className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">
-                            Yes
-                          </button>
-                          <button onClick={() => setDeletingId(null)}
-                            className="text-xs text-text-muted px-1 transition">
-                            No
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-0.5">
-                          <button onClick={() => openEdit(r)}
-                            className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
-                            <span className="material-symbols-outlined text-base">edit</span>
-                          </button>
-                          <button onClick={() => setDeletingId(r.id)}
-                            className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
-                            <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  )}
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
-          <span>Page {page} of {totalPages} · {filtered.length} records</span>
-          <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-              className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">
-              Prev
-            </button>
-            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
-              className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">
-              Next
-            </button>
-          </div>
+              ) : (
+                paginated.map(r => (
+                  <tr key={r.id} className="border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors">
+                    <td className="px-4 py-2.5 font-mono text-xs text-text-muted">{r.code}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${r.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
+                        <span className="material-symbols-outlined text-xs">{r.type === 'income' ? 'arrow_circle_down' : 'arrow_circle_up'}</span>
+                        {r.type === 'income' ? 'Income' : 'Expense'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-text-muted">{r.category}</td>
+                    <td className="px-4 py-2.5 text-xs text-text-muted whitespace-nowrap">{r.date}</td>
+                    <td className="px-4 py-2.5 text-xs text-text-muted">{r.reference || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-text-muted max-w-[160px] truncate" title={r.description || ''}>{r.description || '—'}</td>
+                    <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${r.type === 'income' ? 'text-primary' : 'text-error'}`}>
+                      {r.type === 'income' ? '+' : '-'}{fmt(r.amount)}
+                      <span className="text-[10px] font-normal text-text-muted ml-1">{r.currency || 'USD'}</span>
+                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-2.5">
+                        {deletingId === r.id ? (
+                          <div className="flex items-center gap-1 justify-end">
+                            <button onClick={() => handleDelete(r.id)} className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">Yes</button>
+                            <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1 transition">No</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
+                              <span className="material-symbols-outlined text-base">edit</span>
+                            </button>
+                            <button onClick={() => setDeletingId(r.id)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
+                              <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-2 border-t border-theme-border shrink-0 text-xs text-text-muted">
+            <span>Page {page} of {totalPages} · {filtered.length} records</span>
+            <div className="flex gap-1.5">
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
+                className="px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
+              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {showAdd && (
         <Modal title="New Transaction" form={form} setForm={setForm} errors={errors}
-          onClose={() => setShowAdd(false)} onSave={handleAdd} orders={orders} />
+          onClose={() => setShowAdd(false)} onSave={handleAdd} orders={orders}
+          rates={rates} ratesBase={ratesBase} />
       )}
       {editItem && (
         <Modal title="Edit Transaction" form={form} setForm={setForm} errors={errors}
-          onClose={() => setEditItem(null)} onSave={handleEdit} orders={orders} />
+          onClose={() => setEditItem(null)} onSave={handleEdit} orders={orders}
+          rates={rates} ratesBase={ratesBase} />
       )}
     </div>
   )

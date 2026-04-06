@@ -250,14 +250,16 @@ export function DataProvider({ children }) {
   // ── Orders ──
   async function addOrder(form) {
     const res = await fetch(`${API_URL}/orders`, { method: 'POST', headers, body: JSON.stringify(form) })
-    const order = await res.json()
-    setOrders((prev) => [order, ...prev])
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to create order')
+    setOrders((prev) => [data, ...prev])
   }
 
   async function updateOrder(id, form) {
     const res = await fetch(`${API_URL}/orders/${id}`, { method: 'PUT', headers, body: JSON.stringify(form) })
-    const updated = await res.json()
-    setOrders((prev) => prev.map((o) => (o.id === id ? updated : o)))
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to update order')
+    setOrders((prev) => prev.map((o) => (o.id === id ? data : o)))
   }
 
   async function deleteOrder(id) {
