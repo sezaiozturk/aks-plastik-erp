@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone      String?
+  role       String  @default("user") // "admin" or "user"
+  department String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  passwordResetTokens PasswordResetToken[]
+  orders              Order[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  initials     String
+  contact      String   @default("—")
+  contactRole  String   @default("—")
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  region       String?
+  address      String?
+  city         String?
+  postalCode   String?
+  country      String?
+  phone        String?
+  email        String?
+  latitude     Float?
+  longitude    Float?
+  totalOrders  Int      @default(0)
+  activeOrders Int      @default(0)
+  badge        String   @default("0 OPEN")
+  badgeType    String   @default("clear")
+  flagged      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reports    Report[]
+  siteVisits SiteVisit[]
+  orders     Order[]
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  title       String
+  description String    @default("")
+  priority    String    @default("Low")
+  column      String    @default("open")
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  employeeId String?
+}
+
+model SiteVisit {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  title     String
+  location  String   @default("")
+  date      String
+  time      String
+  status    String   @default("Scheduled")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  employeeId String?
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  stockNo     String   @default("")
+  name        String
+  description String   @default("")
+  category    String   @default("General")
+  unit        String   @default("pcs")
+  currency    String   @default("USD")
+  price       Float    @default(0)
+  stock       Int      @default(0)
+  minStock    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+}
+
+model Employee {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  initials     String
+  department   String   @default("General")
+  position     String   @default("")
+  phone        String?
+  email        String?
+  salary       Float    @default(0)
+  status       String   @default("Active")
+  hireDate     String?
+  supervisorId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  supervisor   Employee?  @relation("EmployeeSupervisor", fields: [supervisorId], references: [id])
+  subordinates Employee[] @relation("EmployeeSupervisor")
+
+  orders        Order[]
+  reports       Report[]
+  siteVisits    SiteVisit[]
+  attendances   Attendance[]
+  leaveRequests LeaveRequest[]
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  status      String   @default("Draft")
+  vat         Float    @default(0)
+  totalAmount Float    @default(0)
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  customerId  String?
+  employee    Employee? @relation(fields: [employeeId], references: [id])
+  employeeId  String?
+  salesRep    User?     @relation(fields: [salesRepId], references: [id])
+  salesRepId  String?
+
+  items          OrderItem[]
+  financeRecords FinanceRecord[]
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  productName String
+  quantity    Int     @default(1)
+  unitPrice   Float   @default(0)
+  currency    String  @default("USD")
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product? @relation(fields: [productId], references: [id])
+  productId String?
+}
+
+model UserRole {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model RolePermission {
+  id   Int    @id @default(autoincrement())
+  role String
+  page String
+
+  @@unique([role, page])
+}
+
+model RoleStatusPermission {
+  id     Int    @id @default(autoincrement())
+  role   String
+  status String
+
+  @@unique([role, status])
+}
+
+model Machine {
+  id                  Int                        @id @default(autoincrement())
+  code                String                     @unique
+  name                String
+  manufacturer        String                     @default("")
+  manufacturerCountry String                     @default("")
+  manufacturerContact String                     @default("")
+  productionYear      Int?
+  warrantyExpiry      String                     @default("")
+  status              String                     @default("Active")
+  location            String                     @default("")
+  nextMaintenanceDue  String                     @default("")
+  notes               String                     @default("")
+  manualPath          String                     @default("")
+  manualName          String                     @default("")
+  createdAt           DateTime                   @default(now())
+  maintenanceRecords  MachineMaintenanceRecord[]
+  monthlyMaintenance  MachineMonthlyMaintenance[]
+}
+
+model MachineMaintenanceRecord {
+  id          Int      @id @default(autoincrement())
+  machineId   Int
+  machine     Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  date        String
+  type        String   @default("Preventive")
+  description String   @default("")
+  technician  String   @default("")
+  cost        Float    @default(0)
+  currency    String   @default("USD")
+  nextDue     String   @default("")
+  createdAt   DateTime @default(now())
+}
+
+model MachineMonthlyMaintenance {
+  id          Int      @id @default(autoincrement())
+  machineId   Int
+  machine     Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  year        Int
+  month       Int
+  description String   @default("")
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model FinanceRecord {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  type        String
+  category    String   @default("General")
+  amount      Float    @default(0)
+  date        String
+  reference   String   @default("")
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
+}
+
+model Attendance {
+  id         String   @id @default(cuid())
+  date       String
+  checkIn    String?
+  checkOut   String?
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+
+  @@unique([employeeId, date])
+}
+
+model LeaveRequest {
+  id         String   @id @default(cuid())
+  type       String   @default("Annual")
+  startDate  String
+  endDate    String
+  days       Int      @default(1)
+  reason     String   @default("")
+  status     String   @default("Pending")
+  reviewedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String
+}

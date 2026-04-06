@@ -1,0 +1,75 @@
+{
+  "name": "plan-s-field-app",
+  "version": "1.0.0",
+  "description": "AKS CRM Dashboard Desktop Application",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "package": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.plans.fieldapp",
+    "productName": "AKS CRM Dashboard",
+    "copyright": "Copyright © 2026 AKS",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/main/plan_s_icon_dark.png",
+      "publisherName": "AKS",
+      "requestedExecutionLevel": "asInvoker",
+      "signingHashAlgorithms": null,
+      "sign": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "src/main/plan_s_dark.ico",
+      "uninstallerIcon": "src/main/plan_s_dark.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AKS CRM Dashboard",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
+    "leaflet": "^1.9.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.22.0",
+    "serialport": "^13.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "electron": "^29.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^2.0.0",
+    "postcss": "^8.4.35",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.1.4"
+  }
+}
