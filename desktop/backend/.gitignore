@@ -1,5 +1,0 @@
-node_modules
-desktop/node_modules/
-.env
-*.exe
-desktop/dist/
