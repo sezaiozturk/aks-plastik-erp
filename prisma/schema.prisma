@@ -40,16 +40,53 @@ model Customer {
   initials     String
   contact      String   @default("—")
   contactRole  String   @default("—")
-  contactName  String?
-  contactPhone String?
-  contactEmail String?
-  region       String?
+  // Basic Identity
+  customerType String   @default("Company")
+  fullName     String?
+  taxId        String?
+  taxOffice    String?
+  // Address & Contact
   address      String?
   city         String?
+  district     String?
   postalCode   String?
   country      String?
   phone        String?
   email        String?
+  region       String?
+  // Tax & e-Document
+  eInvoiceStatus  Boolean  @default(false)
+  eArchiveStatus  Boolean  @default(false)
+  eDispatchStatus Boolean  @default(false)
+  invoiceScenario String   @default("Basic")
+  // Accounting / Financial
+  accountCode  String?
+  accountType  String   @default("Customer")
+  currency     String   @default("TRY")
+  paymentTerm  String?
+  creditLimit  Float?
+  balance      Float    @default(0)
+  // Bank Information
+  bankName     String?
+  iban         String?
+  branchCode   String?
+  accountHolder String?
+  // Invoicing & Payment Settings
+  invoiceType   String?
+  paymentMethod String?
+  paymentTerms  String?
+  // Contact Person
+  contactName     String?
+  contactPhone    String?
+  contactEmail    String?
+  contactPosition String?
+  // Optional Fields
+  industry         String?
+  customerCategory String?
+  salesRepName     String?
+  notes            String?
+  gdprConsent      Boolean  @default(false)
+  // Meta
   latitude     Float?
   longitude    Float?
   totalOrders  Int      @default(0)

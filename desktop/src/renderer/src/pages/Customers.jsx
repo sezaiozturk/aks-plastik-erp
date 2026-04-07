@@ -12,79 +12,304 @@ const badgeStyles = {
 const ITEMS_PER_PAGE = 5
 
 const emptyForm = {
+  // Identity
+  customerType: 'Company',
+  fullName: '',
   companyName: '',
+  taxId: '',
+  taxOffice: '',
+  country: '',
+  // Address
   address: '',
   city: '',
+  district: '',
   postalCode: '',
-  country: '',
   phone: '',
   email: '',
-  latitude: '',
-  longitude: '',
+  // Tax & Docs
+  eInvoiceStatus: false,
+  eArchiveStatus: false,
+  eDispatchStatus: false,
+  invoiceScenario: 'Basic',
+  // Financial
+  accountCode: '',
+  accountType: 'Customer',
+  currency: 'TRY',
+  paymentTerm: '',
+  creditLimit: '',
+  // Bank
+  bankName: '',
+  iban: '',
+  branchCode: '',
+  accountHolder: '',
+  // Invoicing & Payment
+  invoiceType: '',
+  paymentMethod: '',
+  paymentTerms: '',
+  // Contact Person
   contactName: '',
   contactPhone: '',
   contactEmail: '',
+  contactPosition: '',
+  // Optional
+  industry: '',
+  customerCategory: '',
+  salesRepName: '',
+  notes: '',
+  gdprConsent: false,
+}
+
+const TAB_DEFS = [
+  { id: 'identity',  label: 'Identity',   icon: 'badge'                   },
+  { id: 'address',   label: 'Address',    icon: 'location_on'             },
+  { id: 'tax',       label: 'Tax & Docs', icon: 'receipt_long'            },
+  { id: 'financial', label: 'Financial',  icon: 'account_balance_wallet'  },
+  { id: 'contact',   label: 'Contact',    icon: 'contact_phone'           },
+]
+
+function getTabFields(tabId, form) {
+  switch (tabId) {
+    case 'identity':
+      return [
+        {
+          id: 'customerType', label: 'Customer Type', icon: 'category', type: 'select', col: 2,
+          options: [{ value: 'Company', label: 'Company – Legal Entity' }, { value: 'Individual', label: 'Individual – Person' }],
+        },
+        ...(form.customerType === 'Individual'
+          ? [{ id: 'fullName', label: 'Full Name', icon: 'person', type: 'text', col: 2, placeholder: 'e.g. John Doe' }]
+          : [{ id: 'companyName', label: 'Company Name', icon: 'business', type: 'text', col: 2, placeholder: 'e.g. Acme Corporation' }]
+        ),
+        { id: 'taxId', label: 'Tax Identification No. (TIN / TCKN)', icon: 'fingerprint', type: 'text', col: 2, placeholder: 'e.g. 1234567890' },
+        { id: 'taxOffice', label: 'Tax Office', icon: 'account_balance', type: 'text', col: 1, placeholder: 'Tax office name' },
+        { id: 'country', label: 'Country', icon: 'public', type: 'text', col: 1, placeholder: 'e.g. Turkey' },
+      ]
+    case 'address':
+      return [
+        { id: 'address', label: 'Full Address', icon: 'home', type: 'text', col: 2, placeholder: 'Street address' },
+        { id: 'city', label: 'City', icon: 'apartment', type: 'text', col: 1, placeholder: 'City' },
+        { id: 'district', label: 'District', icon: 'map', type: 'text', col: 1, placeholder: 'District / Neighbourhood' },
+        { id: 'postalCode', label: 'Postal Code', icon: 'markunread_mailbox', type: 'text', col: 1, placeholder: 'ZIP / Postal code' },
+        { id: 'phone', label: 'Phone Number', icon: 'phone', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
+        { id: 'email', label: 'Email Address', icon: 'mail', type: 'email', col: 2, placeholder: 'info@company.com' },
+      ]
+    case 'tax':
+      return [
+        { id: 'eInvoiceStatus', label: 'e-Invoice Status', icon: 'receipt', type: 'toggle', col: 1 },
+        { id: 'eArchiveStatus', label: 'e-Archive Invoice Status', icon: 'archive', type: 'toggle', col: 1 },
+        { id: 'eDispatchStatus', label: 'e-Dispatch Status', icon: 'local_shipping', type: 'toggle', col: 1 },
+        {
+          id: 'invoiceScenario', label: 'Invoice Scenario', icon: 'description', type: 'select', col: 1,
+          options: [{ value: 'Basic', label: 'Basic' }, { value: 'Commercial', label: 'Commercial' }],
+        },
+      ]
+    case 'financial':
+      return [
+        { id: 'accountCode', label: 'Customer Account Code', icon: 'tag', type: 'text', col: 1, placeholder: 'Unique ID' },
+        {
+          id: 'accountType', label: 'Account Type', icon: 'manage_accounts', type: 'select', col: 1,
+          options: [{ value: 'Customer', label: 'Customer' }, { value: 'Vendor', label: 'Vendor' }, { value: 'Both', label: 'Both' }],
+        },
+        {
+          id: 'currency', label: 'Currency', icon: 'currency_exchange', type: 'select', col: 1,
+          options: [{ value: 'TRY', label: 'TRY – Turkish Lira' }, { value: 'USD', label: 'USD – US Dollar' }, { value: 'EUR', label: 'EUR – Euro' }],
+        },
+        { id: 'paymentTerm', label: 'Payment Term', icon: 'schedule', type: 'text', col: 1, placeholder: 'e.g. Net 30' },
+        { id: 'creditLimit', label: 'Credit Limit', icon: 'credit_score', type: 'number', col: 2, placeholder: '0.00' },
+        { id: '_div_bank', label: 'Bank Information', icon: 'account_balance', type: 'divider', col: 2 },
+        { id: 'bankName', label: 'Bank Name', icon: 'account_balance', type: 'text', col: 1, placeholder: 'e.g. Garanti BBVA' },
+        { id: 'iban', label: 'IBAN', icon: 'credit_card', type: 'text', col: 1, placeholder: 'TR00 0000 0000 0000 0000 0000 00' },
+        { id: 'branchCode', label: 'Branch Name / Code', icon: 'store', type: 'text', col: 1, placeholder: 'Branch code' },
+        { id: 'accountHolder', label: 'Account Holder Name', icon: 'person', type: 'text', col: 1, placeholder: 'Name on account' },
+        { id: '_div_pay', label: 'Invoicing & Payment Settings', icon: 'payments', type: 'divider', col: 2 },
+        {
+          id: 'invoiceType', label: 'Invoice Type', icon: 'description', type: 'select', col: 1,
+          options: [{ value: '', label: 'Select...' }, { value: 'e-Invoice', label: 'e-Invoice' }, { value: 'e-Archive', label: 'e-Archive' }],
+        },
+        {
+          id: 'paymentMethod', label: 'Payment Method', icon: 'payments', type: 'select', col: 1,
+          options: [{ value: '', label: 'Select...' }, { value: 'Cash', label: 'Cash' }, { value: 'Transfer', label: 'Transfer' }, { value: 'Check', label: 'Check' }, { value: 'Note', label: 'Note' }],
+        },
+        {
+          id: 'paymentTerms', label: 'Payment Terms', icon: 'schedule_send', type: 'select', col: 2,
+          options: [{ value: '', label: 'Select...' }, { value: 'Cash', label: 'Cash' }, { value: 'Deferred', label: 'Deferred' }],
+        },
+      ]
+    case 'contact':
+      return [
+        { id: 'contactName', label: 'Contact Person Name', icon: 'person', type: 'text', col: 2, placeholder: 'Full name' },
+        { id: 'contactPhone', label: 'Phone Number', icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
+        { id: 'contactEmail', label: 'Email Address', icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: 'person@company.com' },
+        { id: 'contactPosition', label: 'Position / Department', icon: 'work', type: 'text', col: 2, placeholder: 'e.g. Sales Manager' },
+        { id: '_div_opt', label: 'Optional Fields', icon: 'tune', type: 'divider', col: 2 },
+        { id: 'industry', label: 'Industry / Sector', icon: 'factory', type: 'text', col: 1, placeholder: 'e.g. Manufacturing' },
+        {
+          id: 'customerCategory', label: 'Customer Category', icon: 'grade', type: 'select', col: 1,
+          options: [{ value: '', label: 'Select...' }, { value: 'A', label: 'A – Priority' }, { value: 'B', label: 'B – Standard' }, { value: 'C', label: 'C – Low Activity' }],
+        },
+        { id: 'salesRepName', label: 'Sales Representative', icon: 'badge', type: 'text', col: 2, placeholder: 'Sales rep name' },
+        { id: 'notes', label: 'Notes / Remarks', icon: 'edit_note', type: 'textarea', col: 2, placeholder: 'Any additional notes...' },
+        { id: 'gdprConsent', label: 'GDPR / KVKK Consent Status', icon: 'verified_user', type: 'toggle', col: 2 },
+      ]
+    default:
+      return []
+  }
+}
+
+function FieldInput({ field, value, onChange, error }) {
+  const { id, label, icon, type, placeholder, options } = field
+
+  if (type === 'divider') {
+    return (
+      <div className="col-span-2 flex items-center gap-3 pt-1">
+        <div className="flex-1 h-px bg-surface-container-high" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[14px]">{icon}</span>
+          {label}
+        </span>
+        <div className="flex-1 h-px bg-surface-container-high" />
+      </div>
+    )
+  }
+
+  if (type === 'toggle') {
+    return (
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={() => onChange(!value)}
+          className={`flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all w-full ${
+            value ? 'bg-primary/10 ring-2 ring-primary' : 'bg-surface-container-high'
+          }`}
+        >
+          <span className={`material-symbols-outlined text-[20px] flex-shrink-0 ${value ? 'text-primary' : 'text-on-surface-variant'}`}>
+            {value ? 'toggle_on' : 'toggle_off'}
+          </span>
+          <span className={`text-sm font-semibold ${value ? 'text-primary' : 'text-on-surface-variant'}`}>
+            {value ? 'Yes / Active' : 'No / Inactive'}
+          </span>
+        </button>
+      </div>
+    )
+  }
+
+  if (type === 'select') {
+    return (
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
+          {label}
+        </label>
+        <div className={`flex items-center gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 transition-all ${
+          error ? 'ring-2 ring-error' : 'focus-within:ring-2 focus-within:ring-primary'
+        }`}>
+          <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">{icon}</span>
+          <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="bg-transparent border-none outline-none text-sm text-on-surface w-full"
+          >
+            {options.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        {error && <p className="text-[10px] text-error font-medium mt-1">{error}</p>}
+      </div>
+    )
+  }
+
+  if (type === 'textarea') {
+    return (
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
+          {label}
+        </label>
+        <div className={`flex items-start gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 transition-all ${
+          error ? 'ring-2 ring-error' : 'focus-within:ring-2 focus-within:ring-primary'
+        }`}>
+          <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0 mt-0.5">{icon}</span>
+          <textarea
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            rows={3}
+            className="bg-transparent border-none outline-none text-sm text-on-surface w-full placeholder-slate-400 resize-none"
+          />
+        </div>
+        {error && <p className="text-[10px] text-error font-medium mt-1">{error}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
+        {label}
+      </label>
+      <div className={`flex items-center gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 transition-all ${
+        error ? 'ring-2 ring-error' : 'focus-within:ring-2 focus-within:ring-primary'
+      }`}>
+        <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">{icon}</span>
+        <input
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="bg-transparent border-none outline-none text-sm text-on-surface w-full placeholder-slate-400"
+        />
+      </div>
+      {error && <p className="text-[10px] text-error font-medium mt-1">{error}</p>}
+    </div>
+  )
 }
 
 function AddCustomerModal({ onClose, onSave }) {
+  const [activeTab, setActiveTab] = useState(0)
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
 
-  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
+  const set = (field) => (val) =>
+    setForm((f) => ({ ...f, [field]: val }))
 
   function validate() {
     const e = {}
-    if (!form.companyName.trim()) e.companyName = 'Required'
-    if (!form.address.trim()) e.address = 'Required'
-    if (!form.city.trim()) e.city = 'Required'
-    if (!form.postalCode.trim()) e.postalCode = 'Required'
-    if (!form.country.trim())   e.country    = 'Required'
+    const name = form.customerType === 'Individual' ? form.fullName : form.companyName
+    if (!name.trim()) {
+      e[form.customerType === 'Individual' ? 'fullName' : 'companyName'] = 'Required'
+    }
     if (!form.phone.trim()) e.phone = 'Required'
     else if (!/^[+\d\s\-().]{7,}$/.test(form.phone)) e.phone = 'Invalid phone number'
-    if (!form.email.trim()) e.email = 'Required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email address'
-    if (!form.contactName.trim()) e.contactName = 'Required'
-    if (!form.contactPhone.trim()) e.contactPhone = 'Required'
-    else if (!/^[+\d\s\-().]{7,}$/.test(form.contactPhone)) e.contactPhone = 'Invalid phone number'
-    if (!form.contactEmail.trim()) e.contactEmail = 'Required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) e.contactEmail = 'Invalid email address'
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email address'
+    if (form.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) e.contactEmail = 'Invalid email'
     return e
   }
 
   function handleSave() {
     const e = validate()
-    if (Object.keys(e).length) { setErrors(e); return }
+    if (Object.keys(e).length) {
+      setErrors(e)
+      // jump to first tab containing an error
+      const errorIds = new Set(Object.keys(e))
+      for (let i = 0; i < TAB_DEFS.length; i++) {
+        const fields = getTabFields(TAB_DEFS[i].id, form)
+        if (fields.some((f) => errorIds.has(f.id))) { setActiveTab(i); break }
+      }
+      return
+    }
     onSave(form)
   }
 
-  const fields = [
-    { id: 'companyName',  label: 'Company Name',        icon: 'business',           type: 'text',  placeholder: 'e.g. Acme Corporation', col: 2 },
-    { id: 'address',      label: 'Address',             icon: 'location_on',        type: 'text',  placeholder: 'Street address',         col: 2 },
-    { id: 'city',         label: 'City',                icon: 'apartment',          type: 'text',  placeholder: 'City',                   col: 1 },
-    { id: 'postalCode',   label: 'Postal Code',         icon: 'markunread_mailbox', type: 'text',  placeholder: 'ZIP / Postal code',      col: 1 },
-    { id: 'country',      label: 'Country',             icon: 'public',             type: 'text',  placeholder: 'Country',                col: 2 },
-    { id: 'phone',        label: 'Company Phone',       icon: 'phone',              type: 'tel',   placeholder: '+1 (555) 000-0000',      col: 1 },
-    { id: 'email',        label: 'Company Email',       icon: 'mail',               type: 'email', placeholder: 'info@company.com',       col: 1 },
-    { id: 'latitude',     label: 'Latitude',            icon: 'my_location',        type: 'text',  placeholder: 'e.g. 41.0082',           col: 1 },
-    { id: 'longitude',    label: 'Longitude',           icon: 'explore',            type: 'text',  placeholder: 'e.g. 28.9784',           col: 1 },
-    { id: 'divider',      label: '',                    icon: '',                   type: '',      placeholder: '',                       col: 'divider' },
-    { id: 'contactName',  label: 'Contact Person',      icon: 'person',             type: 'text',  placeholder: 'Full name',              col: 2 },
-    { id: 'contactPhone', label: 'Contact Phone',       icon: 'phone_in_talk',      type: 'tel',   placeholder: '+1 (555) 000-0000',      col: 1 },
-    { id: 'contactEmail', label: 'Contact Email',       icon: 'forward_to_inbox',   type: 'email', placeholder: 'person@company.com',     col: 1 },
-  ]
+  const fields = getTabFields(TAB_DEFS[activeTab].id, form)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Panel */}
-      <div className="relative bg-surface-container-lowest rounded-3xl shadow-2xl shadow-inverse-surface/20 w-full max-w-xl mx-4 overflow-hidden">
+      <div className="relative bg-surface-container-lowest rounded-3xl shadow-2xl shadow-inverse-surface/20 w-full max-w-2xl mx-4 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-surface-container-low">
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-surface-container-low flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 primary-gradient rounded-xl flex items-center justify-center text-white">
               <span className="material-symbols-outlined fill-icon">person_add</span>
@@ -94,73 +319,96 @@ function AddCustomerModal({ onClose, onSave }) {
               <p className="text-xs text-on-surface-variant">Add a new partner to the directory</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        {/* Form */}
-        <div className="px-8 py-6 grid grid-cols-2 gap-5 max-h-[60vh] overflow-y-auto">
-          {fields.map(({ id, label, icon, type, placeholder, col }) => {
-            if (col === 'divider') return (
-              <div key={id} className="col-span-2 flex items-center gap-3 pt-2">
-                <div className="flex-1 h-px bg-surface-container-high" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[14px]">contact_phone</span>
-                  Contact Person
-                </span>
-                <div className="flex-1 h-px bg-surface-container-high" />
-              </div>
-            )
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 px-6 pt-4 pb-0 flex-shrink-0">
+          {TAB_DEFS.map((tab, i) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(i)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                activeTab === i
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-on-surface-variant hover:bg-surface-container-low'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="px-8 py-5 grid grid-cols-2 gap-4 overflow-y-auto flex-1 border-t border-surface-container-low mt-0">
+          {fields.map((field) => {
+            const colClass = field.col === 2 ? 'col-span-2' : 'col-span-1'
+            const val = form[field.id] ?? ''
             return (
-              <div key={id} className={col === 2 ? 'col-span-2' : 'col-span-1'}>
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
-                  {label}
-                </label>
-                <div
-                  className={`flex items-center gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 transition-all ${
-                    errors[id]
-                      ? 'ring-2 ring-error'
-                      : 'focus-within:ring-2 focus-within:ring-primary'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">
-                    {icon}
-                  </span>
-                  <input
-                    type={type}
-                    placeholder={placeholder}
-                    value={form[id]}
-                    onChange={set(id)}
-                    className="bg-transparent border-none outline-none text-sm text-on-surface w-full placeholder-slate-400"
-                  />
-                </div>
-                {errors[id] && (
-                  <p className="text-[10px] text-error font-medium mt-1">{errors[id]}</p>
-                )}
+              <div key={field.id} className={colClass}>
+                <FieldInput
+                  field={field}
+                  value={val}
+                  onChange={set(field.id)}
+                  error={errors[field.id]}
+                />
               </div>
             )
           })}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-8 pb-8">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-base">save</span>
-            Save Customer
-          </button>
+        <div className="flex items-center justify-between gap-3 px-8 pb-7 pt-4 border-t border-surface-container-low flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab((t) => Math.max(0, t - 1))}
+              disabled={activeTab === 0}
+              className="px-4 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors disabled:opacity-40 flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-base">chevron_left</span>
+              Previous
+            </button>
+            <button
+              onClick={() => setActiveTab((t) => Math.min(TAB_DEFS.length - 1, t + 1))}
+              disabled={activeTab === TAB_DEFS.length - 1}
+              className="px-4 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors disabled:opacity-40 flex items-center gap-1"
+            >
+              Next
+              <span className="material-symbols-outlined text-base">chevron_right</span>
+            </button>
+          </div>
+
+          {/* Step dots */}
+          <div className="flex items-center gap-1.5">
+            {TAB_DEFS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveTab(i)}
+                className={`rounded-full transition-all ${
+                  i === activeTab ? 'w-5 h-2 bg-primary' : 'w-2 h-2 bg-surface-container-high hover:bg-surface-container'
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">save</span>
+              Save Customer
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -169,7 +417,7 @@ function AddCustomerModal({ onClose, onSave }) {
 
 function DetailRow({ icon, label, value }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-surface-container-low last:border-0">
+    <div className="flex items-start gap-3 py-2.5 border-b border-surface-container-low last:border-0">
       <div className="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0 mt-0.5">
         <span className="material-symbols-outlined text-on-surface-variant text-[18px]">{icon}</span>
       </div>
@@ -181,46 +429,75 @@ function DetailRow({ icon, label, value }) {
   )
 }
 
+function SectionHeader({ icon, label }) {
+  return (
+    <div className="flex items-center gap-3 py-2 col-span-2">
+      <div className="flex-1 h-px bg-surface-container-high" />
+      <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+        <span className="material-symbols-outlined text-[14px]">{icon}</span>
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-surface-container-high" />
+    </div>
+  )
+}
+
 function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
   const { isAdmin } = useData()
   const [editing, setEditing] = useState(false)
+  const [editTab, setEditTab] = useState(0)
   const [confirming, setConfirming] = useState(false)
-  const [form, setForm] = useState({
-    companyName:  customer.name,
-    address:      customer.address      || '',
-    city:         customer.city         || '',
-    postalCode:   customer.postalCode   || '',
-    country:      customer.country      || '',
-    phone:        customer.phone        || '',
-    email:        customer.email        || '',
-    latitude:     customer.latitude != null ? String(customer.latitude) : '',
-    longitude:    customer.longitude != null ? String(customer.longitude) : '',
-    contactName:  customer.contactName  || '',
-    contactPhone: customer.contactPhone || '',
-    contactEmail: customer.contactEmail || '',
-  })
   const [errors, setErrors] = useState({})
 
-  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
+  const [form, setForm] = useState({
+    customerType:    customer.customerType    || 'Company',
+    fullName:        customer.fullName        || '',
+    companyName:     customer.name            || '',
+    taxId:           customer.taxId           || '',
+    taxOffice:       customer.taxOffice       || '',
+    country:         customer.country         || '',
+    address:         customer.address         || '',
+    city:            customer.city            || '',
+    district:        customer.district        || '',
+    postalCode:      customer.postalCode      || '',
+    phone:           customer.phone           || '',
+    email:           customer.email           || '',
+    eInvoiceStatus:  customer.eInvoiceStatus  || false,
+    eArchiveStatus:  customer.eArchiveStatus  || false,
+    eDispatchStatus: customer.eDispatchStatus || false,
+    invoiceScenario: customer.invoiceScenario || 'Basic',
+    accountCode:     customer.accountCode     || '',
+    accountType:     customer.accountType     || 'Customer',
+    currency:        customer.currency        || 'TRY',
+    paymentTerm:     customer.paymentTerm     || '',
+    creditLimit:     customer.creditLimit != null ? String(customer.creditLimit) : '',
+    bankName:        customer.bankName        || '',
+    iban:            customer.iban            || '',
+    branchCode:      customer.branchCode      || '',
+    accountHolder:   customer.accountHolder   || '',
+    invoiceType:     customer.invoiceType     || '',
+    paymentMethod:   customer.paymentMethod   || '',
+    paymentTerms:    customer.paymentTerms    || '',
+    contactName:     customer.contactName     || '',
+    contactPhone:    customer.contactPhone    || '',
+    contactEmail:    customer.contactEmail    || '',
+    contactPosition: customer.contactPosition || '',
+    industry:        customer.industry        || '',
+    customerCategory: customer.customerCategory || '',
+    salesRepName:    customer.salesRepName    || '',
+    notes:           customer.notes           || '',
+    gdprConsent:     customer.gdprConsent     || false,
+  })
+
+  const set = (field) => (val) => setForm((f) => ({ ...f, [field]: val }))
 
   function validate() {
     const e = {}
-    if (!form.companyName.trim()) e.companyName = 'Required'
-    if (!form.address.trim())     e.address     = 'Required'
-    if (!form.city.trim())        e.city        = 'Required'
-    if (!form.postalCode.trim())   e.postalCode   = 'Required'
-    if (!form.country.trim())      e.country      = 'Required'
-    if (!form.phone.trim())        e.phone        = 'Required'
-    else if (!/^[+\d\s\-().]{7,}$/.test(form.phone)) e.phone = 'Invalid phone number'
-    if (!form.email.trim())        e.email        = 'Required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email address'
-    if (form.latitude && isNaN(parseFloat(form.latitude))) e.latitude = 'Must be a number'
-    if (form.longitude && isNaN(parseFloat(form.longitude))) e.longitude = 'Must be a number'
-    if (!form.contactName.trim())  e.contactName  = 'Required'
-    if (!form.contactPhone.trim()) e.contactPhone = 'Required'
-    else if (!/^[+\d\s\-().]{7,}$/.test(form.contactPhone)) e.contactPhone = 'Invalid phone number'
-    if (!form.contactEmail.trim()) e.contactEmail = 'Required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) e.contactEmail = 'Invalid email address'
+    const name = form.customerType === 'Individual' ? form.fullName : form.companyName
+    if (!name.trim()) e[form.customerType === 'Individual' ? 'fullName' : 'companyName'] = 'Required'
+    if (form.phone.trim() && !/^[+\d\s\-().]{7,}$/.test(form.phone)) e.phone = 'Invalid phone number'
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email'
+    if (form.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) e.contactEmail = 'Invalid email'
     return e
   }
 
@@ -234,44 +511,56 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
 
   function handleCancel() {
     setForm({
-      companyName:  customer.name,
-      address:      customer.address      || '',
-      city:         customer.city         || '',
-      postalCode:   customer.postalCode   || '',
-      country:      customer.country      || '',
-      phone:        customer.phone        || '',
-      email:        customer.email        || '',
-      latitude:     customer.latitude != null ? String(customer.latitude) : '',
-      longitude:    customer.longitude != null ? String(customer.longitude) : '',
-      contactName:  customer.contactName  || '',
-      contactPhone: customer.contactPhone || '',
-      contactEmail: customer.contactEmail || '',
+      customerType:    customer.customerType    || 'Company',
+      fullName:        customer.fullName        || '',
+      companyName:     customer.name            || '',
+      taxId:           customer.taxId           || '',
+      taxOffice:       customer.taxOffice       || '',
+      country:         customer.country         || '',
+      address:         customer.address         || '',
+      city:            customer.city            || '',
+      district:        customer.district        || '',
+      postalCode:      customer.postalCode      || '',
+      phone:           customer.phone           || '',
+      email:           customer.email           || '',
+      eInvoiceStatus:  customer.eInvoiceStatus  || false,
+      eArchiveStatus:  customer.eArchiveStatus  || false,
+      eDispatchStatus: customer.eDispatchStatus || false,
+      invoiceScenario: customer.invoiceScenario || 'Basic',
+      accountCode:     customer.accountCode     || '',
+      accountType:     customer.accountType     || 'Customer',
+      currency:        customer.currency        || 'TRY',
+      paymentTerm:     customer.paymentTerm     || '',
+      creditLimit:     customer.creditLimit != null ? String(customer.creditLimit) : '',
+      bankName:        customer.bankName        || '',
+      iban:            customer.iban            || '',
+      branchCode:      customer.branchCode      || '',
+      accountHolder:   customer.accountHolder   || '',
+      invoiceType:     customer.invoiceType     || '',
+      paymentMethod:   customer.paymentMethod   || '',
+      paymentTerms:    customer.paymentTerms    || '',
+      contactName:     customer.contactName     || '',
+      contactPhone:    customer.contactPhone    || '',
+      contactEmail:    customer.contactEmail    || '',
+      contactPosition: customer.contactPosition || '',
+      industry:        customer.industry        || '',
+      customerCategory: customer.customerCategory || '',
+      salesRepName:    customer.salesRepName    || '',
+      notes:           customer.notes           || '',
+      gdprConsent:     customer.gdprConsent     || false,
     })
     setErrors({})
     setEditing(false)
+    setEditTab(0)
   }
 
-  const editFields = [
-    { id: 'companyName',  label: 'Company Name',   icon: 'business',           type: 'text',  col: 2 },
-    { id: 'address',      label: 'Address',         icon: 'location_on',        type: 'text',  col: 2 },
-    { id: 'city',         label: 'City',            icon: 'apartment',          type: 'text',  col: 1 },
-    { id: 'postalCode',   label: 'Postal Code',     icon: 'markunread_mailbox', type: 'text',  col: 1 },
-    { id: 'country',      label: 'Country',         icon: 'public',             type: 'text',  col: 2 },
-    { id: 'phone',        label: 'Company Phone',   icon: 'phone',              type: 'tel',   col: 1 },
-    { id: 'email',        label: 'Company Email',   icon: 'mail',               type: 'email', col: 1 },
-    { id: 'latitude',     label: 'Latitude',         icon: 'my_location',        type: 'text',  col: 1 },
-    { id: 'longitude',    label: 'Longitude',        icon: 'explore',            type: 'text',  col: 1 },
-    { id: 'divider',      label: '',                icon: '',                   type: '',      col: 'divider' },
-    { id: 'contactName',  label: 'Contact Person',  icon: 'person',             type: 'text',  col: 2 },
-    { id: 'contactPhone', label: 'Contact Phone',   icon: 'phone_in_talk',      type: 'tel',   col: 1 },
-    { id: 'contactEmail', label: 'Contact Email',   icon: 'forward_to_inbox',   type: 'email', col: 1 },
-  ]
+  const editFields = getTabFields(TAB_DEFS[editTab].id, form)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-inverse-surface/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-surface-container-lowest rounded-3xl shadow-2xl shadow-inverse-surface/20 w-full max-w-lg mx-4 flex flex-col max-h-[90vh]">
+      <div className="relative bg-surface-container-lowest rounded-3xl shadow-2xl shadow-inverse-surface/20 w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
         {/* Header banner */}
         <div className="primary-gradient px-8 pt-8 pb-6 flex-shrink-0">
           <div className="flex items-start justify-between">
@@ -302,6 +591,16 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 </p>
                 <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Total Tasks</p>
               </div>
+              {customer.customerType && (
+                <span className="bg-surface-container-lowest/10 text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg">
+                  {customer.customerType}
+                </span>
+              )}
+              {customer.customerCategory && (
+                <span className="bg-surface-container-lowest/10 text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg">
+                  Cat. {customer.customerCategory}
+                </span>
+              )}
               {customer.flagged && (
                 <span className="ml-auto bg-tertiary-fixed text-tertiary text-[10px] font-black uppercase px-3 py-1.5 rounded-lg flex items-center gap-1">
                   <span className="material-symbols-outlined text-sm">warning</span>
@@ -314,15 +613,61 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
 
         {/* View mode */}
         {!editing && (
-          <div className="px-8 py-4 overflow-y-auto flex-1">
-            <DetailRow icon="location_on"        label="Address"        value={customer.address} />
-            <DetailRow icon="apartment"          label="City"           value={customer.city || customer.region} />
-            <DetailRow icon="markunread_mailbox" label="Postal Code"    value={customer.postalCode} />
-            <DetailRow icon="public"             label="Country"        value={customer.country} />
-            <DetailRow icon="phone"              label="Company Phone"  value={customer.phone} />
-            <DetailRow icon="mail"               label="Company Email"  value={customer.email} />
-            {/* Contact person section */}
-            <div className="flex items-center gap-3 py-3">
+          <div className="px-8 py-4 overflow-y-auto flex-1 space-y-0">
+            <DetailRow icon="category"    label="Customer Type"     value={customer.customerType} />
+            {customer.customerType === 'Individual' && (
+              <DetailRow icon="person"    label="Full Name"         value={customer.fullName} />
+            )}
+            <DetailRow icon="fingerprint" label="Tax ID (TIN/TCKN)" value={customer.taxId} />
+            <DetailRow icon="account_balance" label="Tax Office"    value={customer.taxOffice} />
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex-1 h-px bg-surface-container-high" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]">location_on</span>
+                Address & Contact
+              </span>
+              <div className="flex-1 h-px bg-surface-container-high" />
+            </div>
+            <DetailRow icon="home"               label="Address"      value={customer.address} />
+            <DetailRow icon="apartment"          label="City"         value={customer.city} />
+            <DetailRow icon="map"                label="District"     value={customer.district} />
+            <DetailRow icon="markunread_mailbox" label="Postal Code"  value={customer.postalCode} />
+            <DetailRow icon="public"             label="Country"      value={customer.country} />
+            <DetailRow icon="phone"              label="Phone"        value={customer.phone} />
+            <DetailRow icon="mail"               label="Email"        value={customer.email} />
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex-1 h-px bg-surface-container-high" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]">receipt_long</span>
+                Tax & e-Document
+              </span>
+              <div className="flex-1 h-px bg-surface-container-high" />
+            </div>
+            <DetailRow icon="receipt"      label="e-Invoice"         value={customer.eInvoiceStatus ? 'Active' : 'Inactive'} />
+            <DetailRow icon="archive"      label="e-Archive Invoice" value={customer.eArchiveStatus ? 'Active' : 'Inactive'} />
+            <DetailRow icon="local_shipping" label="e-Dispatch"      value={customer.eDispatchStatus ? 'Active' : 'Inactive'} />
+            <DetailRow icon="description"  label="Invoice Scenario"  value={customer.invoiceScenario} />
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex-1 h-px bg-surface-container-high" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]">account_balance_wallet</span>
+                Financial & Bank
+              </span>
+              <div className="flex-1 h-px bg-surface-container-high" />
+            </div>
+            <DetailRow icon="tag"              label="Account Code"    value={customer.accountCode} />
+            <DetailRow icon="manage_accounts"  label="Account Type"    value={customer.accountType} />
+            <DetailRow icon="currency_exchange" label="Currency"       value={customer.currency} />
+            <DetailRow icon="schedule"         label="Payment Term"    value={customer.paymentTerm} />
+            <DetailRow icon="credit_score"     label="Credit Limit"    value={customer.creditLimit != null ? customer.creditLimit.toLocaleString() : null} />
+            <DetailRow icon="account_balance"  label="Bank Name"       value={customer.bankName} />
+            <DetailRow icon="credit_card"      label="IBAN"            value={customer.iban} />
+            <DetailRow icon="store"            label="Branch Code"     value={customer.branchCode} />
+            <DetailRow icon="person"           label="Account Holder"  value={customer.accountHolder} />
+            <DetailRow icon="description"      label="Invoice Type"    value={customer.invoiceType} />
+            <DetailRow icon="payments"         label="Payment Method"  value={customer.paymentMethod} />
+            <DetailRow icon="schedule_send"    label="Payment Terms"   value={customer.paymentTerms} />
+            <div className="flex items-center gap-3 py-2">
               <div className="flex-1 h-px bg-surface-container-high" />
               <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px]">contact_phone</span>
@@ -330,58 +675,65 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
               </span>
               <div className="flex-1 h-px bg-surface-container-high" />
             </div>
-            <DetailRow icon="person"           label="Name"  value={customer.contactName} />
-            <DetailRow icon="phone_in_talk"    label="Phone" value={customer.contactPhone} />
-            <DetailRow icon="forward_to_inbox" label="Email" value={customer.contactEmail} />
+            <DetailRow icon="person"           label="Contact Name"     value={customer.contactName} />
+            <DetailRow icon="phone_in_talk"    label="Contact Phone"    value={customer.contactPhone} />
+            <DetailRow icon="forward_to_inbox" label="Contact Email"    value={customer.contactEmail} />
+            <DetailRow icon="work"             label="Position / Dept." value={customer.contactPosition} />
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex-1 h-px bg-surface-container-high" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[14px]">tune</span>
+                Other
+              </span>
+              <div className="flex-1 h-px bg-surface-container-high" />
+            </div>
+            <DetailRow icon="factory"      label="Industry / Sector"    value={customer.industry} />
+            <DetailRow icon="grade"        label="Customer Category"    value={customer.customerCategory} />
+            <DetailRow icon="badge"        label="Sales Representative" value={customer.salesRepName} />
+            <DetailRow icon="edit_note"    label="Notes"                value={customer.notes} />
+            <DetailRow icon="verified_user" label="GDPR / KVKK Consent" value={customer.gdprConsent ? 'Consented' : 'Not Consented'} />
           </div>
         )}
 
-        {/* Edit mode */}
+        {/* Edit mode – tabbed */}
         {editing && (
-          <div className="px-8 py-6 grid grid-cols-2 gap-5 overflow-y-auto flex-1">
-            {editFields.map(({ id, label, icon, type, col }) => {
-              if (col === 'divider') return (
-                <div key={id} className="col-span-2 flex items-center gap-3 pt-2">
-                  <div className="flex-1 h-px bg-surface-container-high" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[14px]">contact_phone</span>
-                    Contact Person
-                  </span>
-                  <div className="flex-1 h-px bg-surface-container-high" />
-                </div>
-              )
-              return (
-                <div key={id} className={col === 2 ? 'col-span-2' : 'col-span-1'}>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
-                    {label}
-                  </label>
-                  <div
-                    className={`flex items-center gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 transition-all ${
-                      errors[id]
-                        ? 'ring-2 ring-error'
-                        : 'focus-within:ring-2 focus-within:ring-primary'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">
-                      {icon}
-                    </span>
-                    <input
-                      type={type}
-                      value={form[id]}
-                      onChange={set(id)}
-                      className="bg-transparent border-none outline-none text-sm text-on-surface w-full placeholder-slate-400"
+          <>
+            <div className="flex items-center gap-1 px-6 pt-4 flex-shrink-0">
+              {TAB_DEFS.map((tab, i) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setEditTab(i)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                    editTab === i
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-on-surface-variant hover:bg-surface-container-low'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="px-8 py-5 grid grid-cols-2 gap-4 overflow-y-auto flex-1 border-t border-surface-container-low">
+              {editFields.map((field) => {
+                const colClass = field.col === 2 ? 'col-span-2' : 'col-span-1'
+                const val = form[field.id] ?? ''
+                return (
+                  <div key={field.id} className={colClass}>
+                    <FieldInput
+                      field={field}
+                      value={val}
+                      onChange={set(field.id)}
+                      error={errors[field.id]}
                     />
                   </div>
-                  {errors[id] && (
-                    <p className="text-[10px] text-error font-medium mt-1">{errors[id]}</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          </>
         )}
 
-        {/* Confirmation bar */}
+        {/* Delete confirmation */}
         {isAdmin && confirming && (
           <div className="mx-8 mb-4 px-5 py-4 bg-error-container rounded-2xl flex items-center justify-between gap-4 flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -422,17 +774,17 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                   Edit
                 </button>
                 {isAdmin && (
-                <button
-                  onClick={() => setConfirming((v) => !v)}
-                  className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all flex items-center gap-2 ${
-                    confirming
-                      ? 'border-error bg-error text-white'
-                      : 'border-error text-error hover:bg-error hover:text-white'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">delete</span>
-                  Delete
-                </button>
+                  <button
+                    onClick={() => setConfirming((v) => !v)}
+                    className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all flex items-center gap-2 ${
+                      confirming
+                        ? 'border-error bg-error text-white'
+                        : 'border-error text-error hover:bg-error hover:text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">delete</span>
+                    Delete
+                  </button>
                 )}
               </div>
               <button
@@ -505,17 +857,44 @@ export default function Customers() {
             updateCustomer(id, form)
             setSelectedCustomer((prev) => ({
               ...prev,
-              name:         form.companyName,
-              address:      form.address,
-              city:         form.city,
-              postalCode:   form.postalCode,
-              country:      form.country,
-              region:       `${form.city}, ${form.postalCode}`,
-              phone:        form.phone,
-              email:        form.email,
-              contactName:  form.contactName,
-              contactPhone: form.contactPhone,
-              contactEmail: form.contactEmail,
+              name:            form.customerType === 'Individual' ? form.fullName : form.companyName,
+              customerType:    form.customerType,
+              fullName:        form.fullName,
+              taxId:           form.taxId,
+              taxOffice:       form.taxOffice,
+              country:         form.country,
+              address:         form.address,
+              city:            form.city,
+              district:        form.district,
+              postalCode:      form.postalCode,
+              region:          `${form.city}, ${form.postalCode}`,
+              phone:           form.phone,
+              email:           form.email,
+              eInvoiceStatus:  form.eInvoiceStatus,
+              eArchiveStatus:  form.eArchiveStatus,
+              eDispatchStatus: form.eDispatchStatus,
+              invoiceScenario: form.invoiceScenario,
+              accountCode:     form.accountCode,
+              accountType:     form.accountType,
+              currency:        form.currency,
+              paymentTerm:     form.paymentTerm,
+              creditLimit:     form.creditLimit ? parseFloat(form.creditLimit) : null,
+              bankName:        form.bankName,
+              iban:            form.iban,
+              branchCode:      form.branchCode,
+              accountHolder:   form.accountHolder,
+              invoiceType:     form.invoiceType,
+              paymentMethod:   form.paymentMethod,
+              paymentTerms:    form.paymentTerms,
+              contactName:     form.contactName,
+              contactPhone:    form.contactPhone,
+              contactEmail:    form.contactEmail,
+              contactPosition: form.contactPosition,
+              industry:        form.industry,
+              customerCategory: form.customerCategory,
+              salesRepName:    form.salesRepName,
+              notes:           form.notes,
+              gdprConsent:     form.gdprConsent,
             }))
           }}
           onDelete={(id) => {
@@ -524,6 +903,7 @@ export default function Customers() {
           }}
         />
       )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div className="max-w-2xl">
@@ -586,7 +966,7 @@ export default function Customers() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-surface-container-low">
-              {['Customers', 'Contact Person', 'City & Country', 'Tasks', 'Details'].map(
+              {['Customer', 'Contact Person', 'City & Country', 'Tasks', 'Details'].map(
                 (h, i) => (
                   <th key={h} className={`px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-widest ${i === 4 ? 'text-right' : ''}`}>
                     {h}
@@ -607,11 +987,17 @@ export default function Customers() {
                     <InitialsAvatar initials={customer.initials} size="lg" />
                     <div>
                       <div className="font-bold text-on-surface text-base">{customer.name}</div>
+                      {customer.customerType && (
+                        <div className="text-[10px] text-on-surface-variant font-medium uppercase">{customer.customerType}</div>
+                      )}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-5">
                   <div className="font-semibold text-on-surface">{customer.contactName || '—'}</div>
+                  {customer.contactPosition && (
+                    <div className="text-xs text-on-surface-variant">{customer.contactPosition}</div>
+                  )}
                 </td>
                 <td className="px-6 py-5 text-on-surface-variant text-sm font-medium">
                   {[customer.city, customer.country].filter(Boolean).join(', ') || customer.region}
@@ -620,10 +1006,10 @@ export default function Customers() {
                   {(() => {
                     const ct = (reports || []).filter((r) => r.customerId === customer.id)
                     const counts = [
-                      { label: 'Open',     col: 'open',        cls: 'status-cancelled-badge'  },
-                      { label: 'In Prog',  col: 'in-progress', cls: 'status-progress-badge'    },
-                      { label: 'Review',   col: 'review',      cls: 'status-scheduled-badge'  },
-                      { label: 'Done',     col: 'completed',   cls: 'status-completed-badge' },
+                      { label: 'Open',    col: 'open',        cls: 'status-cancelled-badge' },
+                      { label: 'In Prog', col: 'in-progress', cls: 'status-progress-badge'  },
+                      { label: 'Review',  col: 'review',      cls: 'status-scheduled-badge' },
+                      { label: 'Done',    col: 'completed',   cls: 'status-completed-badge' },
                     ]
                     return (
                       <div className="flex items-center gap-1.5">
@@ -662,7 +1048,6 @@ export default function Customers() {
             <span className="font-bold">{filtered.length}</span> customers
           </p>
           <div className="flex items-center gap-1">
-            {/* Prev */}
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
@@ -671,7 +1056,6 @@ export default function Customers() {
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
 
-            {/* Page numbers with ellipsis */}
             {(() => {
               const pages = []
               const delta = 2
@@ -681,9 +1065,7 @@ export default function Customers() {
               let prev = null
               for (let p = 1; p <= totalPages; p++) {
                 if (p === 1 || p === totalPages || (p >= left && p <= right)) {
-                  if (prev !== null && p - prev > 1) {
-                    pages.push('...')
-                  }
+                  if (prev !== null && p - prev > 1) pages.push('...')
                   pages.push(p)
                   prev = p
                 }
@@ -691,9 +1073,7 @@ export default function Customers() {
 
               return pages.map((p, i) =>
                 p === '...' ? (
-                  <span key={`ellipsis-${i}`} className="w-10 h-10 flex items-center justify-center text-on-surface-variant text-sm">
-                    …
-                  </span>
+                  <span key={`ellipsis-${i}`} className="w-10 h-10 flex items-center justify-center text-on-surface-variant text-sm">…</span>
                 ) : (
                   <button
                     key={p}
@@ -710,7 +1090,6 @@ export default function Customers() {
               )
             })()}
 
-            {/* Next */}
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
