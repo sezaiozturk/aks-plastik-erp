@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react'
 import { useData } from '../context/DataContext'
-
-const API_URL = 'http://localhost:3001/api'
+import { API_URL } from '../config'
 const MAINTENANCE_TYPES = ['Preventive', 'Corrective', 'Predictive', 'Emergency']
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'TRY', 'AED', 'SAR', 'JPY', 'CNY', 'INR', 'CAD', 'AUD']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']

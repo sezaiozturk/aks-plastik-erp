@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
-
-const API_URL = 'http://localhost:3001/api'
+import { API_URL } from '../config'
 
 const LEAVE_TYPES = ['Annual', 'Sick', 'Personal', 'Unpaid']
 

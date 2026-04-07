@@ -8510,7 +8510,8 @@ function useViewTransitionState(to, opts) {
   let nextPath = stripBasename(vtContext.nextLocation.pathname, basename) || vtContext.nextLocation.pathname;
   return matchPath(path.pathname, nextPath) != null || matchPath(path.pathname, currentPath) != null;
 }
-const API_URL$4 = "http://localhost:3001/api";
+const isDev = !window.electron || false;
+const API_URL = isDev ? "http://localhost:3001/api" : "http://localhost:3001/api";
 const AuthContext = reactExports.createContext(null);
 function AuthProvider({ children }) {
   const [user, setUser] = reactExports.useState(null);
@@ -8520,7 +8521,7 @@ function AuthProvider({ children }) {
     setLoading(false);
   }, []);
   async function login(email, password) {
-    const res = await fetch(`${API_URL$4}/auth/login`, {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password })
@@ -8555,7 +8556,6 @@ function ThemeProvider({ children }) {
 function useTheme() {
   return reactExports.useContext(ThemeContext);
 }
-const API_URL$3 = "http://localhost:3001/api";
 const DataContext = reactExports.createContext(null);
 function DataProvider({ children }) {
   const { token, isAdmin } = useAuth();
@@ -8576,7 +8576,7 @@ function DataProvider({ children }) {
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
   const authHeaders = { Authorization: `Bearer ${token}` };
   const refreshCustomers = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/customers`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => {
+    fetch(`${API_URL}/customers`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => {
       setCustomers(data);
       setReady(true);
     }).catch(() => setReady(true));
@@ -8585,7 +8585,7 @@ function DataProvider({ children }) {
     refreshCustomers();
   }, [token]);
   const refreshReports = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/reports`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => {
+    fetch(`${API_URL}/reports`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => {
       setReports(data);
       setReportsReady(true);
     }).catch(() => setReportsReady(true));
@@ -8594,7 +8594,7 @@ function DataProvider({ children }) {
     refreshReports();
   }, [token]);
   const refreshSiteVisits = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/site-visits`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => {
+    fetch(`${API_URL}/site-visits`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => {
       const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       const mapped = data.map((v2) => ({
         ...v2,
@@ -8605,7 +8605,7 @@ function DataProvider({ children }) {
       setSiteVisits(mapped);
       setVisitsReady(true);
       mapped.filter((v2, i2) => v2.status !== data[i2].status).forEach((v2) => {
-        fetch(`${API_URL$3}/site-visits/${v2.id}`, {
+        fetch(`${API_URL}/site-visits/${v2.id}`, {
           method: "PUT",
           headers,
           body: JSON.stringify({ title: v2.title, customerId: v2.customerId, location: v2.location, employeeId: v2.employeeId, date: v2.date, time: v2.time, status: v2.status, notes: v2.notes })
@@ -8617,56 +8617,56 @@ function DataProvider({ children }) {
     refreshSiteVisits();
   }, [token]);
   const refreshProducts = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/products`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setProducts(data)).catch(() => {
+    fetch(`${API_URL}/products`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setProducts(data)).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshProducts();
   }, [token]);
   const refreshEmployees = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/employees`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setEmployees(data)).catch(() => {
+    fetch(`${API_URL}/employees`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setEmployees(data)).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshEmployees();
   }, [token]);
   const refreshOrders = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/orders`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setOrders(data)).catch(() => {
+    fetch(`${API_URL}/orders`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setOrders(data)).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshOrders();
   }, [token]);
   const refreshFinanceRecords = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/finance`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setFinanceRecords(data)).catch(() => {
+    fetch(`${API_URL}/finance`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setFinanceRecords(data)).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshFinanceRecords();
   }, [token]);
   const refreshRoles = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/roles`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setRoles(Array.isArray(data) ? data : [])).catch(() => {
+    fetch(`${API_URL}/roles`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setRoles(Array.isArray(data) ? data : [])).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshRoles();
   }, [token]);
   const refreshPermissions = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/permissions`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setPermissions(data || {})).catch(() => {
+    fetch(`${API_URL}/permissions`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setPermissions(data || {})).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshPermissions();
   }, [token]);
   const refreshStatusPermissions = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/status-permissions`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setStatusPermissions(data || {})).catch(() => {
+    fetch(`${API_URL}/status-permissions`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setStatusPermissions(data || {})).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
     refreshStatusPermissions();
   }, [token]);
   const refreshMachines = reactExports.useCallback(() => {
-    fetch(`${API_URL$3}/machines`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setMachines(Array.isArray(data) ? data : [])).catch(() => {
+    fetch(`${API_URL}/machines`, { headers: authHeaders }).then((r2) => r2.json()).then((data) => setMachines(Array.isArray(data) ? data : [])).catch(() => {
     });
   }, [token]);
   reactExports.useEffect(() => {
@@ -8689,12 +8689,12 @@ function DataProvider({ children }) {
     return () => clearInterval(interval);
   }, [refreshCustomers, refreshReports, refreshSiteVisits, refreshProducts, refreshEmployees, refreshOrders, refreshFinanceRecords, refreshRoles, refreshPermissions, refreshStatusPermissions, refreshMachines]);
   async function addCustomer(form) {
-    const res = await fetch(`${API_URL$3}/customers`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/customers`, { method: "POST", headers, body: JSON.stringify(form) });
     const customer = await res.json();
     setCustomers((prev) => [customer, ...prev]);
   }
   async function updateCustomer(id2, form) {
-    const res = await fetch(`${API_URL$3}/customers/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/customers/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     const updated = await res.json();
     setCustomers((prev) => prev.map((c2) => c2.id === id2 ? updated : c2));
     setReports((prev) => prev.map((r2) => r2.customerId !== id2 ? r2 : { ...r2, customer: { ...r2.customer || {}, name: updated.name } }));
@@ -8702,98 +8702,100 @@ function DataProvider({ children }) {
     setOrders((prev) => prev.map((o2) => o2.customerId !== id2 ? o2 : { ...o2, customer: { ...o2.customer || {}, name: updated.name } }));
   }
   async function deleteCustomer(id2) {
-    await fetch(`${API_URL$3}/customers/${id2}`, { method: "DELETE", headers: authHeaders });
+    await fetch(`${API_URL}/customers/${id2}`, { method: "DELETE", headers: authHeaders });
     setCustomers((prev) => prev.filter((c2) => c2.id !== id2));
   }
   async function addReport(form) {
-    const res = await fetch(`${API_URL$3}/reports`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/reports`, { method: "POST", headers, body: JSON.stringify(form) });
     const report = await res.json();
     setReports((prev) => [report, ...prev]);
   }
   async function updateReport(id2, form) {
-    const res = await fetch(`${API_URL$3}/reports/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/reports/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     const updated = await res.json();
     setReports((prev) => prev.map((r2) => r2.id === id2 ? updated : r2));
   }
   async function deleteReport(id2) {
-    await fetch(`${API_URL$3}/reports/${id2}`, { method: "DELETE", headers: authHeaders });
+    await fetch(`${API_URL}/reports/${id2}`, { method: "DELETE", headers: authHeaders });
     setReports((prev) => prev.filter((r2) => r2.id !== id2));
   }
   async function moveReport(id2, column) {
-    const res = await fetch(`${API_URL$3}/reports/${id2}/move`, { method: "PATCH", headers, body: JSON.stringify({ column }) });
+    const res = await fetch(`${API_URL}/reports/${id2}/move`, { method: "PATCH", headers, body: JSON.stringify({ column }) });
     const updated = await res.json();
     setReports((prev) => prev.map((r2) => r2.id === id2 ? updated : r2));
   }
   async function addSiteVisit(form) {
-    const res = await fetch(`${API_URL$3}/site-visits`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/site-visits`, { method: "POST", headers, body: JSON.stringify(form) });
     const visit = await res.json();
     setSiteVisits((prev) => [{ ...visit, customerName: visit.customer?.name || form.customerName || "", employeeName: visit.employee?.name || form.employeeName || "" }, ...prev]);
   }
   async function updateSiteVisit(id2, form) {
-    const res = await fetch(`${API_URL$3}/site-visits/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/site-visits/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     const updated = await res.json();
     setSiteVisits((prev) => prev.map((v2) => v2.id === id2 ? { ...updated, customerName: updated.customer?.name || form.customerName || "", employeeName: updated.employee?.name || form.employeeName || "" } : v2));
   }
   async function deleteSiteVisit(id2) {
-    await fetch(`${API_URL$3}/site-visits/${id2}`, { method: "DELETE", headers: authHeaders });
+    await fetch(`${API_URL}/site-visits/${id2}`, { method: "DELETE", headers: authHeaders });
     setSiteVisits((prev) => prev.filter((v2) => v2.id !== id2));
   }
   async function addProduct(form) {
-    const res = await fetch(`${API_URL$3}/products`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/products`, { method: "POST", headers, body: JSON.stringify(form) });
     const product = await res.json();
     setProducts((prev) => [product, ...prev]);
   }
   async function updateProduct(id2, form) {
-    const res = await fetch(`${API_URL$3}/products/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/products/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     const updated = await res.json();
     setProducts((prev) => prev.map((p2) => p2.id === id2 ? updated : p2));
   }
   async function deleteProduct(id2) {
-    await fetch(`${API_URL$3}/products/${id2}`, { method: "DELETE", headers: authHeaders });
+    await fetch(`${API_URL}/products/${id2}`, { method: "DELETE", headers: authHeaders });
     setProducts((prev) => prev.filter((p2) => p2.id !== id2));
   }
   async function addEmployee(form) {
-    const res = await fetch(`${API_URL$3}/employees`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/employees`, { method: "POST", headers, body: JSON.stringify(form) });
     const employee = await res.json();
     setEmployees((prev) => [employee, ...prev]);
   }
   async function updateEmployee(id2, form) {
-    const res = await fetch(`${API_URL$3}/employees/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/employees/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     const updated = await res.json();
     setEmployees((prev) => prev.map((e) => e.id === id2 ? updated : e));
   }
   async function deleteEmployee(id2) {
-    await fetch(`${API_URL$3}/employees/${id2}`, { method: "DELETE", headers: authHeaders });
+    await fetch(`${API_URL}/employees/${id2}`, { method: "DELETE", headers: authHeaders });
     setEmployees((prev) => prev.filter((e) => e.id !== id2));
   }
   async function addOrder(form) {
-    const res = await fetch(`${API_URL$3}/orders`, { method: "POST", headers, body: JSON.stringify(form) });
-    const order = await res.json();
-    setOrders((prev) => [order, ...prev]);
+    const res = await fetch(`${API_URL}/orders`, { method: "POST", headers, body: JSON.stringify(form) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to create order");
+    setOrders((prev) => [data, ...prev]);
   }
   async function updateOrder(id2, form) {
-    const res = await fetch(`${API_URL$3}/orders/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
-    const updated = await res.json();
-    setOrders((prev) => prev.map((o2) => o2.id === id2 ? updated : o2));
+    const res = await fetch(`${API_URL}/orders/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update order");
+    setOrders((prev) => prev.map((o2) => o2.id === id2 ? data : o2));
   }
   async function deleteOrder(id2) {
-    const res = await fetch(`${API_URL$3}/orders/${id2}`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`${API_URL}/orders/${id2}`, { method: "DELETE", headers: authHeaders });
     if (!res.ok) throw new Error((await res.json()).error || "Delete failed");
     setOrders((prev) => prev.filter((o2) => o2.id !== id2));
   }
   async function addRole(name) {
-    const res = await fetch(`${API_URL$3}/roles`, { method: "POST", headers, body: JSON.stringify({ name }) });
+    const res = await fetch(`${API_URL}/roles`, { method: "POST", headers, body: JSON.stringify({ name }) });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     const role = await res.json();
     setRoles((prev) => [...prev, role].sort((a2, b2) => a2.name.localeCompare(b2.name)));
   }
   async function deleteRole(id2) {
-    const res = await fetch(`${API_URL$3}/roles/${id2}`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`${API_URL}/roles/${id2}`, { method: "DELETE", headers: authHeaders });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     setRoles((prev) => prev.filter((r2) => r2.id !== id2));
   }
   async function updateRolePermissions(role, pages) {
-    const res = await fetch(`${API_URL$3}/permissions/${encodeURIComponent(role)}`, {
+    const res = await fetch(`${API_URL}/permissions/${encodeURIComponent(role)}`, {
       method: "PUT",
       headers,
       body: JSON.stringify({ pages })
@@ -8802,7 +8804,7 @@ function DataProvider({ children }) {
     setPermissions((prev) => ({ ...prev, [role]: pages }));
   }
   async function updateRoleStatusPermissions(role, statuses) {
-    const res = await fetch(`${API_URL$3}/status-permissions/${encodeURIComponent(role)}`, {
+    const res = await fetch(`${API_URL}/status-permissions/${encodeURIComponent(role)}`, {
       method: "PUT",
       headers,
       body: JSON.stringify({ statuses })
@@ -8811,28 +8813,28 @@ function DataProvider({ children }) {
     setStatusPermissions((prev) => ({ ...prev, [role]: statuses }));
   }
   async function addMachine(form) {
-    const res = await fetch(`${API_URL$3}/machines`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/machines`, { method: "POST", headers, body: JSON.stringify(form) });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     const machine = await res.json();
     setMachines((prev) => [machine, ...prev]);
     return machine;
   }
   async function updateMachine(id2, form) {
-    const res = await fetch(`${API_URL$3}/machines/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/machines/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     const machine = await res.json();
     setMachines((prev) => prev.map((m2) => m2.id === id2 ? machine : m2));
     return machine;
   }
   async function deleteMachine(id2) {
-    const res = await fetch(`${API_URL$3}/machines/${id2}`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`${API_URL}/machines/${id2}`, { method: "DELETE", headers: authHeaders });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     setMachines((prev) => prev.filter((m2) => m2.id !== id2));
   }
   async function uploadMachineManual(id2, file) {
     const formData = new FormData();
     formData.append("manual", file);
-    const res = await fetch(`${API_URL$3}/machines/${id2}/manual`, {
+    const res = await fetch(`${API_URL}/machines/${id2}/manual`, {
       method: "POST",
       headers: authHeaders,
       body: formData
@@ -8843,7 +8845,7 @@ function DataProvider({ children }) {
     return machine;
   }
   async function downloadMachineManual(id2, filename) {
-    const res = await fetch(`${API_URL$3}/machines/${id2}/manual`, { headers: authHeaders });
+    const res = await fetch(`${API_URL}/machines/${id2}/manual`, { headers: authHeaders });
     if (!res.ok) throw new Error("Download failed");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -8854,26 +8856,26 @@ function DataProvider({ children }) {
     URL.revokeObjectURL(url);
   }
   async function deleteMachineManual(id2) {
-    const res = await fetch(`${API_URL$3}/machines/${id2}/manual`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`${API_URL}/machines/${id2}/manual`, { method: "DELETE", headers: authHeaders });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     const machine = await res.json();
     setMachines((prev) => prev.map((m2) => m2.id === id2 ? machine : m2));
     return machine;
   }
   async function addMaintenanceRecord(machineId, form) {
-    const res = await fetch(`${API_URL$3}/machines/${machineId}/maintenance`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/machines/${machineId}/maintenance`, { method: "POST", headers, body: JSON.stringify(form) });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     const record = await res.json();
     setMachines((prev) => prev.map((m2) => m2.id === machineId ? { ...m2, maintenanceRecords: [record, ...m2.maintenanceRecords || []] } : m2));
     return record;
   }
   async function deleteMaintenanceRecord(machineId, recordId) {
-    const res = await fetch(`${API_URL$3}/machines/${machineId}/maintenance/${recordId}`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`${API_URL}/machines/${machineId}/maintenance/${recordId}`, { method: "DELETE", headers: authHeaders });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     setMachines((prev) => prev.map((m2) => m2.id === machineId ? { ...m2, maintenanceRecords: (m2.maintenanceRecords || []).filter((r2) => r2.id !== recordId) } : m2));
   }
   async function addMonthlyTask(machineId, { year, month, description }) {
-    const res = await fetch(`${API_URL$3}/machines/${machineId}/monthly`, {
+    const res = await fetch(`${API_URL}/machines/${machineId}/monthly`, {
       method: "POST",
       headers,
       body: JSON.stringify({ year, month, description })
@@ -8884,7 +8886,7 @@ function DataProvider({ children }) {
     return task;
   }
   async function updateMonthlyTask(machineId, taskId, data) {
-    const res = await fetch(`${API_URL$3}/machines/${machineId}/monthly/${taskId}`, {
+    const res = await fetch(`${API_URL}/machines/${machineId}/monthly/${taskId}`, {
       method: "PUT",
       headers,
       body: JSON.stringify(data)
@@ -8895,22 +8897,22 @@ function DataProvider({ children }) {
     return task;
   }
   async function deleteMonthlyTask(machineId, taskId) {
-    const res = await fetch(`${API_URL$3}/machines/${machineId}/monthly/${taskId}`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`${API_URL}/machines/${machineId}/monthly/${taskId}`, { method: "DELETE", headers: authHeaders });
     if (!res.ok) throw new Error((await res.json()).error || "Failed");
     setMachines((prev) => prev.map((m2) => m2.id === machineId ? { ...m2, monthlyMaintenance: (m2.monthlyMaintenance || []).filter((t3) => t3.id !== taskId) } : m2));
   }
   async function addFinanceRecord(form) {
-    const res = await fetch(`${API_URL$3}/finance`, { method: "POST", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/finance`, { method: "POST", headers, body: JSON.stringify(form) });
     const record = await res.json();
     setFinanceRecords((prev) => [record, ...prev]);
   }
   async function updateFinanceRecord(id2, form) {
-    const res = await fetch(`${API_URL$3}/finance/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
+    const res = await fetch(`${API_URL}/finance/${id2}`, { method: "PUT", headers, body: JSON.stringify(form) });
     const updated = await res.json();
     setFinanceRecords((prev) => prev.map((r2) => r2.id === id2 ? updated : r2));
   }
   async function deleteFinanceRecord(id2) {
-    await fetch(`${API_URL$3}/finance/${id2}`, { method: "DELETE", headers: authHeaders });
+    await fetch(`${API_URL}/finance/${id2}`, { method: "DELETE", headers: authHeaders });
     setFinanceRecords((prev) => prev.filter((r2) => r2.id !== id2));
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx(DataContext.Provider, { value: {
@@ -9032,7 +9034,7 @@ function Sidebar() {
 function TopBar() {
   const { user } = useAuth();
   const { dark, toggleTheme } = useTheme();
-  const { reports } = useData();
+  const { reports, employees } = useData();
   const navigate = useNavigate();
   const [now, setNow] = reactExports.useState(/* @__PURE__ */ new Date());
   const [showOverdue, setShowOverdue] = reactExports.useState(false);
@@ -9060,6 +9062,7 @@ function TopBar() {
   const utcOffset = -now.getTimezoneOffset() / 60;
   const timezone = `UTC${utcOffset >= 0 ? "+" : ""}${utcOffset}`;
   const date = now.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const matchedEmployee = user?.email ? (employees || []).find((e) => e.email && e.email.toLowerCase() === user.email.toLowerCase()) : null;
   const initials = user?.name ? user.name.split(" ").map((w2) => w2[0]).join("").slice(0, 2).toUpperCase() : "??";
   const roleBadge = user?.role === "admin" ? "Admin" : "User";
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "w-full h-16 sticky top-0 z-30 bg-surface-container-lowest flex items-center justify-between px-6", children: [
@@ -9125,7 +9128,11 @@ function TopBar() {
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-right", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-bold text-on-surface leading-none", children: user?.name || "User" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] text-text-muted mt-0.5", children: roleBadge })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] text-text-muted mt-0.5", children: roleBadge }),
+                matchedEmployee && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[10px] text-primary mt-0.5 flex items-center justify-end gap-0.5", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined", style: { fontSize: "10px" }, children: "badge" }),
+                  matchedEmployee.name
+                ] })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-9 h-9 rounded-full primary-gradient flex items-center justify-center text-white text-sm font-bold flex-shrink-0", children: initials })
             ]
@@ -9166,15 +9173,14 @@ function TopBar() {
   ] });
 }
 function Layout() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-h-screen bg-page-bg text-on-surface", children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex h-screen bg-page-bg text-on-surface overflow-hidden", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Sidebar, {}),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 ml-64 flex flex-col min-h-screen", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 ml-64 flex flex-col overflow-hidden", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(TopBar, {}),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "flex-1 overflow-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "flex-1 min-h-0 overflow-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Outlet, {}) })
     ] })
   ] });
 }
-const API = "http://localhost:3001/api";
 function Login() {
   const { login } = useAuth();
   const { dark, toggleTheme } = useTheme();
@@ -9205,7 +9211,7 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/forgot-password`, {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail })
@@ -9231,7 +9237,7 @@ function Login() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/reset-password`, {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail, code: resetCode, newPassword })
@@ -19900,13 +19906,13 @@ function SSF_fix_hijri(date, o2) {
   if (date < 60) dow = (dow + 6) % 7;
   return dow;
 }
-function SSF_write_date(type, fmt, val, ss0) {
+function SSF_write_date(type, fmt2, val, ss0) {
   var o2 = "", ss = 0, tt2 = 0, y2 = val.y, out, outl = 0;
   switch (type) {
     case 98:
       y2 = val.y + 543;
     case 121:
-      switch (fmt.length) {
+      switch (fmt2.length) {
         case 1:
         case 2:
           out = y2 % 100;
@@ -19919,11 +19925,11 @@ function SSF_write_date(type, fmt, val, ss0) {
       }
       break;
     case 109:
-      switch (fmt.length) {
+      switch (fmt2.length) {
         case 1:
         case 2:
           out = val.m;
-          outl = fmt.length;
+          outl = fmt2.length;
           break;
         case 3:
           return months[val.m - 1][1];
@@ -19934,11 +19940,11 @@ function SSF_write_date(type, fmt, val, ss0) {
       }
       break;
     case 100:
-      switch (fmt.length) {
+      switch (fmt2.length) {
         case 1:
         case 2:
           out = val.d;
-          outl = fmt.length;
+          outl = fmt2.length;
           break;
         case 3:
           return days[val.q][0];
@@ -19947,51 +19953,51 @@ function SSF_write_date(type, fmt, val, ss0) {
       }
       break;
     case 104:
-      switch (fmt.length) {
+      switch (fmt2.length) {
         case 1:
         case 2:
           out = 1 + (val.H + 11) % 12;
-          outl = fmt.length;
+          outl = fmt2.length;
           break;
         default:
-          throw "bad hour format: " + fmt;
+          throw "bad hour format: " + fmt2;
       }
       break;
     case 72:
-      switch (fmt.length) {
+      switch (fmt2.length) {
         case 1:
         case 2:
           out = val.H;
-          outl = fmt.length;
+          outl = fmt2.length;
           break;
         default:
-          throw "bad hour format: " + fmt;
+          throw "bad hour format: " + fmt2;
       }
       break;
     case 77:
-      switch (fmt.length) {
+      switch (fmt2.length) {
         case 1:
         case 2:
           out = val.M;
-          outl = fmt.length;
+          outl = fmt2.length;
           break;
         default:
-          throw "bad minute format: " + fmt;
+          throw "bad minute format: " + fmt2;
       }
       break;
     case 115:
-      if (fmt != "s" && fmt != "ss" && fmt != ".0" && fmt != ".00" && fmt != ".000") throw "bad second format: " + fmt;
-      if (val.u === 0 && (fmt == "s" || fmt == "ss")) return pad0(val.S, fmt.length);
+      if (fmt2 != "s" && fmt2 != "ss" && fmt2 != ".0" && fmt2 != ".00" && fmt2 != ".000") throw "bad second format: " + fmt2;
+      if (val.u === 0 && (fmt2 == "s" || fmt2 == "ss")) return pad0(val.S, fmt2.length);
       if (ss0 >= 2) tt2 = ss0 === 3 ? 1e3 : 100;
       else tt2 = ss0 === 1 ? 10 : 1;
       ss = Math.round(tt2 * (val.S + val.u));
       if (ss >= 60 * tt2) ss = 0;
-      if (fmt === "s") return ss === 0 ? "0" : "" + ss / tt2;
+      if (fmt2 === "s") return ss === 0 ? "0" : "" + ss / tt2;
       o2 = pad0(ss, 2 + ss0);
-      if (fmt === "ss") return o2.substr(0, 2);
-      return "." + o2.substr(2, fmt.length - 1);
+      if (fmt2 === "ss") return o2.substr(0, 2);
+      return "." + o2.substr(2, fmt2.length - 1);
     case 90:
-      switch (fmt) {
+      switch (fmt2) {
         case "[h]":
         case "[hh]":
           out = val.D * 24 + val.H;
@@ -20005,9 +20011,9 @@ function SSF_write_date(type, fmt, val, ss0) {
           out = ((val.D * 24 + val.H) * 60 + val.M) * 60 + Math.round(val.S + val.u);
           break;
         default:
-          throw "bad abstime format: " + fmt;
+          throw "bad abstime format: " + fmt2;
       }
-      outl = fmt.length === 3 ? 1 : 2;
+      outl = fmt2.length === 3 ? 1 : 2;
       break;
     case 101:
       out = y2;
@@ -20025,23 +20031,23 @@ function commaify(s2) {
   return o2;
 }
 var pct1 = /%/g;
-function write_num_pct(type, fmt, val) {
-  var sfmt = fmt.replace(pct1, ""), mul = fmt.length - sfmt.length;
+function write_num_pct(type, fmt2, val) {
+  var sfmt = fmt2.replace(pct1, ""), mul = fmt2.length - sfmt.length;
   return write_num(type, sfmt, val * Math.pow(10, 2 * mul)) + fill("%", mul);
 }
-function write_num_cm(type, fmt, val) {
-  var idx = fmt.length - 1;
-  while (fmt.charCodeAt(idx - 1) === 44) --idx;
-  return write_num(type, fmt.substr(0, idx), val / Math.pow(10, 3 * (fmt.length - idx)));
+function write_num_cm(type, fmt2, val) {
+  var idx = fmt2.length - 1;
+  while (fmt2.charCodeAt(idx - 1) === 44) --idx;
+  return write_num(type, fmt2.substr(0, idx), val / Math.pow(10, 3 * (fmt2.length - idx)));
 }
-function write_num_exp(fmt, val) {
+function write_num_exp(fmt2, val) {
   var o2;
-  var idx = fmt.indexOf("E") - fmt.indexOf(".") - 1;
-  if (fmt.match(/^#+0.0E\+0$/)) {
+  var idx = fmt2.indexOf("E") - fmt2.indexOf(".") - 1;
+  if (fmt2.match(/^#+0.0E\+0$/)) {
     if (val == 0) return "0.0E+0";
-    else if (val < 0) return "-" + write_num_exp(fmt, -val);
-    var period = fmt.indexOf(".");
-    if (period === -1) period = fmt.indexOf("E");
+    else if (val < 0) return "-" + write_num_exp(fmt2, -val);
+    var period = fmt2.indexOf(".");
+    if (period === -1) period = fmt2.indexOf("E");
     var ee2 = Math.floor(Math.log(val) * Math.LOG10E) % period;
     if (ee2 < 0) ee2 += period;
     o2 = (val / Math.pow(10, ee2)).toPrecision(idx + 1 + (period + ee2) % period);
@@ -20059,8 +20065,8 @@ function write_num_exp(fmt, val) {
       return $1 + $2 + $3.substr(0, (period + ee2) % period) + "." + $3.substr(ee2) + "E";
     });
   } else o2 = val.toExponential(idx);
-  if (fmt.match(/E\+00$/) && o2.match(/e[+-]\d$/)) o2 = o2.substr(0, o2.length - 1) + "0" + o2.charAt(o2.length - 1);
-  if (fmt.match(/E\-/) && o2.match(/e\+/)) o2 = o2.replace(/e\+/, "e");
+  if (fmt2.match(/E\+00$/) && o2.match(/e[+-]\d$/)) o2 = o2.substr(0, o2.length - 1) + "0" + o2.charAt(o2.length - 1);
+  if (fmt2.match(/E\-/) && o2.match(/e\+/)) o2 = o2.replace(/e\+/, "e");
   return o2.replace("e", "E");
 }
 var frac1 = /# (\?+)( ?)\/( ?)(\d+)/;
@@ -20110,57 +20116,57 @@ function flr(val) {
   if (val < 2147483647 && val > -2147483648) return "" + (val >= 0 ? val | 0 : val - 1 | 0);
   return "" + Math.floor(val);
 }
-function write_num_flt(type, fmt, val) {
-  if (type.charCodeAt(0) === 40 && !fmt.match(closeparen)) {
-    var ffmt = fmt.replace(/\( */, "").replace(/ \)/, "").replace(/\)/, "");
+function write_num_flt(type, fmt2, val) {
+  if (type.charCodeAt(0) === 40 && !fmt2.match(closeparen)) {
+    var ffmt = fmt2.replace(/\( */, "").replace(/ \)/, "").replace(/\)/, "");
     if (val >= 0) return write_num_flt("n", ffmt, val);
     return "(" + write_num_flt("n", ffmt, -val) + ")";
   }
-  if (fmt.charCodeAt(fmt.length - 1) === 44) return write_num_cm(type, fmt, val);
-  if (fmt.indexOf("%") !== -1) return write_num_pct(type, fmt, val);
-  if (fmt.indexOf("E") !== -1) return write_num_exp(fmt, val);
-  if (fmt.charCodeAt(0) === 36) return "$" + write_num_flt(type, fmt.substr(fmt.charAt(1) == " " ? 2 : 1), val);
+  if (fmt2.charCodeAt(fmt2.length - 1) === 44) return write_num_cm(type, fmt2, val);
+  if (fmt2.indexOf("%") !== -1) return write_num_pct(type, fmt2, val);
+  if (fmt2.indexOf("E") !== -1) return write_num_exp(fmt2, val);
+  if (fmt2.charCodeAt(0) === 36) return "$" + write_num_flt(type, fmt2.substr(fmt2.charAt(1) == " " ? 2 : 1), val);
   var o2;
   var r2, ri2, ff2, aval = Math.abs(val), sign = val < 0 ? "-" : "";
-  if (fmt.match(/^00+$/)) return sign + pad0r(aval, fmt.length);
-  if (fmt.match(/^[#?]+$/)) {
+  if (fmt2.match(/^00+$/)) return sign + pad0r(aval, fmt2.length);
+  if (fmt2.match(/^[#?]+$/)) {
     o2 = pad0r(val, 0);
     if (o2 === "0") o2 = "";
-    return o2.length > fmt.length ? o2 : hashq(fmt.substr(0, fmt.length - o2.length)) + o2;
+    return o2.length > fmt2.length ? o2 : hashq(fmt2.substr(0, fmt2.length - o2.length)) + o2;
   }
-  if (r2 = fmt.match(frac1)) return write_num_f1(r2, aval, sign);
-  if (fmt.match(/^#+0+$/)) return sign + pad0r(aval, fmt.length - fmt.indexOf("0"));
-  if (r2 = fmt.match(dec1)) {
+  if (r2 = fmt2.match(frac1)) return write_num_f1(r2, aval, sign);
+  if (fmt2.match(/^#+0+$/)) return sign + pad0r(aval, fmt2.length - fmt2.indexOf("0"));
+  if (r2 = fmt2.match(dec1)) {
     o2 = rnd(val, r2[1].length).replace(/^([^\.]+)$/, "$1." + hashq(r2[1])).replace(/\.$/, "." + hashq(r2[1])).replace(/\.(\d*)$/, function($$, $1) {
       return "." + $1 + fill("0", hashq(
         /*::(*/
         r2[1]
       ).length - $1.length);
     });
-    return fmt.indexOf("0.") !== -1 ? o2 : o2.replace(/^0\./, ".");
+    return fmt2.indexOf("0.") !== -1 ? o2 : o2.replace(/^0\./, ".");
   }
-  fmt = fmt.replace(/^#+([0.])/, "$1");
-  if (r2 = fmt.match(/^(0*)\.(#*)$/)) {
+  fmt2 = fmt2.replace(/^#+([0.])/, "$1");
+  if (r2 = fmt2.match(/^(0*)\.(#*)$/)) {
     return sign + rnd(aval, r2[2].length).replace(/\.(\d*[1-9])0*$/, ".$1").replace(/^(-?\d*)$/, "$1.").replace(/^0\./, r2[1].length ? "0." : ".");
   }
-  if (r2 = fmt.match(/^#{1,3},##0(\.?)$/)) return sign + commaify(pad0r(aval, 0));
-  if (r2 = fmt.match(/^#,##0\.([#0]*0)$/)) {
-    return val < 0 ? "-" + write_num_flt(type, fmt, -val) : commaify("" + (Math.floor(val) + carry(val, r2[1].length))) + "." + pad0(dec(val, r2[1].length), r2[1].length);
+  if (r2 = fmt2.match(/^#{1,3},##0(\.?)$/)) return sign + commaify(pad0r(aval, 0));
+  if (r2 = fmt2.match(/^#,##0\.([#0]*0)$/)) {
+    return val < 0 ? "-" + write_num_flt(type, fmt2, -val) : commaify("" + (Math.floor(val) + carry(val, r2[1].length))) + "." + pad0(dec(val, r2[1].length), r2[1].length);
   }
-  if (r2 = fmt.match(/^#,#*,#0/)) return write_num_flt(type, fmt.replace(/^#,#*,/, ""), val);
-  if (r2 = fmt.match(/^([0#]+)(\\?-([0#]+))+$/)) {
-    o2 = _strrev(write_num_flt(type, fmt.replace(/[\\-]/g, ""), val));
+  if (r2 = fmt2.match(/^#,#*,#0/)) return write_num_flt(type, fmt2.replace(/^#,#*,/, ""), val);
+  if (r2 = fmt2.match(/^([0#]+)(\\?-([0#]+))+$/)) {
+    o2 = _strrev(write_num_flt(type, fmt2.replace(/[\\-]/g, ""), val));
     ri2 = 0;
-    return _strrev(_strrev(fmt.replace(/\\/g, "")).replace(/[0#]/g, function(x3) {
+    return _strrev(_strrev(fmt2.replace(/\\/g, "")).replace(/[0#]/g, function(x3) {
       return ri2 < o2.length ? o2.charAt(ri2++) : x3 === "0" ? "0" : "";
     }));
   }
-  if (fmt.match(phone)) {
+  if (fmt2.match(phone)) {
     o2 = write_num_flt(type, "##########", val);
     return "(" + o2.substr(0, 3) + ") " + o2.substr(3, 3) + "-" + o2.substr(6);
   }
   var oa2 = "";
-  if (r2 = fmt.match(/^([#0?]+)( ?)\/( ?)([#0?]+)/)) {
+  if (r2 = fmt2.match(/^([#0?]+)( ?)\/( ?)([#0?]+)/)) {
     ri2 = Math.min(
       /*::String(*/
       r2[4].length,
@@ -20183,29 +20189,29 @@ function write_num_flt(type, fmt, val) {
     o2 += oa2;
     return o2;
   }
-  if (r2 = fmt.match(/^# ([#0?]+)( ?)\/( ?)([#0?]+)/)) {
+  if (r2 = fmt2.match(/^# ([#0?]+)( ?)\/( ?)([#0?]+)/)) {
     ri2 = Math.min(Math.max(r2[1].length, r2[4].length), 7);
     ff2 = SSF_frac(aval, Math.pow(10, ri2) - 1, true);
     return sign + (ff2[0] || (ff2[1] ? "" : "0")) + " " + (ff2[1] ? pad_(ff2[1], ri2) + r2[2] + "/" + r2[3] + rpad_(ff2[2], ri2) : fill(" ", 2 * ri2 + 1 + r2[2].length + r2[3].length));
   }
-  if (r2 = fmt.match(/^[#0?]+$/)) {
+  if (r2 = fmt2.match(/^[#0?]+$/)) {
     o2 = pad0r(val, 0);
-    if (fmt.length <= o2.length) return o2;
-    return hashq(fmt.substr(0, fmt.length - o2.length)) + o2;
+    if (fmt2.length <= o2.length) return o2;
+    return hashq(fmt2.substr(0, fmt2.length - o2.length)) + o2;
   }
-  if (r2 = fmt.match(/^([#0?]+)\.([#0]+)$/)) {
+  if (r2 = fmt2.match(/^([#0?]+)\.([#0]+)$/)) {
     o2 = "" + val.toFixed(Math.min(r2[2].length, 10)).replace(/([^0])0+$/, "$1");
     ri2 = o2.indexOf(".");
-    var lres = fmt.indexOf(".") - ri2, rres = fmt.length - o2.length - lres;
-    return hashq(fmt.substr(0, lres) + o2 + fmt.substr(fmt.length - rres));
+    var lres = fmt2.indexOf(".") - ri2, rres = fmt2.length - o2.length - lres;
+    return hashq(fmt2.substr(0, lres) + o2 + fmt2.substr(fmt2.length - rres));
   }
-  if (r2 = fmt.match(/^00,000\.([#0]*0)$/)) {
+  if (r2 = fmt2.match(/^00,000\.([#0]*0)$/)) {
     ri2 = dec(val, r2[1].length);
-    return val < 0 ? "-" + write_num_flt(type, fmt, -val) : commaify(flr(val)).replace(/^\d,\d{3}$/, "0$&").replace(/^\d*$/, function($$) {
+    return val < 0 ? "-" + write_num_flt(type, fmt2, -val) : commaify(flr(val)).replace(/^\d,\d{3}$/, "0$&").replace(/^\d*$/, function($$) {
       return "00," + ($$.length < 3 ? pad0(0, 3 - $$.length) : "") + $$;
     }) + "." + pad0(ri2, r2[1].length);
   }
-  switch (fmt) {
+  switch (fmt2) {
     case "###,##0.00":
       return write_num_flt(type, "#,##0.00", val);
     case "###,###":
@@ -20218,25 +20224,25 @@ function write_num_flt(type, fmt, val) {
     case "#,###.00":
       return write_num_flt(type, "#,##0.00", val).replace(/^0\./, ".");
   }
-  throw new Error("unsupported format |" + fmt + "|");
+  throw new Error("unsupported format |" + fmt2 + "|");
 }
-function write_num_cm2(type, fmt, val) {
-  var idx = fmt.length - 1;
-  while (fmt.charCodeAt(idx - 1) === 44) --idx;
-  return write_num(type, fmt.substr(0, idx), val / Math.pow(10, 3 * (fmt.length - idx)));
+function write_num_cm2(type, fmt2, val) {
+  var idx = fmt2.length - 1;
+  while (fmt2.charCodeAt(idx - 1) === 44) --idx;
+  return write_num(type, fmt2.substr(0, idx), val / Math.pow(10, 3 * (fmt2.length - idx)));
 }
-function write_num_pct2(type, fmt, val) {
-  var sfmt = fmt.replace(pct1, ""), mul = fmt.length - sfmt.length;
+function write_num_pct2(type, fmt2, val) {
+  var sfmt = fmt2.replace(pct1, ""), mul = fmt2.length - sfmt.length;
   return write_num(type, sfmt, val * Math.pow(10, 2 * mul)) + fill("%", mul);
 }
-function write_num_exp2(fmt, val) {
+function write_num_exp2(fmt2, val) {
   var o2;
-  var idx = fmt.indexOf("E") - fmt.indexOf(".") - 1;
-  if (fmt.match(/^#+0.0E\+0$/)) {
+  var idx = fmt2.indexOf("E") - fmt2.indexOf(".") - 1;
+  if (fmt2.match(/^#+0.0E\+0$/)) {
     if (val == 0) return "0.0E+0";
-    else if (val < 0) return "-" + write_num_exp2(fmt, -val);
-    var period = fmt.indexOf(".");
-    if (period === -1) period = fmt.indexOf("E");
+    else if (val < 0) return "-" + write_num_exp2(fmt2, -val);
+    var period = fmt2.indexOf(".");
+    if (period === -1) period = fmt2.indexOf("E");
     var ee2 = Math.floor(Math.log(val) * Math.LOG10E) % period;
     if (ee2 < 0) ee2 += period;
     o2 = (val / Math.pow(10, ee2)).toPrecision(idx + 1 + (period + ee2) % period);
@@ -20250,59 +20256,59 @@ function write_num_exp2(fmt, val) {
       return $1 + $2 + $3.substr(0, (period + ee2) % period) + "." + $3.substr(ee2) + "E";
     });
   } else o2 = val.toExponential(idx);
-  if (fmt.match(/E\+00$/) && o2.match(/e[+-]\d$/)) o2 = o2.substr(0, o2.length - 1) + "0" + o2.charAt(o2.length - 1);
-  if (fmt.match(/E\-/) && o2.match(/e\+/)) o2 = o2.replace(/e\+/, "e");
+  if (fmt2.match(/E\+00$/) && o2.match(/e[+-]\d$/)) o2 = o2.substr(0, o2.length - 1) + "0" + o2.charAt(o2.length - 1);
+  if (fmt2.match(/E\-/) && o2.match(/e\+/)) o2 = o2.replace(/e\+/, "e");
   return o2.replace("e", "E");
 }
-function write_num_int(type, fmt, val) {
-  if (type.charCodeAt(0) === 40 && !fmt.match(closeparen)) {
-    var ffmt = fmt.replace(/\( */, "").replace(/ \)/, "").replace(/\)/, "");
+function write_num_int(type, fmt2, val) {
+  if (type.charCodeAt(0) === 40 && !fmt2.match(closeparen)) {
+    var ffmt = fmt2.replace(/\( */, "").replace(/ \)/, "").replace(/\)/, "");
     if (val >= 0) return write_num_int("n", ffmt, val);
     return "(" + write_num_int("n", ffmt, -val) + ")";
   }
-  if (fmt.charCodeAt(fmt.length - 1) === 44) return write_num_cm2(type, fmt, val);
-  if (fmt.indexOf("%") !== -1) return write_num_pct2(type, fmt, val);
-  if (fmt.indexOf("E") !== -1) return write_num_exp2(fmt, val);
-  if (fmt.charCodeAt(0) === 36) return "$" + write_num_int(type, fmt.substr(fmt.charAt(1) == " " ? 2 : 1), val);
+  if (fmt2.charCodeAt(fmt2.length - 1) === 44) return write_num_cm2(type, fmt2, val);
+  if (fmt2.indexOf("%") !== -1) return write_num_pct2(type, fmt2, val);
+  if (fmt2.indexOf("E") !== -1) return write_num_exp2(fmt2, val);
+  if (fmt2.charCodeAt(0) === 36) return "$" + write_num_int(type, fmt2.substr(fmt2.charAt(1) == " " ? 2 : 1), val);
   var o2;
   var r2, ri2, ff2, aval = Math.abs(val), sign = val < 0 ? "-" : "";
-  if (fmt.match(/^00+$/)) return sign + pad0(aval, fmt.length);
-  if (fmt.match(/^[#?]+$/)) {
+  if (fmt2.match(/^00+$/)) return sign + pad0(aval, fmt2.length);
+  if (fmt2.match(/^[#?]+$/)) {
     o2 = "" + val;
     if (val === 0) o2 = "";
-    return o2.length > fmt.length ? o2 : hashq(fmt.substr(0, fmt.length - o2.length)) + o2;
+    return o2.length > fmt2.length ? o2 : hashq(fmt2.substr(0, fmt2.length - o2.length)) + o2;
   }
-  if (r2 = fmt.match(frac1)) return write_num_f2(r2, aval, sign);
-  if (fmt.match(/^#+0+$/)) return sign + pad0(aval, fmt.length - fmt.indexOf("0"));
-  if (r2 = fmt.match(dec1)) {
+  if (r2 = fmt2.match(frac1)) return write_num_f2(r2, aval, sign);
+  if (fmt2.match(/^#+0+$/)) return sign + pad0(aval, fmt2.length - fmt2.indexOf("0"));
+  if (r2 = fmt2.match(dec1)) {
     o2 = ("" + val).replace(/^([^\.]+)$/, "$1." + hashq(r2[1])).replace(/\.$/, "." + hashq(r2[1]));
     o2 = o2.replace(/\.(\d*)$/, function($$, $1) {
       return "." + $1 + fill("0", hashq(r2[1]).length - $1.length);
     });
-    return fmt.indexOf("0.") !== -1 ? o2 : o2.replace(/^0\./, ".");
+    return fmt2.indexOf("0.") !== -1 ? o2 : o2.replace(/^0\./, ".");
   }
-  fmt = fmt.replace(/^#+([0.])/, "$1");
-  if (r2 = fmt.match(/^(0*)\.(#*)$/)) {
+  fmt2 = fmt2.replace(/^#+([0.])/, "$1");
+  if (r2 = fmt2.match(/^(0*)\.(#*)$/)) {
     return sign + ("" + aval).replace(/\.(\d*[1-9])0*$/, ".$1").replace(/^(-?\d*)$/, "$1.").replace(/^0\./, r2[1].length ? "0." : ".");
   }
-  if (r2 = fmt.match(/^#{1,3},##0(\.?)$/)) return sign + commaify("" + aval);
-  if (r2 = fmt.match(/^#,##0\.([#0]*0)$/)) {
-    return val < 0 ? "-" + write_num_int(type, fmt, -val) : commaify("" + val) + "." + fill("0", r2[1].length);
+  if (r2 = fmt2.match(/^#{1,3},##0(\.?)$/)) return sign + commaify("" + aval);
+  if (r2 = fmt2.match(/^#,##0\.([#0]*0)$/)) {
+    return val < 0 ? "-" + write_num_int(type, fmt2, -val) : commaify("" + val) + "." + fill("0", r2[1].length);
   }
-  if (r2 = fmt.match(/^#,#*,#0/)) return write_num_int(type, fmt.replace(/^#,#*,/, ""), val);
-  if (r2 = fmt.match(/^([0#]+)(\\?-([0#]+))+$/)) {
-    o2 = _strrev(write_num_int(type, fmt.replace(/[\\-]/g, ""), val));
+  if (r2 = fmt2.match(/^#,#*,#0/)) return write_num_int(type, fmt2.replace(/^#,#*,/, ""), val);
+  if (r2 = fmt2.match(/^([0#]+)(\\?-([0#]+))+$/)) {
+    o2 = _strrev(write_num_int(type, fmt2.replace(/[\\-]/g, ""), val));
     ri2 = 0;
-    return _strrev(_strrev(fmt.replace(/\\/g, "")).replace(/[0#]/g, function(x3) {
+    return _strrev(_strrev(fmt2.replace(/\\/g, "")).replace(/[0#]/g, function(x3) {
       return ri2 < o2.length ? o2.charAt(ri2++) : x3 === "0" ? "0" : "";
     }));
   }
-  if (fmt.match(phone)) {
+  if (fmt2.match(phone)) {
     o2 = write_num_int(type, "##########", val);
     return "(" + o2.substr(0, 3) + ") " + o2.substr(3, 3) + "-" + o2.substr(6);
   }
   var oa2 = "";
-  if (r2 = fmt.match(/^([#0?]+)( ?)\/( ?)([#0?]+)/)) {
+  if (r2 = fmt2.match(/^([#0?]+)( ?)\/( ?)([#0?]+)/)) {
     ri2 = Math.min(
       /*::String(*/
       r2[4].length,
@@ -20325,47 +20331,47 @@ function write_num_int(type, fmt, val) {
     o2 += oa2;
     return o2;
   }
-  if (r2 = fmt.match(/^# ([#0?]+)( ?)\/( ?)([#0?]+)/)) {
+  if (r2 = fmt2.match(/^# ([#0?]+)( ?)\/( ?)([#0?]+)/)) {
     ri2 = Math.min(Math.max(r2[1].length, r2[4].length), 7);
     ff2 = SSF_frac(aval, Math.pow(10, ri2) - 1, true);
     return sign + (ff2[0] || (ff2[1] ? "" : "0")) + " " + (ff2[1] ? pad_(ff2[1], ri2) + r2[2] + "/" + r2[3] + rpad_(ff2[2], ri2) : fill(" ", 2 * ri2 + 1 + r2[2].length + r2[3].length));
   }
-  if (r2 = fmt.match(/^[#0?]+$/)) {
+  if (r2 = fmt2.match(/^[#0?]+$/)) {
     o2 = "" + val;
-    if (fmt.length <= o2.length) return o2;
-    return hashq(fmt.substr(0, fmt.length - o2.length)) + o2;
+    if (fmt2.length <= o2.length) return o2;
+    return hashq(fmt2.substr(0, fmt2.length - o2.length)) + o2;
   }
-  if (r2 = fmt.match(/^([#0]+)\.([#0]+)$/)) {
+  if (r2 = fmt2.match(/^([#0]+)\.([#0]+)$/)) {
     o2 = "" + val.toFixed(Math.min(r2[2].length, 10)).replace(/([^0])0+$/, "$1");
     ri2 = o2.indexOf(".");
-    var lres = fmt.indexOf(".") - ri2, rres = fmt.length - o2.length - lres;
-    return hashq(fmt.substr(0, lres) + o2 + fmt.substr(fmt.length - rres));
+    var lres = fmt2.indexOf(".") - ri2, rres = fmt2.length - o2.length - lres;
+    return hashq(fmt2.substr(0, lres) + o2 + fmt2.substr(fmt2.length - rres));
   }
-  if (r2 = fmt.match(/^00,000\.([#0]*0)$/)) {
-    return val < 0 ? "-" + write_num_int(type, fmt, -val) : commaify("" + val).replace(/^\d,\d{3}$/, "0$&").replace(/^\d*$/, function($$) {
+  if (r2 = fmt2.match(/^00,000\.([#0]*0)$/)) {
+    return val < 0 ? "-" + write_num_int(type, fmt2, -val) : commaify("" + val).replace(/^\d,\d{3}$/, "0$&").replace(/^\d*$/, function($$) {
       return "00," + ($$.length < 3 ? pad0(0, 3 - $$.length) : "") + $$;
     }) + "." + pad0(0, r2[1].length);
   }
-  switch (fmt) {
+  switch (fmt2) {
     case "###,###":
     case "##,###":
     case "#,###":
       var x2 = commaify("" + aval);
       return x2 !== "0" ? sign + x2 : "";
     default:
-      if (fmt.match(/\.[0#?]*$/)) return write_num_int(type, fmt.slice(0, fmt.lastIndexOf(".")), val) + hashq(fmt.slice(fmt.lastIndexOf(".")));
+      if (fmt2.match(/\.[0#?]*$/)) return write_num_int(type, fmt2.slice(0, fmt2.lastIndexOf(".")), val) + hashq(fmt2.slice(fmt2.lastIndexOf(".")));
   }
-  throw new Error("unsupported format |" + fmt + "|");
+  throw new Error("unsupported format |" + fmt2 + "|");
 }
-function write_num(type, fmt, val) {
-  return (val | 0) === val ? write_num_int(type, fmt, val) : write_num_flt(type, fmt, val);
+function write_num(type, fmt2, val) {
+  return (val | 0) === val ? write_num_int(type, fmt2, val) : write_num_flt(type, fmt2, val);
 }
-function SSF_split_fmt(fmt) {
+function SSF_split_fmt(fmt2) {
   var out = [];
   var in_str = false;
-  for (var i2 = 0, j2 = 0; i2 < fmt.length; ++i2) switch (
+  for (var i2 = 0, j2 = 0; i2 < fmt2.length; ++i2) switch (
     /*cc=*/
-    fmt.charCodeAt(i2)
+    fmt2.charCodeAt(i2)
   ) {
     case 34:
       in_str = !in_str;
@@ -20376,27 +20382,27 @@ function SSF_split_fmt(fmt) {
       ++i2;
       break;
     case 59:
-      out[out.length] = fmt.substr(j2, i2 - j2);
+      out[out.length] = fmt2.substr(j2, i2 - j2);
       j2 = i2 + 1;
   }
-  out[out.length] = fmt.substr(j2);
-  if (in_str === true) throw new Error("Format |" + fmt + "| unterminated string ");
+  out[out.length] = fmt2.substr(j2);
+  if (in_str === true) throw new Error("Format |" + fmt2 + "| unterminated string ");
   return out;
 }
 var SSF_abstime = /\[[HhMmSs\u0E0A\u0E19\u0E17]*\]/;
-function fmt_is_date(fmt) {
+function fmt_is_date(fmt2) {
   var i2 = 0, c2 = "", o2 = "";
-  while (i2 < fmt.length) {
-    switch (c2 = fmt.charAt(i2)) {
+  while (i2 < fmt2.length) {
+    switch (c2 = fmt2.charAt(i2)) {
       case "G":
-        if (SSF_isgeneral(fmt, i2)) i2 += 6;
+        if (SSF_isgeneral(fmt2, i2)) i2 += 6;
         i2++;
         break;
       case '"':
         for (
           ;
           /*cc=*/
-          fmt.charCodeAt(++i2) !== 34 && i2 < fmt.length;
+          fmt2.charCodeAt(++i2) !== 34 && i2 < fmt2.length;
         ) {
         }
         ++i2;
@@ -20412,7 +20418,7 @@ function fmt_is_date(fmt) {
         break;
       case "B":
       case "b":
-        if (fmt.charAt(i2 + 1) === "1" || fmt.charAt(i2 + 1) === "2") return true;
+        if (fmt2.charAt(i2 + 1) === "1" || fmt2.charAt(i2 + 1) === "2") return true;
       case "M":
       case "D":
       case "Y":
@@ -20430,29 +20436,29 @@ function fmt_is_date(fmt) {
       case "A":
       case "a":
       case "上":
-        if (fmt.substr(i2, 3).toUpperCase() === "A/P") return true;
-        if (fmt.substr(i2, 5).toUpperCase() === "AM/PM") return true;
-        if (fmt.substr(i2, 5).toUpperCase() === "上午/下午") return true;
+        if (fmt2.substr(i2, 3).toUpperCase() === "A/P") return true;
+        if (fmt2.substr(i2, 5).toUpperCase() === "AM/PM") return true;
+        if (fmt2.substr(i2, 5).toUpperCase() === "上午/下午") return true;
         ++i2;
         break;
       case "[":
         o2 = c2;
-        while (fmt.charAt(i2++) !== "]" && i2 < fmt.length) o2 += fmt.charAt(i2);
+        while (fmt2.charAt(i2++) !== "]" && i2 < fmt2.length) o2 += fmt2.charAt(i2);
         if (o2.match(SSF_abstime)) return true;
         break;
       case ".":
       case "0":
       case "#":
-        while (i2 < fmt.length && ("0#?.,E+-%".indexOf(c2 = fmt.charAt(++i2)) > -1 || c2 == "\\" && fmt.charAt(i2 + 1) == "-" && "0#".indexOf(fmt.charAt(i2 + 2)) > -1)) {
+        while (i2 < fmt2.length && ("0#?.,E+-%".indexOf(c2 = fmt2.charAt(++i2)) > -1 || c2 == "\\" && fmt2.charAt(i2 + 1) == "-" && "0#".indexOf(fmt2.charAt(i2 + 2)) > -1)) {
         }
         break;
       case "?":
-        while (fmt.charAt(++i2) === c2) {
+        while (fmt2.charAt(++i2) === c2) {
         }
         break;
       case "*":
         ++i2;
-        if (fmt.charAt(i2) == " " || fmt.charAt(i2) == "*") ++i2;
+        if (fmt2.charAt(i2) == " " || fmt2.charAt(i2) == "*") ++i2;
         break;
       case "(":
       case ")":
@@ -20467,7 +20473,7 @@ function fmt_is_date(fmt) {
       case "7":
       case "8":
       case "9":
-        while (i2 < fmt.length && "0123456789".indexOf(fmt.charAt(++i2)) > -1) {
+        while (i2 < fmt2.length && "0123456789".indexOf(fmt2.charAt(++i2)) > -1) {
         }
         break;
       case " ":
@@ -20480,23 +20486,23 @@ function fmt_is_date(fmt) {
   }
   return false;
 }
-function eval_fmt(fmt, v2, opts, flen) {
+function eval_fmt(fmt2, v2, opts, flen) {
   var out = [], o2 = "", i2 = 0, c2 = "", lst = "t", dt2, j2, cc2;
   var hr = "H";
-  while (i2 < fmt.length) {
-    switch (c2 = fmt.charAt(i2)) {
+  while (i2 < fmt2.length) {
+    switch (c2 = fmt2.charAt(i2)) {
       case "G":
-        if (!SSF_isgeneral(fmt, i2)) throw new Error("unrecognized character " + c2 + " in " + fmt);
+        if (!SSF_isgeneral(fmt2, i2)) throw new Error("unrecognized character " + c2 + " in " + fmt2);
         out[out.length] = { t: "G", v: "General" };
         i2 += 7;
         break;
       case '"':
-        for (o2 = ""; (cc2 = fmt.charCodeAt(++i2)) !== 34 && i2 < fmt.length; ) o2 += String.fromCharCode(cc2);
+        for (o2 = ""; (cc2 = fmt2.charCodeAt(++i2)) !== 34 && i2 < fmt2.length; ) o2 += String.fromCharCode(cc2);
         out[out.length] = { t: "t", v: o2 };
         ++i2;
         break;
       case "\\":
-        var w2 = fmt.charAt(++i2), t3 = w2 === "(" || w2 === ")" ? w2 : "t";
+        var w2 = fmt2.charAt(++i2), t3 = w2 === "(" || w2 === ")" ? w2 : "t";
         out[out.length] = { t: t3, v: w2 };
         ++i2;
         break;
@@ -20510,12 +20516,12 @@ function eval_fmt(fmt, v2, opts, flen) {
         break;
       case "B":
       case "b":
-        if (fmt.charAt(i2 + 1) === "1" || fmt.charAt(i2 + 1) === "2") {
+        if (fmt2.charAt(i2 + 1) === "1" || fmt2.charAt(i2 + 1) === "2") {
           if (dt2 == null) {
-            dt2 = SSF_parse_date_code(v2, opts, fmt.charAt(i2 + 1) === "2");
+            dt2 = SSF_parse_date_code(v2, opts, fmt2.charAt(i2 + 1) === "2");
             if (dt2 == null) return "";
           }
-          out[out.length] = { t: "X", v: fmt.substr(i2, 2) };
+          out[out.length] = { t: "X", v: fmt2.substr(i2, 2) };
           lst = c2;
           i2 += 2;
           break;
@@ -20540,7 +20546,7 @@ function eval_fmt(fmt, v2, opts, flen) {
           if (dt2 == null) return "";
         }
         o2 = c2;
-        while (++i2 < fmt.length && fmt.charAt(i2).toLowerCase() === c2) o2 += c2;
+        while (++i2 < fmt2.length && fmt2.charAt(i2).toLowerCase() === c2) o2 += c2;
         if (c2 === "m" && lst.toLowerCase() === "h") c2 = "M";
         if (c2 === "h") c2 = hr;
         out[out.length] = { t: c2, v: o2 };
@@ -20551,17 +20557,17 @@ function eval_fmt(fmt, v2, opts, flen) {
       case "上":
         var q2 = { t: c2, v: c2 };
         if (dt2 == null) dt2 = SSF_parse_date_code(v2, opts);
-        if (fmt.substr(i2, 3).toUpperCase() === "A/P") {
+        if (fmt2.substr(i2, 3).toUpperCase() === "A/P") {
           if (dt2 != null) q2.v = dt2.H >= 12 ? "P" : "A";
           q2.t = "T";
           hr = "h";
           i2 += 3;
-        } else if (fmt.substr(i2, 5).toUpperCase() === "AM/PM") {
+        } else if (fmt2.substr(i2, 5).toUpperCase() === "AM/PM") {
           if (dt2 != null) q2.v = dt2.H >= 12 ? "PM" : "AM";
           q2.t = "T";
           i2 += 5;
           hr = "h";
-        } else if (fmt.substr(i2, 5).toUpperCase() === "上午/下午") {
+        } else if (fmt2.substr(i2, 5).toUpperCase() === "上午/下午") {
           if (dt2 != null) q2.v = dt2.H >= 12 ? "下午" : "上午";
           q2.t = "T";
           i2 += 5;
@@ -20576,7 +20582,7 @@ function eval_fmt(fmt, v2, opts, flen) {
         break;
       case "[":
         o2 = c2;
-        while (fmt.charAt(i2++) !== "]" && i2 < fmt.length) o2 += fmt.charAt(i2);
+        while (fmt2.charAt(i2++) !== "]" && i2 < fmt2.length) o2 += fmt2.charAt(i2);
         if (o2.slice(-1) !== "]") throw 'unterminated "[" block: |' + o2 + "|";
         if (o2.match(SSF_abstime)) {
           if (dt2 == null) {
@@ -20587,31 +20593,31 @@ function eval_fmt(fmt, v2, opts, flen) {
           lst = o2.charAt(1);
         } else if (o2.indexOf("$") > -1) {
           o2 = (o2.match(/\$([^-\[\]]*)/) || [])[1] || "$";
-          if (!fmt_is_date(fmt)) out[out.length] = { t: "t", v: o2 };
+          if (!fmt_is_date(fmt2)) out[out.length] = { t: "t", v: o2 };
         }
         break;
       case ".":
         if (dt2 != null) {
           o2 = c2;
-          while (++i2 < fmt.length && (c2 = fmt.charAt(i2)) === "0") o2 += c2;
+          while (++i2 < fmt2.length && (c2 = fmt2.charAt(i2)) === "0") o2 += c2;
           out[out.length] = { t: "s", v: o2 };
           break;
         }
       case "0":
       case "#":
         o2 = c2;
-        while (++i2 < fmt.length && "0#?.,E+-%".indexOf(c2 = fmt.charAt(i2)) > -1) o2 += c2;
+        while (++i2 < fmt2.length && "0#?.,E+-%".indexOf(c2 = fmt2.charAt(i2)) > -1) o2 += c2;
         out[out.length] = { t: "n", v: o2 };
         break;
       case "?":
         o2 = c2;
-        while (fmt.charAt(++i2) === c2) o2 += c2;
+        while (fmt2.charAt(++i2) === c2) o2 += c2;
         out[out.length] = { t: c2, v: o2 };
         lst = c2;
         break;
       case "*":
         ++i2;
-        if (fmt.charAt(i2) == " " || fmt.charAt(i2) == "*") ++i2;
+        if (fmt2.charAt(i2) == " " || fmt2.charAt(i2) == "*") ++i2;
         break;
       case "(":
       case ")":
@@ -20628,7 +20634,7 @@ function eval_fmt(fmt, v2, opts, flen) {
       case "8":
       case "9":
         o2 = c2;
-        while (i2 < fmt.length && "0123456789".indexOf(fmt.charAt(++i2)) > -1) o2 += fmt.charAt(i2);
+        while (i2 < fmt2.length && "0123456789".indexOf(fmt2.charAt(++i2)) > -1) o2 += fmt2.charAt(i2);
         out[out.length] = { t: "D", v: o2 };
         break;
       case " ":
@@ -20640,7 +20646,7 @@ function eval_fmt(fmt, v2, opts, flen) {
         ++i2;
         break;
       default:
-        if (",$-+/():!^&'~{}<>=€acfijklopqrtuvwxzP".indexOf(c2) === -1) throw new Error("unrecognized character " + c2 + " in " + fmt);
+        if (",$-+/():!^&'~{}<>=€acfijklopqrtuvwxzP".indexOf(c2) === -1) throw new Error("unrecognized character " + c2 + " in " + fmt2);
         out[out.length] = { t: "t", v: c2 };
         ++i2;
         break;
@@ -20847,44 +20853,44 @@ function chkcond(v2, rr) {
   return false;
 }
 function choose_fmt(f2, v2) {
-  var fmt = SSF_split_fmt(f2);
-  var l2 = fmt.length, lat = fmt[l2 - 1].indexOf("@");
+  var fmt2 = SSF_split_fmt(f2);
+  var l2 = fmt2.length, lat = fmt2[l2 - 1].indexOf("@");
   if (l2 < 4 && lat > -1) --l2;
-  if (fmt.length > 4) throw new Error("cannot find right format for |" + fmt.join("|") + "|");
-  if (typeof v2 !== "number") return [4, fmt.length === 4 || lat > -1 ? fmt[fmt.length - 1] : "@"];
-  switch (fmt.length) {
+  if (fmt2.length > 4) throw new Error("cannot find right format for |" + fmt2.join("|") + "|");
+  if (typeof v2 !== "number") return [4, fmt2.length === 4 || lat > -1 ? fmt2[fmt2.length - 1] : "@"];
+  switch (fmt2.length) {
     case 1:
-      fmt = lat > -1 ? ["General", "General", "General", fmt[0]] : [fmt[0], fmt[0], fmt[0], "@"];
+      fmt2 = lat > -1 ? ["General", "General", "General", fmt2[0]] : [fmt2[0], fmt2[0], fmt2[0], "@"];
       break;
     case 2:
-      fmt = lat > -1 ? [fmt[0], fmt[0], fmt[0], fmt[1]] : [fmt[0], fmt[1], fmt[0], "@"];
+      fmt2 = lat > -1 ? [fmt2[0], fmt2[0], fmt2[0], fmt2[1]] : [fmt2[0], fmt2[1], fmt2[0], "@"];
       break;
     case 3:
-      fmt = lat > -1 ? [fmt[0], fmt[1], fmt[0], fmt[2]] : [fmt[0], fmt[1], fmt[2], "@"];
+      fmt2 = lat > -1 ? [fmt2[0], fmt2[1], fmt2[0], fmt2[2]] : [fmt2[0], fmt2[1], fmt2[2], "@"];
       break;
   }
-  var ff2 = v2 > 0 ? fmt[0] : v2 < 0 ? fmt[1] : fmt[2];
-  if (fmt[0].indexOf("[") === -1 && fmt[1].indexOf("[") === -1) return [l2, ff2];
-  if (fmt[0].match(/\[[=<>]/) != null || fmt[1].match(/\[[=<>]/) != null) {
-    var m1 = fmt[0].match(cfregex2);
-    var m2 = fmt[1].match(cfregex2);
-    return chkcond(v2, m1) ? [l2, fmt[0]] : chkcond(v2, m2) ? [l2, fmt[1]] : [l2, fmt[m1 != null && m2 != null ? 2 : 1]];
+  var ff2 = v2 > 0 ? fmt2[0] : v2 < 0 ? fmt2[1] : fmt2[2];
+  if (fmt2[0].indexOf("[") === -1 && fmt2[1].indexOf("[") === -1) return [l2, ff2];
+  if (fmt2[0].match(/\[[=<>]/) != null || fmt2[1].match(/\[[=<>]/) != null) {
+    var m1 = fmt2[0].match(cfregex2);
+    var m2 = fmt2[1].match(cfregex2);
+    return chkcond(v2, m1) ? [l2, fmt2[0]] : chkcond(v2, m2) ? [l2, fmt2[1]] : [l2, fmt2[m1 != null && m2 != null ? 2 : 1]];
   }
   return [l2, ff2];
 }
-function SSF_format(fmt, v2, o2) {
+function SSF_format(fmt2, v2, o2) {
   if (o2 == null) o2 = {};
   var sfmt = "";
-  switch (typeof fmt) {
+  switch (typeof fmt2) {
     case "string":
-      if (fmt == "m/d/yy" && o2.dateNF) sfmt = o2.dateNF;
-      else sfmt = fmt;
+      if (fmt2 == "m/d/yy" && o2.dateNF) sfmt = o2.dateNF;
+      else sfmt = fmt2;
       break;
     case "number":
-      if (fmt == 14 && o2.dateNF) sfmt = o2.dateNF;
-      else sfmt = (o2.table != null ? o2.table : table_fmt)[fmt];
-      if (sfmt == null) sfmt = o2.table && o2.table[SSF_default_map[fmt]] || table_fmt[SSF_default_map[fmt]];
-      if (sfmt == null) sfmt = SSF_default_str[fmt] || "General";
+      if (fmt2 == 14 && o2.dateNF) sfmt = o2.dateNF;
+      else sfmt = (o2.table != null ? o2.table : table_fmt)[fmt2];
+      if (sfmt == null) sfmt = o2.table && o2.table[SSF_default_map[fmt2]] || table_fmt[SSF_default_map[fmt2]];
+      if (sfmt == null) sfmt = SSF_default_str[fmt2] || "General";
       break;
   }
   if (SSF_isgeneral(sfmt, 0)) return SSF_general(v2, o2);
@@ -20896,7 +20902,7 @@ function SSF_format(fmt, v2, o2) {
   else if (v2 === "" || v2 == null) return "";
   return eval_fmt(f2[1], v2, o2, f2[0]);
 }
-function SSF_load(fmt, idx) {
+function SSF_load(fmt2, idx) {
   if (typeof idx != "number") {
     idx = +idx || -1;
     for (var i2 = 0; i2 < 392; ++i2) {
@@ -20904,14 +20910,14 @@ function SSF_load(fmt, idx) {
         if (idx < 0) idx = i2;
         continue;
       }
-      if (table_fmt[i2] == fmt) {
+      if (table_fmt[i2] == fmt2) {
         idx = i2;
         break;
       }
     }
     if (idx < 0) idx = 391;
   }
-  table_fmt[idx] = fmt;
+  table_fmt[idx] = fmt2;
   return idx;
 }
 function SSF_load_table(tbl) {
@@ -20979,9 +20985,9 @@ var SSFImplicit = {
 };
 var dateNFregex = /[dD]+|[mM]+|[yYeE]+|[Hh]+|[Ss]+/g;
 function dateNF_regex(dateNF) {
-  var fmt = typeof dateNF == "number" ? table_fmt[dateNF] : dateNF;
-  fmt = fmt.replace(dateNFregex, "(\\d+)");
-  return new RegExp("^" + fmt + "$");
+  var fmt2 = typeof dateNF == "number" ? table_fmt[dateNF] : dateNF;
+  fmt2 = fmt2.replace(dateNFregex, "(\\d+)");
+  return new RegExp("^" + fmt2 + "$");
 }
 function dateNF_fix(str, dateNF, match) {
   var Y2 = -1, m2 = -1, d2 = -1, H2 = -1, M2 = -1, S2 = -1;
@@ -37779,9 +37785,9 @@ function xlml_parsexmltagobj(tag) {
 }
 var XLMLFormatMap;
 function xlml_format(format, value) {
-  var fmt = XLMLFormatMap[format] || unescapexml(format);
-  if (fmt === "General") return SSF_general(value);
-  return SSF_format(fmt, value);
+  var fmt2 = XLMLFormatMap[format] || unescapexml(format);
+  if (fmt2 === "General") return SSF_general(value);
+  return SSF_format(fmt2, value);
 }
 function xlml_set_custprop(Custprops, key, cp, val) {
   var oval = val;
@@ -50129,8 +50135,8 @@ function book_set_sheet_visibility(wb2, sh2, vis) {
   }
   wb2.Workbook.Sheets[idx].Hidden = vis;
 }
-function cell_set_number_format(cell, fmt) {
-  cell.z = fmt;
+function cell_set_number_format(cell, fmt2) {
+  cell.z = fmt2;
   return cell;
 }
 function cell_set_hyperlink(cell, target, tooltip) {
@@ -52128,7 +52134,6 @@ function Reports() {
     }) })
   ] });
 }
-const API_URL$2 = "http://localhost:3001/api";
 function ChangePasswordModal({ token, onClose }) {
   const [form, setForm] = reactExports.useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [error, setError] = reactExports.useState("");
@@ -52147,7 +52152,7 @@ function ChangePasswordModal({ token, onClose }) {
     setConfirming(false);
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL$2}/auth/change-password`, {
+      const res = await fetch(`${API_URL}/auth/change-password`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ currentPassword: form.currentPassword, newPassword: form.newPassword })
@@ -52255,37 +52260,74 @@ function ChangePasswordModal({ token, onClose }) {
   ] });
 }
 function Account() {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = reactExports.useState(false);
+  const [confirmLogout, setConfirmLogout] = reactExports.useState(false);
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
   const initials = user?.name ? user.name.split(" ").map((w2) => w2[0]).join("").slice(0, 2).toUpperCase() : "??";
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-6 max-w-lg", children: [
     showModal && /* @__PURE__ */ jsxRuntimeExports.jsx(ChangePasswordModal, { token, onClose: () => setShowModal(false) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-xl font-bold text-on-surface mb-6", style: { fontFamily: "Manrope, sans-serif" }, children: "My Account" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest rounded-xl border border-theme-border p-6 flex items-center justify-between gap-4", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-14 h-14 rounded-full primary-gradient flex items-center justify-center text-white text-lg font-bold flex-shrink-0", children: initials }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest rounded-xl border border-theme-border p-6", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4 mb-5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-16 h-16 rounded-full primary-gradient flex items-center justify-center text-white text-xl font-bold flex-shrink-0", children: initials }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-bold text-on-surface", children: user?.name }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted", children: user?.email }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${user?.role === "admin" ? "status-scheduled-badge" : "bg-surface-container-high text-on-surface-variant"}`, children: user?.role === "admin" ? "Admin" : "User" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-lg font-bold text-on-surface leading-tight", children: user?.name || "—" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted mt-0.5", children: user?.email }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${user?.role === "admin" ? "status-scheduled-badge" : "bg-surface-container-high text-on-surface-variant"}`, children: user?.role === "admin" ? "Admin" : "User" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setShowModal(true),
-          className: "flex items-center gap-2 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-high hover:text-on-surface transition-colors",
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-lg", children: "lock" }),
-            "Change Password"
-          ]
-        }
-      )
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 pt-4 border-t border-theme-border", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setShowModal(true),
+            className: "flex items-center gap-2 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-high hover:text-on-surface transition-colors",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "lock" }),
+              "Change Password"
+            ]
+          }
+        ),
+        confirmLogout ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 ml-auto", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-text-muted", children: "Log out?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: handleLogout,
+              className: "px-3 py-2 rounded-lg bg-error text-white text-xs font-bold hover:opacity-90 transition-opacity",
+              children: "Yes, log out"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => setConfirmLogout(false),
+              className: "px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-high transition-colors",
+              children: "Cancel"
+            }
+          )
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setConfirmLogout(true),
+            className: "ml-auto flex items-center gap-2 px-4 py-2.5 rounded-lg border border-error/40 text-error text-sm font-semibold hover:bg-error/10 transition-colors",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "logout" }),
+              "Log Out"
+            ]
+          }
+        )
+      ] })
     ] })
   ] });
 }
 const ITEMS_PER_PAGE$3 = 10;
-const CURRENCIES$1 = ["USD", "EUR", "GBP", "TRY", "AED", "SAR", "JPY", "CNY", "INR", "CAD", "AUD"];
+const CURRENCIES$2 = ["USD", "EUR", "GBP", "TRY", "AED", "SAR", "JPY", "CNY", "INR", "CAD", "AUD"];
 const emptyForm$4 = {
   stockNo: "",
   name: "",
@@ -52331,7 +52373,7 @@ function Modal$2({ title, form, setForm, onClose, onSave, errors }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Currency" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inputCls2("currency"), value: form.currency, onChange: set("currency"), children: CURRENCIES$1.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c2 }, c2)) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inputCls2("currency"), value: form.currency, onChange: set("currency"), children: CURRENCIES$2.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c2 }, c2)) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Price *" }),
@@ -63640,7 +63682,7 @@ function(t3) {
   var h2 = l2.getContext("2d");
   h2.fillStyle = "#fff", h2.fillRect(0, 0, l2.width, l2.height);
   var f2 = { ignoreMouse: true, ignoreAnimation: true, ignoreDimensions: true }, d2 = this;
-  return (i.canvg ? Promise.resolve(i.canvg) : __vitePreload(() => import("./index.es-B5_vbWhA.js"), true ? [] : void 0, import.meta.url)).catch(function(t4) {
+  return (i.canvg ? Promise.resolve(i.canvg) : __vitePreload(() => import("./index.es-BFYmZRFU.js"), true ? [] : void 0, import.meta.url)).catch(function(t4) {
     return Promise.reject(new Error("Could not load canvg: " + t4));
   }).then(function(t4) {
     return t4.default ? t4.default : t4;
@@ -66237,9 +66279,42 @@ const robotoFontUrl = "" + new URL("Roboto-Regular-DPspvn0D.ttf", import.meta.ur
 const ITEMS_PER_PAGE$1 = 10;
 const ORDER_STATUSES$1 = ["Processing", "Confirmed", "In-Production", "Production Completed", "E-WayBill", "In Delivery", "E-Invoice", "Delivered"];
 const ORDER_COLUMNS = ["Order Code", "Customer", "Sales Rep", "Status", "Notes", "Product Name", "Quantity", "Unit Price", "Currency"];
+const SHIPMENT_TYPES = [
+  "",
+  "Air Freight",
+  "Sea Freight (FCL)",
+  "Sea Freight (LCL)",
+  "Road Freight (FTL)",
+  "Road Freight (LTL)",
+  "Rail Freight",
+  "Multimodal",
+  "Express Courier (DHL / FedEx / UPS)",
+  "Door-to-Door Delivery",
+  "Ex-Works (EXW)",
+  "FOB (Free On Board)",
+  "CIF (Cost, Insurance & Freight)",
+  "DAP (Delivered At Place)",
+  "DDP (Delivered Duty Paid)"
+];
+const PAYMENT_METHODS = [
+  "",
+  "Bank Transfer (Wire)",
+  "Letter of Credit (L/C)",
+  "Cash in Advance",
+  "Open Account (Net 30)",
+  "Open Account (Net 60)",
+  "Open Account (Net 90)",
+  "Documentary Collection (D/P)",
+  "Documentary Collection (D/A)",
+  "Credit Card",
+  "Cheque",
+  "Cash on Delivery (COD)",
+  "Escrow",
+  "PayPal / Online Payment"
+];
 const emptyItem = { productName: "", quantity: 1, unitPrice: "", currency: "USD" };
 function emptyForm$2() {
-  return { customerId: "", salesRepId: "", status: "Processing", vat: "0", notes: "", items: [{ ...emptyItem }] };
+  return { customerId: "", salesRepId: "", status: "Processing", vat: "0", notes: "", shipmentType: "", paymentMethod: "", items: [{ ...emptyItem }] };
 }
 const detailStatusStyle = {
   Processing: "bg-amber-100 text-amber-700",
@@ -66334,6 +66409,22 @@ function OrderDetailModal$2({ order, onClose, currentUser, onStatusChange }) {
         parseFloat(order.totalAmount).toFixed(2)
       ] })
     ] }),
+    (order.shipmentType || order.paymentMethod) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3 mb-4", children: [
+      order.shipmentType && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-high rounded-xl px-4 py-3 flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base text-text-muted", children: "local_shipping" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] text-text-muted uppercase tracking-wide font-semibold", children: "Shipment" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-on-surface font-medium", children: order.shipmentType })
+        ] })
+      ] }),
+      order.paymentMethod && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-high rounded-xl px-4 py-3 flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base text-text-muted", children: "payments" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] text-text-muted uppercase tracking-wide font-semibold", children: "Payment" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-on-surface font-medium", children: order.paymentMethod })
+        ] })
+      ] })
+    ] }),
     order.notes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-high rounded-xl px-4 py-3 text-sm text-text-muted mb-4", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-on-surface mr-2", children: "Notes:" }),
       order.notes
@@ -66384,7 +66475,7 @@ function OrderDetailModal$2({ order, onClose, currentUser, onStatusChange }) {
     ] })
   ] }) });
 }
-function OrderModal({ title, form, setForm, onClose, onSave, errors, customers, employees, products, currentUser, salesTeam }) {
+function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, customers, employees, products, currentUser, salesTeam }) {
   const set = (field) => (e) => setForm((f2) => ({ ...f2, [field]: e.target.value }));
   const inputCls2 = (err) => `w-full bg-surface-container-lowest border rounded px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition ${err ? "border-error" : "border-theme-border"}`;
   function setItem(idx, field, value) {
@@ -66558,12 +66649,25 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, customers, 
           ] })
         ] })
       ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Shipment Type *" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inputCls2(errors.shipmentType), value: form.shipmentType, onChange: set("shipmentType"), children: SHIPMENT_TYPES.map((s2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: s2, children: s2 || "— Select shipment type —" }, s2)) }),
+          errors.shipmentType && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-error mt-1", children: errors.shipmentType })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Payment Method *" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inputCls2(errors.paymentMethod), value: form.paymentMethod, onChange: set("paymentMethod"), children: PAYMENT_METHODS.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: p2, children: p2 || "— Select payment method —" }, p2)) }),
+          errors.paymentMethod && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-error mt-1", children: errors.paymentMethod })
+        ] })
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Notes" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { rows: 2, className: inputCls2(), value: form.notes, onChange: set("notes") })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 mt-6", children: [
+    saveError && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 px-3 py-2 rounded-lg bg-error/10 border border-error/30 text-xs text-error", children: saveError }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 mt-4", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, className: "flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition", children: "Cancel" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onSave, className: "flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition", children: "Save" })
     ] })
@@ -66615,7 +66719,7 @@ function Orders() {
   const canCreate = isAdmin || currentUser?.department === "Sales Manager" || currentUser?.department === "Sales Representative";
   reactExports.useEffect(() => {
     if (!token) return;
-    fetch("http://localhost:3001/api/auth/salesteam", {
+    fetch(`${API_URL}/auth/salesteam`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then((r2) => r2.json()).then((data) => Array.isArray(data) && setSalesTeam(data)).catch(() => {
     });
@@ -66630,6 +66734,7 @@ function Orders() {
   const [detailOrder, setDetailOrder] = reactExports.useState(null);
   const [form, setForm] = reactExports.useState(emptyForm$2());
   const [errors, setErrors] = reactExports.useState({});
+  const [saveError, setSaveError] = reactExports.useState("");
   const [selected, setSelected] = reactExports.useState(/* @__PURE__ */ new Set());
   const [exportOpen, setExportOpen] = reactExports.useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = reactExports.useState(null);
@@ -66782,6 +66887,8 @@ function Orders() {
     const e = {};
     if (!f2.customerId) e.customerId = "Customer is required";
     if (!f2.salesRepId && currentUser?.department !== "Sales Representative") e.salesRepId = "Sales rep is required";
+    if (!f2.shipmentType) e.shipmentType = "Shipment type is required";
+    if (!f2.paymentMethod) e.paymentMethod = "Payment method is required";
     const validItems = f2.items.filter((it2) => it2.productName.trim());
     if (!validItems.length) {
       e.items = "At least one product is required";
@@ -66809,6 +66916,8 @@ function Orders() {
       status: item.status || "Draft",
       vat: item.vat ?? "0",
       notes: item.notes || "",
+      shipmentType: item.shipmentType || "",
+      paymentMethod: item.paymentMethod || "",
       items: item.items?.length ? item.items.map((it2) => ({
         productName: it2.productName,
         quantity: it2.quantity,
@@ -66826,8 +66935,13 @@ function Orders() {
       setErrors(e);
       return;
     }
-    await addOrder({ ...form, items: form.items.filter((it2) => it2.productName.trim()) });
-    setShowAdd(false);
+    try {
+      setSaveError("");
+      await addOrder({ ...form, items: form.items.filter((it2) => it2.productName.trim()) });
+      setShowAdd(false);
+    } catch (err) {
+      setSaveError(err.message);
+    }
   }
   async function handleEdit() {
     const e = validate(form);
@@ -66835,8 +66949,13 @@ function Orders() {
       setErrors(e);
       return;
     }
-    await updateOrder(editItem.id, { ...form, items: form.items.filter((it2) => it2.productName.trim()) });
-    setEditItem(null);
+    try {
+      setSaveError("");
+      await updateOrder(editItem.id, { ...form, items: form.items.filter((it2) => it2.productName.trim()) });
+      setEditItem(null);
+    } catch (err) {
+      setSaveError(err.message);
+    }
   }
   async function handleDelete() {
     await deleteOrder(confirmDeleteId);
@@ -66852,6 +66971,8 @@ function Orders() {
       status: newStatus,
       vat: order.vat,
       notes: order.notes,
+      shipmentType: order.shipmentType || "",
+      paymentMethod: order.paymentMethod || "",
       items: (order.items || []).map((it2) => ({
         productName: it2.productName,
         quantity: it2.quantity,
@@ -67074,7 +67195,7 @@ function Orders() {
                   className: "w-4 h-4 rounded accent-primary cursor-pointer"
                 }
               ) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 font-mono text-xs text-text-muted font-semibold", children: o2.code }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 font-mono text-xs text-text-muted font-semibold", children: o2.code || "—" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 font-medium text-on-surface", children: o2.customer?.name || "—" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 text-text-muted", children: o2.salesRep?.name || o2.employee?.name || "—" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 font-mono text-xs text-text-muted", children: stockNos || "—" }),
@@ -67082,7 +67203,7 @@ function Orders() {
               /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 text-right text-text-muted text-sm", children: o2.vat > 0 ? `${o2.vat}%` : "—" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "px-4 py-4 text-right font-semibold text-on-surface", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-text-muted mr-1", children: currency }),
-                parseFloat(o2.totalAmount).toFixed(2)
+                (parseFloat(o2.totalAmount) || 0).toFixed(2)
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle$2[o2.status] || statusStyle$2.Draft}`, children: o2.status }) }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-4 text-xs text-text-muted whitespace-nowrap", children: dateStr }),
@@ -67131,7 +67252,11 @@ function Orders() {
         form,
         setForm,
         errors,
-        onClose: () => setShowAdd(false),
+        saveError,
+        onClose: () => {
+          setShowAdd(false);
+          setSaveError("");
+        },
         onSave: handleAdd,
         customers,
         employees,
@@ -67147,7 +67272,11 @@ function Orders() {
         form,
         setForm,
         errors,
-        onClose: () => setEditItem(null),
+        saveError,
+        onClose: () => {
+          setEditItem(null);
+          setSaveError("");
+        },
         onSave: handleEdit,
         customers,
         employees,
@@ -67158,98 +67287,449 @@ function Orders() {
     )
   ] });
 }
-const ITEMS_PER_PAGE = 10;
-const INCOME_CATEGORIES = ["Sales", "Service", "Consulting", "Refund", "Other"];
-const EXPENSE_CATEGORIES = ["Salary", "Rent", "Utilities", "Supplies", "Travel", "Marketing", "IT", "Other"];
+const CACHE_KEY = "aks_currency_rates_cache";
+const CONFIG_KEY = "aks_currency_api_config";
+const CACHE_TTL = 60 * 60 * 1e3;
+const DEFAULT_RATES_URL = "https://open.er-api.com/v6/latest/USD";
+const DEFAULT_RATES_PATH = "rates";
+const DEFAULT_BASE = "USD";
+function getAtPath(obj, path) {
+  return path.split(".").reduce((o2, k2) => o2?.[k2], obj);
+}
+function loadRatesConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+function saveRatesConfig(cfg) {
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  localStorage.removeItem(CACHE_KEY);
+}
+function useCurrencyRates() {
+  const [rates, setRates] = reactExports.useState(null);
+  const [base, setBase] = reactExports.useState(DEFAULT_BASE);
+  const [loading, setLoading] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState("");
+  const [lastUpdated, setLastUpdated] = reactExports.useState(null);
+  const applyCache = reactExports.useCallback(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        setRates(cached.rates);
+        setBase(cached.base || DEFAULT_BASE);
+        setLastUpdated(new Date(cached.timestamp));
+        return true;
+      }
+    } catch {
+    }
+    return false;
+  }, []);
+  const fetchRates = reactExports.useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const cfg = loadRatesConfig();
+      const url = cfg.url || DEFAULT_RATES_URL;
+      const ratesPath = cfg.ratesPath || DEFAULT_RATES_PATH;
+      const baseCur = cfg.base || DEFAULT_BASE;
+      const headers = cfg.apiKey ? { [cfg.apiKeyHeader || "Authorization"]: cfg.apiKey } : {};
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      const json = await res.json();
+      const ratesObj = getAtPath(json, ratesPath);
+      if (!ratesObj || typeof ratesObj !== "object") {
+        throw new Error(`No rates found at path "${ratesPath}". Check your JSON path setting.`);
+      }
+      const cache = { rates: ratesObj, base: baseCur, timestamp: Date.now() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+      setRates(ratesObj);
+      setBase(baseCur);
+      setLastUpdated(/* @__PURE__ */ new Date());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  reactExports.useEffect(() => {
+    if (!applyCache()) fetchRates();
+  }, [applyCache, fetchRates]);
+  function getRate(currency) {
+    if (!rates) return null;
+    if (currency === base) return 1;
+    return rates[currency] ?? null;
+  }
+  function convert(amount, from, to) {
+    if (!rates || from === to) return amount;
+    const fromRate = from === base ? 1 : rates[from] ?? 1;
+    const toRate = to === base ? 1 : rates[to] ?? 1;
+    return amount / fromRate * toRate;
+  }
+  return { rates, base, loading, error, lastUpdated, fetchRates, getRate, convert };
+}
+const ITEMS_PER_PAGE = 15;
+const CURRENCIES$1 = ["USD", "EUR", "GBP", "TRY", "AED", "SAR", "JPY", "CNY", "INR", "CAD", "AUD"];
+const INCOME_CATEGORIES = [
+  "Sales Revenue",
+  "Service Revenue",
+  "Consulting",
+  "Interest Income",
+  "Refund Received",
+  "Other Income"
+];
+const EXPENSE_CATEGORIES = [
+  "Salaries & Wages",
+  "Rent & Lease",
+  "Utilities",
+  "Raw Materials",
+  "Travel & Transport",
+  "Marketing",
+  "IT & Software",
+  "Maintenance",
+  "Insurance",
+  "Taxes",
+  "Legal & Professional",
+  "Supplies",
+  "Other Expense"
+];
 const emptyForm$1 = {
   type: "income",
-  category: "Sales",
+  category: "Sales Revenue",
   amount: "",
+  currency: "USD",
   date: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
   reference: "",
   description: "",
   orderId: ""
 };
-function Modal({ title, form, setForm, onClose, onSave, errors, orders }) {
-  const set = (field) => (e) => setForm((f2) => ({ ...f2, [field]: e.target.value }));
-  const inputCls2 = (field) => `w-full bg-surface-container-lowest border rounded px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition ${errors[field] ? "border-error" : "border-theme-border"}`;
-  const categories = form.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-lg p-8", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-6", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-bold text-on-surface", children: title }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, className: "text-text-muted hover:text-error", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined", children: "close" }) })
+function fmt(n2) {
+  return n2.toLocaleString(void 0, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function MonthlyChart({ records }) {
+  const months2 = reactExports.useMemo(() => {
+    const now = /* @__PURE__ */ new Date();
+    return Array.from({ length: 6 }, (_2, i2) => {
+      const d2 = new Date(now.getFullYear(), now.getMonth() - 5 + i2, 1);
+      return {
+        year: d2.getFullYear(),
+        month: d2.getMonth() + 1,
+        label: d2.toLocaleDateString("en-US", { month: "short" })
+      };
+    });
+  }, []);
+  const data = reactExports.useMemo(() => months2.map(({ year, month, label }) => {
+    const prefix = `${year}-${String(month).padStart(2, "0")}`;
+    const recs = records.filter((r2) => r2.date?.startsWith(prefix));
+    const income = recs.filter((r2) => r2.type === "income").reduce((s2, r2) => s2 + r2.amount, 0);
+    const expense = recs.filter((r2) => r2.type === "expense").reduce((s2, r2) => s2 + r2.amount, 0);
+    return { label, income, expense };
+  }), [months2, records]);
+  const maxVal = Math.max(...data.flatMap((d2) => [d2.income, d2.expense]), 1);
+  const H2 = 96;
+  const barW = 16;
+  const gap = 3;
+  const groupGap = 22;
+  const groupW = barW * 2 + gap + groupGap;
+  const W2 = groupW * 6 + groupGap;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "100%", viewBox: `0 0 ${W2} ${H2 + 20}`, style: { overflow: "visible" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "0", y1: H2, x2: W2, y2: H2, stroke: "currentColor", opacity: "0.08", strokeWidth: "1" }),
+      data.map((d2, i2) => {
+        const x2 = i2 * groupW + groupGap / 2;
+        const incH = Math.max(3, d2.income / maxVal * H2);
+        const expH = Math.max(3, d2.expense / maxVal * H2);
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("g", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "rect",
+            {
+              x: x2,
+              y: H2 - incH,
+              width: barW,
+              height: incH,
+              rx: "3",
+              fill: "var(--md-sys-color-primary, #4f82f7)",
+              opacity: "0.8",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("title", { children: [
+                d2.label,
+                " Income: $",
+                fmt(d2.income)
+              ] })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "rect",
+            {
+              x: x2 + barW + gap,
+              y: H2 - expH,
+              width: barW,
+              height: expH,
+              rx: "3",
+              fill: "#f87171",
+              opacity: "0.85",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("title", { children: [
+                d2.label,
+                " Expense: $",
+                fmt(d2.expense)
+              ] })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "text",
+            {
+              x: x2 + barW,
+              y: H2 + 14,
+              textAnchor: "middle",
+              fill: "currentColor",
+              opacity: "0.45",
+              style: { fontSize: 9 },
+              children: d2.label
+            }
+          )
+        ] }, i2);
+      })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Type *" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: ["income", "expense"].map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setForm((f2) => ({ ...f2, type: t3, category: t3 === "income" ? "Sales" : "Salary" })),
-            className: `flex-1 py-2 rounded-lg text-sm font-semibold border transition ${form.type === t3 ? t3 === "income" ? "bg-primary text-white border-primary" : "bg-error text-white border-error" : "border-theme-border text-text-muted hover:bg-hover-bg"}`,
-            children: t3 === "income" ? "Income" : "Expense"
-          },
-          t3
-        )) })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4 mt-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-xs text-text-muted", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "w-2.5 h-2.5 rounded-sm inline-block opacity-80", style: { background: "var(--md-sys-color-primary, #4f82f7)" } }),
+        "Income"
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Category" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inputCls2("category"), value: form.category, onChange: set("category"), children: categories.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c2 }, c2)) })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Amount *" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "number", min: "0", step: "0.01", className: inputCls2("amount"), value: form.amount, onChange: set("amount") }),
-          errors.amount && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-error mt-1", children: errors.amount })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-xs text-text-muted", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "w-2.5 h-2.5 rounded-sm inline-block bg-red-400 opacity-85" }),
+        "Expense"
+      ] })
+    ] })
+  ] });
+}
+function CategoryBreakdown({ records, type }) {
+  const breakdown = reactExports.useMemo(() => {
+    const filtered = records.filter((r2) => r2.type === type);
+    const total = filtered.reduce((s2, r2) => s2 + r2.amount, 0);
+    const map = {};
+    filtered.forEach((r2) => {
+      map[r2.category] = (map[r2.category] || 0) + r2.amount;
+    });
+    return Object.entries(map).map(([cat, amt]) => ({ cat, amt, pct: total > 0 ? amt / total * 100 : 0 })).sort((a2, b2) => b2.amt - a2.amt).slice(0, 6);
+  }, [records, type]);
+  if (breakdown.length === 0) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-text-muted text-center py-6", children: [
+      "No ",
+      type,
+      " data yet"
+    ] });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: breakdown.map(({ cat, amt, pct }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between text-xs mb-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-on-surface font-medium truncate max-w-[130px]", children: cat }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-text-muted ml-2 shrink-0 tabular-nums", children: [
+        "$",
+        fmt(amt)
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-1.5 bg-surface-container-high rounded-full overflow-hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: `h-full rounded-full ${type === "income" ? "bg-primary" : "bg-red-400"}`,
+        style: { width: `${pct}%` }
+      }
+    ) })
+  ] }, cat)) });
+}
+const TICKER_CURRENCIES = ["EUR", "GBP", "TRY", "AED", "SAR", "JPY", "CNY", "CAD", "AUD", "INR"];
+function CurrencyTicker() {
+  const { rates, base, loading, error, lastUpdated, fetchRates } = useCurrencyRates();
+  if (error) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2 mb-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm", children: "error" }),
+    "Exchange rates unavailable: ",
+    error,
+    /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: fetchRates, className: "ml-auto underline hover:no-underline", children: "Retry" })
+  ] });
+  if (loading || !rates) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-text-muted mb-4 px-1", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm animate-spin", children: "refresh" }),
+    "Loading exchange rates…"
+  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 mb-4 bg-surface-container-lowest border border-theme-border rounded-xl px-4 py-2 overflow-x-auto", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0 mr-2", children: [
+      "Live Rates · ",
+      base
+    ] }),
+    TICKER_CURRENCIES.map((cur) => {
+      const rate = rates[cur];
+      if (!rate) return null;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 shrink-0 px-3 py-0.5 rounded-lg bg-surface-container-high", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-bold text-on-surface", children: cur }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-text-muted tabular-nums", children: rate.toFixed(4) })
+      ] }, cur);
+    }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "ml-auto shrink-0 flex items-center gap-2 pl-3 border-l border-theme-border", children: [
+      lastUpdated && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] text-text-muted whitespace-nowrap", children: lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: fetchRates, title: "Refresh rates", className: "text-text-muted hover:text-primary transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm", children: "refresh" }) })
+    ] })
+  ] });
+}
+function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, ratesBase }) {
+  const set = (field) => (e) => setForm((f2) => ({ ...f2, [field]: e.target.value }));
+  const inp = (field) => `w-full bg-surface-container-lowest border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition ${errors[field] ? "border-error" : "border-theme-border"}`;
+  const categories = form.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center bg-black/40", onClick: onClose, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg p-6", onClick: (e) => e.stopPropagation(), children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-base font-bold text-on-surface", children: title }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, className: "text-text-muted hover:text-error transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined", children: "close" }) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2 mb-4", children: ["income", "expense"].map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "button",
+      {
+        onClick: () => setForm((f2) => ({ ...f2, type: t3, category: t3 === "income" ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0] })),
+        className: `flex-1 py-2.5 rounded-xl text-sm font-semibold border transition flex items-center justify-center gap-1.5 ${form.type === t3 ? t3 === "income" ? "bg-primary text-white border-primary" : "bg-error text-white border-error" : "border-theme-border text-text-muted hover:bg-hover-bg"}`,
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: t3 === "income" ? "trending_up" : "trending_down" }),
+          t3 === "income" ? "Income" : "Expense"
+        ]
+      },
+      t3
+    )) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Date *" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "date", className: inputCls2("date"), value: form.date, onChange: set("date") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "date", className: inp("date"), value: form.date, onChange: set("date") }),
           errors.date && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-error mt-1", children: errors.date })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Reference" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inputCls2("reference"), value: form.reference, onChange: set("reference"), placeholder: "Invoice / receipt #" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Amount *" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-1.5", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "select",
+              {
+                className: "bg-surface-container-lowest border border-theme-border rounded-xl px-2 py-2 text-sm text-on-surface outline-none focus:border-primary shrink-0",
+                value: form.currency,
+                onChange: set("currency"),
+                children: CURRENCIES$1.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c2 }, c2))
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "number",
+                min: "0",
+                step: "0.01",
+                className: `${inp("amount")} flex-1`,
+                value: form.amount,
+                onChange: set("amount"),
+                placeholder: "0.00"
+              }
+            )
+          ] }),
+          errors.amount && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-error mt-1", children: errors.amount }),
+          rates && form.currency && form.currency !== ratesBase && rates[form.currency] && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[10px] text-text-muted mt-1 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-xs", children: "currency_exchange" }),
+            "1 ",
+            ratesBase,
+            " = ",
+            rates[form.currency].toFixed(4),
+            " ",
+            form.currency,
+            form.amount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "ml-1 font-semibold text-primary", children: [
+              "≈ ",
+              (parseFloat(form.amount) / rates[form.currency]).toFixed(2),
+              " ",
+              ratesBase
+            ] })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Category" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inp("category"), value: form.category, onChange: set("category"), children: categories.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c2 }, c2)) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Invoice / Reference #" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp("reference"), value: form.reference, onChange: set("reference"), placeholder: "INV-0001" })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Linked Order" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("select", { className: inputCls2("orderId"), value: form.orderId, onChange: set("orderId"), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("select", { className: inp("orderId"), value: form.orderId, onChange: set("orderId"), children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "— None —" }),
           orders.map((o2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("option", { value: o2.id, children: [
             o2.code,
-            " ",
-            o2.customer?.name ? `— ${o2.customer.name}` : ""
+            o2.customer?.name ? ` — ${o2.customer.name}` : ""
           ] }, o2.id))
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Description" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { rows: 2, className: inputCls2("description"), value: form.description, onChange: set("description") })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Notes / Description" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "textarea",
+          {
+            rows: 2,
+            className: inp("description"),
+            value: form.description,
+            onChange: set("description"),
+            placeholder: "Additional details…"
+          }
+        )
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 mt-6", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, className: "flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition", children: "Cancel" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onSave, className: "flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition", children: "Save" })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3 mt-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, className: "flex-1 border border-theme-border rounded-xl py-2.5 text-sm text-text-muted hover:bg-hover-bg transition", children: "Cancel" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: onSave,
+          className: `flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition hover:opacity-90 ${form.type === "income" ? "bg-primary" : "bg-error"}`,
+          children: "Save"
+        }
+      )
     ] })
   ] }) });
 }
 function Finance() {
   const { financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, orders, isAdmin } = useData();
+  const { rates, base: ratesBase } = useCurrencyRates();
   const [search, setSearch] = reactExports.useState("");
   const [typeFilter, setTypeFilter] = reactExports.useState("all");
+  const [categoryFilter, setCategoryFilter] = reactExports.useState("all");
+  const [dateFilter, setDateFilter] = reactExports.useState("all");
   const [page, setPage] = reactExports.useState(1);
   const [showAdd, setShowAdd] = reactExports.useState(false);
   const [editItem, setEditItem] = reactExports.useState(null);
   const [form, setForm] = reactExports.useState({ ...emptyForm$1 });
   const [errors, setErrors] = reactExports.useState({});
+  const [deletingId, setDeletingId] = reactExports.useState(null);
+  const [breakdownType, setBreakdownType] = reactExports.useState("expense");
+  const now = /* @__PURE__ */ new Date();
+  const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthPrefix = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+  const thisYearPrefix = `${now.getFullYear()}`;
   const summary = reactExports.useMemo(() => {
     const income = financeRecords.filter((r2) => r2.type === "income").reduce((s2, r2) => s2 + r2.amount, 0);
     const expense = financeRecords.filter((r2) => r2.type === "expense").reduce((s2, r2) => s2 + r2.amount, 0);
-    return { income, expense, balance: income - expense };
-  }, [financeRecords]);
+    const tmIncome = financeRecords.filter((r2) => r2.type === "income" && r2.date?.startsWith(thisMonthPrefix)).reduce((s2, r2) => s2 + r2.amount, 0);
+    const tmExpense = financeRecords.filter((r2) => r2.type === "expense" && r2.date?.startsWith(thisMonthPrefix)).reduce((s2, r2) => s2 + r2.amount, 0);
+    const lmIncome = financeRecords.filter((r2) => r2.type === "income" && r2.date?.startsWith(lastMonthPrefix)).reduce((s2, r2) => s2 + r2.amount, 0);
+    const lmExpense = financeRecords.filter((r2) => r2.type === "expense" && r2.date?.startsWith(lastMonthPrefix)).reduce((s2, r2) => s2 + r2.amount, 0);
+    return {
+      income,
+      expense,
+      balance: income - expense,
+      incomeCount: financeRecords.filter((r2) => r2.type === "income").length,
+      expenseCount: financeRecords.filter((r2) => r2.type === "expense").length,
+      tmIncome,
+      tmExpense,
+      tmNet: tmIncome - tmExpense,
+      lmIncome,
+      lmExpense
+    };
+  }, [financeRecords, thisMonthPrefix, lastMonthPrefix]);
+  function pctChange(curr, prev) {
+    if (prev === 0 && curr === 0) return null;
+    if (prev === 0) return null;
+    return (curr - prev) / prev * 100;
+  }
   function validate(f2) {
     const e = {};
     if (!f2.amount || isNaN(parseFloat(f2.amount)) || parseFloat(f2.amount) <= 0) e.amount = "Valid amount required";
@@ -67262,15 +67742,7 @@ function Finance() {
     setShowAdd(true);
   }
   function openEdit(item) {
-    setForm({
-      type: item.type,
-      category: item.category || "General",
-      amount: item.amount,
-      date: item.date,
-      reference: item.reference || "",
-      description: item.description || "",
-      orderId: item.orderId || ""
-    });
+    setForm({ type: item.type, category: item.category || "General", amount: item.amount, currency: item.currency || "USD", date: item.date, reference: item.reference || "", description: item.description || "", orderId: item.orderId || "" });
     setErrors({});
     setEditItem(item);
   }
@@ -67293,70 +67765,174 @@ function Finance() {
     setEditItem(null);
   }
   async function handleDelete(id2) {
-    if (!confirm("Delete this record?")) return;
     await deleteFinanceRecord(id2);
+    setDeletingId(null);
   }
-  const filtered = financeRecords.filter((r2) => {
-    const matchType = typeFilter === "all" || r2.type === typeFilter;
-    const matchSearch = r2.code.toLowerCase().includes(search.toLowerCase()) || r2.category.toLowerCase().includes(search.toLowerCase()) || (r2.reference || "").toLowerCase().includes(search.toLowerCase()) || (r2.description || "").toLowerCase().includes(search.toLowerCase());
-    return matchType && matchSearch;
-  });
+  function exportCSV() {
+    const header = ["Code", "Type", "Category", "Date", "Reference", "Amount", "Description", "Linked Order"];
+    const rows = financeRecords.map((r2) => [
+      r2.code,
+      r2.type,
+      r2.category,
+      r2.date,
+      r2.reference || "",
+      r2.amount.toFixed(2),
+      r2.description || "",
+      r2.order?.code || ""
+    ]);
+    const csv = [header, ...rows].map((row) => row.map((c2) => `"${String(c2).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a2 = document.createElement("a");
+    a2.href = url;
+    a2.download = `finance_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.csv`;
+    a2.click();
+    URL.revokeObjectURL(url);
+  }
+  const allCategories = reactExports.useMemo(
+    () => [...new Set(financeRecords.map((r2) => r2.category))].sort(),
+    [financeRecords]
+  );
+  const filtered = reactExports.useMemo(() => {
+    return financeRecords.filter((r2) => {
+      if (typeFilter !== "all" && r2.type !== typeFilter) return false;
+      if (categoryFilter !== "all" && r2.category !== categoryFilter) return false;
+      if (dateFilter === "this_month" && !r2.date?.startsWith(thisMonthPrefix)) return false;
+      if (dateFilter === "last_month" && !r2.date?.startsWith(lastMonthPrefix)) return false;
+      if (dateFilter === "this_year" && !r2.date?.startsWith(thisYearPrefix)) return false;
+      if (search) {
+        const q2 = search.toLowerCase();
+        return r2.code.toLowerCase().includes(q2) || r2.category.toLowerCase().includes(q2) || (r2.reference || "").toLowerCase().includes(q2) || (r2.description || "").toLowerCase().includes(q2);
+      }
+      return true;
+    });
+  }, [financeRecords, typeFilter, categoryFilter, dateFilter, search, thisMonthPrefix, lastMonthPrefix, thisYearPrefix]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-8 max-w-7xl mx-auto", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-6", children: [
+  const incomeChg = pctChange(summary.tmIncome, summary.lmIncome);
+  pctChange(summary.tmExpense, summary.lmExpense);
+  const hasFilters = search || typeFilter !== "all" || categoryFilter !== "all" || dateFilter !== "all";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "h-full flex flex-col overflow-hidden px-5 pt-4 pb-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-3 shrink-0", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-2xl font-bold text-on-surface", children: "Finance" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-text-muted mt-0.5", children: [
-          financeRecords.length,
-          " total records"
-        ] })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-xl font-bold text-on-surface", children: "Finance" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted mt-0.5", children: "Track income, expenses and cash flow" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: openAdd, className: "flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "add" }),
-        "Add Record"
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: exportCSV,
+            className: "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm", children: "download" }),
+              "Export CSV"
+            ]
+          }
+        ),
+        isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: openAdd,
+            className: "flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-90 transition",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm", children: "add" }),
+              "Add Record"
+            ]
+          }
+        )
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-4 mb-6", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-5", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-primary text-xl", children: "trending_up" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-text-muted uppercase tracking-wider", children: "Total Income" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-2xl font-bold text-primary", children: [
-          "$",
-          summary.income.toLocaleString(void 0, { minimumFractionDigits: 2 })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "shrink-0 mb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CurrencyTicker, {}) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-4 gap-3 mb-3 shrink-0", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-xl p-3 flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-primary text-base", children: "trending_up" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-semibold text-text-muted uppercase tracking-wide", children: "Total Income" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-base font-bold text-primary tabular-nums", children: fmt(summary.income) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[10px] text-text-muted", children: [
+            summary.incomeCount,
+            " tx"
+          ] })
         ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-5", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-error text-xl", children: "trending_down" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-text-muted uppercase tracking-wider", children: "Total Expenses" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-2xl font-bold text-error", children: [
-          "$",
-          summary.expense.toLocaleString(void 0, { minimumFractionDigits: 2 })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-xl p-3 flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-error text-base", children: "trending_down" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-semibold text-text-muted uppercase tracking-wide", children: "Total Expenses" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-base font-bold text-error tabular-nums", children: fmt(summary.expense) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[10px] text-text-muted", children: [
+            summary.expenseCount,
+            " tx"
+          ] })
         ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-5", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-secondary text-xl", children: "account_balance" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-text-muted uppercase tracking-wider", children: "Balance" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `text-2xl font-bold ${summary.balance >= 0 ? "text-primary" : "text-error"}`, children: [
-          "$",
-          summary.balance.toLocaleString(void 0, { minimumFractionDigits: 2 })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `border rounded-xl p-3 flex items-center gap-3 ${summary.balance >= 0 ? "bg-green-50 dark:bg-green-900/10 border-green-200" : "bg-red-50 dark:bg-red-900/10 border-red-200"}`, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${summary.balance >= 0 ? "bg-green-100" : "bg-red-100"}`, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `material-symbols-outlined text-base ${summary.balance >= 0 ? "text-green-600" : "text-red-500"}`, children: "account_balance" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-semibold text-text-muted uppercase tracking-wide", children: "Net Balance" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: `text-base font-bold tabular-nums ${summary.balance >= 0 ? "text-green-700" : "text-red-600"}`, children: [
+            summary.balance >= 0 ? "+" : "-",
+            fmt(Math.abs(summary.balance))
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] text-text-muted", children: "All time" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-xl p-3 flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-on-surface-variant text-base", children: "calendar_month" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] font-semibold text-text-muted uppercase tracking-wide", children: "This Month" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: `text-base font-bold tabular-nums ${summary.tmNet >= 0 ? "text-primary" : "text-error"}`, children: [
+            summary.tmNet >= 0 ? "+" : "-",
+            fmt(Math.abs(summary.tmNet))
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[10px] text-primary", children: [
+              "↑",
+              fmt(summary.tmIncome)
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[10px] text-error", children: [
+              "↓",
+              fmt(summary.tmExpense)
+            ] }),
+            incomeChg !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `text-[10px] font-semibold ${incomeChg >= 0 ? "text-green-600" : "text-red-500"}`, children: [
+              incomeChg >= 0 ? "▲" : "▼",
+              Math.abs(incomeChg).toFixed(0),
+              "%"
+            ] })
+          ] })
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 mb-4", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex-1 max-w-sm", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg", children: "search" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-3 mb-3 shrink-0", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-2 bg-surface-container-lowest border border-theme-border rounded-xl px-4 pt-3 pb-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xs font-semibold text-on-surface mb-2", children: "6-Month Cash Flow" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(MonthlyChart, { records: financeRecords })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-xl px-4 pt-3 pb-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xs font-semibold text-on-surface", children: "Top Categories" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-0.5 bg-surface-container-high rounded-lg p-0.5", children: ["income", "expense"].map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => setBreakdownType(t3),
+              className: `px-2 py-0.5 rounded-md text-[10px] font-semibold transition capitalize ${breakdownType === t3 ? "bg-surface-container-lowest text-on-surface shadow-sm" : "text-text-muted"}`,
+              children: t3
+            },
+            t3
+          )) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CategoryBreakdown, { records: financeRecords, type: breakdownType })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-2 shrink-0 flex-wrap", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex-1 min-w-44", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-base", children: "search" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
           {
-            className: "w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary",
-            placeholder: "Search records…",
+            className: "w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-1.5 text-xs text-on-surface outline-none focus:border-primary",
+            placeholder: "Search code, category, reference…",
             value: search,
             onChange: (e) => {
               setSearch(e.target.value);
@@ -67365,86 +67941,184 @@ function Finance() {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1 bg-surface-container-lowest border border-theme-border rounded-xl p-1", children: ["all", "income", "expense"].map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-0.5 bg-surface-container-lowest border border-theme-border rounded-xl p-0.5", children: ["all", "income", "expense"].map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           onClick: () => {
             setTypeFilter(t3);
             setPage(1);
           },
-          className: `px-3 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === t3 ? "bg-primary text-white" : "text-text-muted hover:bg-hover-bg"}`,
+          className: `px-2.5 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === t3 ? "bg-primary text-white" : "text-text-muted hover:bg-hover-bg"}`,
           children: t3
         },
         t3
-      )) })
+      )) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "select",
+        {
+          value: dateFilter,
+          onChange: (e) => {
+            setDateFilter(e.target.value);
+            setPage(1);
+          },
+          className: "bg-surface-container-lowest border border-theme-border rounded-xl px-2.5 py-1.5 text-xs text-on-surface outline-none focus:border-primary",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "all", children: "All Time" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "this_month", children: "This Month" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "last_month", children: "Last Month" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "this_year", children: "This Year" })
+          ]
+        }
+      ),
+      allCategories.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "select",
+        {
+          value: categoryFilter,
+          onChange: (e) => {
+            setCategoryFilter(e.target.value);
+            setPage(1);
+          },
+          className: "bg-surface-container-lowest border border-theme-border rounded-xl px-2.5 py-1.5 text-xs text-on-surface outline-none focus:border-primary",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "all", children: "All Categories" }),
+            allCategories.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c2, children: c2 }, c2))
+          ]
+        }
+      ),
+      hasFilters && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => {
+            setSearch("");
+            setTypeFilter("all");
+            setCategoryFilter("all");
+            setDateFilter("all");
+            setPage(1);
+          },
+          className: "flex items-center gap-1 text-xs text-text-muted hover:text-error transition",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm", children: "close" }),
+            "Clear"
+          ]
+        }
+      )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-surface-container-lowest rounded-2xl border border-theme-border overflow-hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-theme-border text-text-muted text-xs uppercase tracking-wider", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-6 py-4 font-semibold", children: "Code" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-6 py-4 font-semibold", children: "Type" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-6 py-4 font-semibold", children: "Category" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-6 py-4 font-semibold", children: "Date" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-6 py-4 font-semibold", children: "Reference" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-right px-6 py-4 font-semibold", children: "Amount" }),
-        isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-right px-6 py-4 font-semibold", children: "Actions" })
-      ] }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: paginated.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("td", { colSpan: isAdmin ? 7 : 6, className: "text-center py-16 text-text-muted", children: "No records found" }) }) : paginated.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-theme-border hover:bg-hover-bg transition-colors", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-6 py-4 font-mono text-xs text-text-muted", children: r2.code }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-6 py-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${r2.type === "income" ? "bg-primary-fixed text-on-primary-fixed-variant" : "bg-error/10 text-error"}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-xs", children: r2.type === "income" ? "trending_up" : "trending_down" }),
-          r2.type === "income" ? "Income" : "Expense"
-        ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-6 py-4 text-text-muted", children: r2.category }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-6 py-4 text-text-muted", children: r2.date }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-6 py-4 text-text-muted", children: r2.reference || "—" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: `px-6 py-4 text-right font-bold ${r2.type === "income" ? "text-primary" : "text-error"}`, children: [
-          r2.type === "income" ? "+" : "-",
-          "$",
-          parseFloat(r2.amount).toFixed(2)
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-h-0 bg-surface-container-lowest rounded-xl border border-theme-border flex flex-col overflow-hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between px-4 py-2 border-b border-theme-border shrink-0", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-text-muted", children: [
+          filtered.length,
+          " record",
+          filtered.length !== 1 ? "s" : ""
         ] }),
-        isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-6 py-4 text-right", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-1", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => openEdit(r2), className: "p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "edit" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => handleDelete(r2.id), className: "p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "delete" }) })
-        ] }) })
-      ] }, r2.id)) })
-    ] }) }),
-    totalPages > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mt-4 text-sm text-text-muted", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-        filtered.length,
-        " records"
+        filtered.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 text-xs", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-primary font-semibold tabular-nums", children: [
+            "↑ ",
+            fmt(filtered.filter((r2) => r2.type === "income").reduce((s2, r2) => s2 + r2.amount, 0)),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-text-muted font-normal ml-0.5", children: "mixed" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-error font-semibold tabular-nums", children: [
+            "↓ ",
+            fmt(filtered.filter((r2) => r2.type === "expense").reduce((s2, r2) => s2 + r2.amount, 0)),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-text-muted font-normal ml-0.5", children: "mixed" })
+          ] })
+        ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { disabled: page === 1, onClick: () => setPage((p2) => p2 - 1), className: "px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition", children: "Prev" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "px-3 py-1.5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-auto flex-1", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { className: "sticky top-0 bg-surface-container-lowest z-10", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-theme-border text-text-muted text-xs uppercase tracking-wider", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-4 py-2.5 font-semibold", children: "Code" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-4 py-2.5 font-semibold", children: "Type" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-4 py-2.5 font-semibold", children: "Category" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-4 py-2.5 font-semibold", children: "Date" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-4 py-2.5 font-semibold", children: "Reference" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-left px-4 py-2.5 font-semibold", children: "Description" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "text-right px-4 py-2.5 font-semibold", children: "Amount" }),
+          isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-4 py-2.5 w-20" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: paginated.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("tr", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { colSpan: isAdmin ? 8 : 7, className: "text-center py-12 text-text-muted", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-4xl block mb-2 opacity-30", children: "receipt_long" }),
+          "No records found"
+        ] }) }) : paginated.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5 font-mono text-xs text-text-muted", children: r2.code }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${r2.type === "income" ? "bg-primary/10 text-primary" : "bg-error/10 text-error"}`, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-xs", children: r2.type === "income" ? "arrow_circle_down" : "arrow_circle_up" }),
+            r2.type === "income" ? "Income" : "Expense"
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5 text-xs text-text-muted", children: r2.category }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5 text-xs text-text-muted whitespace-nowrap", children: r2.date }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5 text-xs text-text-muted", children: r2.reference || "—" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5 text-xs text-text-muted max-w-[160px] truncate", title: r2.description || "", children: r2.description || "—" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: `px-4 py-2.5 text-right font-bold tabular-nums ${r2.type === "income" ? "text-primary" : "text-error"}`, children: [
+            r2.type === "income" ? "+" : "-",
+            fmt(r2.amount),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-normal text-text-muted ml-1", children: r2.currency || "USD" })
+          ] }),
+          isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-4 py-2.5", children: deletingId === r2.id ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 justify-end", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => handleDelete(r2.id), className: "text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition", children: "Yes" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setDeletingId(null), className: "text-xs text-text-muted px-1 transition", children: "No" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-end gap-0.5", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => openEdit(r2), className: "p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "edit" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setDeletingId(r2.id), className: "p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "delete" }) })
+          ] }) })
+        ] }, r2.id)) })
+      ] }) }),
+      totalPages > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between px-4 py-2 border-t border-theme-border shrink-0 text-xs text-text-muted", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+          "Page ",
           page,
-          " / ",
-          totalPages
+          " of ",
+          totalPages,
+          " · ",
+          filtered.length,
+          " records"
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { disabled: page === totalPages, onClick: () => setPage((p2) => p2 + 1), className: "px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition", children: "Next" })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-1.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              disabled: page === 1,
+              onClick: () => setPage((p2) => p2 - 1),
+              className: "px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition",
+              children: "Prev"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              disabled: page === totalPages,
+              onClick: () => setPage((p2) => p2 + 1),
+              className: "px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition",
+              children: "Next"
+            }
+          )
+        ] })
       ] })
     ] }),
     showAdd && /* @__PURE__ */ jsxRuntimeExports.jsx(
       Modal,
       {
-        title: "Add Finance Record",
+        title: "New Transaction",
         form,
         setForm,
         errors,
         onClose: () => setShowAdd(false),
         onSave: handleAdd,
-        orders
+        orders,
+        rates,
+        ratesBase
       }
     ),
     editItem && /* @__PURE__ */ jsxRuntimeExports.jsx(
       Modal,
       {
-        title: "Edit Finance Record",
+        title: "Edit Transaction",
         form,
         setForm,
         errors,
         onClose: () => setEditItem(null),
         onSave: handleEdit,
-        orders
+        orders,
+        rates,
+        ratesBase
       }
     )
   ] });
@@ -68049,7 +68723,6 @@ function Logistics() {
     )
   ] });
 }
-const API_URL$1 = "http://localhost:3001/api";
 function Users() {
   const { token } = useAuth();
   const { roles } = useData();
@@ -68062,7 +68735,7 @@ function Users() {
   const [error, setError] = reactExports.useState("");
   const [editError, setEditError] = reactExports.useState("");
   reactExports.useEffect(() => {
-    fetch(`${API_URL$1}/auth/users`, {
+    fetch(`${API_URL}/auth/users`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then((r2) => r2.json()).then(setUsers).catch(() => {
     });
@@ -68071,7 +68744,7 @@ function Users() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch(`${API_URL$1}/auth/users`, {
+      const res = await fetch(`${API_URL}/auth/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(form)
@@ -68087,7 +68760,7 @@ function Users() {
   }
   async function handleDelete(id2) {
     try {
-      const res = await fetch(`${API_URL$1}/auth/users/${id2}`, {
+      const res = await fetch(`${API_URL}/auth/users/${id2}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -68115,7 +68788,7 @@ function Users() {
   async function sendResetEmail(email) {
     setResetEmailStatus("sending");
     try {
-      const res = await fetch(`${API_URL$1}/auth/forgot-password`, {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -68134,7 +68807,7 @@ function Users() {
   async function handleUpdate() {
     setEditError("");
     try {
-      const res = await fetch(`${API_URL$1}/auth/users/${editingUser}`, {
+      const res = await fetch(`${API_URL}/auth/users/${editingUser}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(editForm)
@@ -69307,11 +69980,406 @@ function MachinesTab() {
     )
   ] });
 }
+const STORAGE_KEY = "aks_api_connections";
+function loadConnections() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveConnections(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+const emptyConn = () => ({
+  id: crypto.randomUUID(),
+  name: "",
+  url: "",
+  method: "GET",
+  apiKeyHeader: "Authorization",
+  apiKey: "",
+  extraHeaders: "",
+  description: ""
+});
+function CurrencyRatesConfig() {
+  const { token } = useAuth();
+  const [cfg, setCfg] = reactExports.useState(() => ({
+    url: DEFAULT_RATES_URL,
+    ratesPath: DEFAULT_RATES_PATH,
+    base: DEFAULT_BASE,
+    apiKey: "",
+    apiKeyHeader: "Authorization",
+    ...loadRatesConfig()
+  }));
+  const [testing, setTesting] = reactExports.useState(false);
+  const [preview, setPreview] = reactExports.useState(null);
+  const [saved, setSaved] = reactExports.useState(false);
+  const inp = "w-full bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition";
+  function getAtPath2(obj, path) {
+    if (!path) return obj;
+    return path.split(".").reduce((o2, k2) => o2?.[k2], obj);
+  }
+  async function testAndSave() {
+    setTesting(true);
+    setPreview(null);
+    setSaved(false);
+    try {
+      const headers = cfg.apiKey ? { [cfg.apiKeyHeader || "Authorization"]: cfg.apiKey } : {};
+      const res = await fetch(cfg.url, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      const json = await res.json();
+      const ratesObj = getAtPath2(json, cfg.ratesPath);
+      if (!ratesObj || typeof ratesObj !== "object") {
+        throw new Error(`No object found at path "${cfg.ratesPath}"`);
+      }
+      const sample = Object.entries(ratesObj).slice(0, 8).map(([k2, v2]) => `${k2}: ${Number(v2).toFixed(4)}`).join("  ·  ");
+      setPreview({ ok: true, sample, total: Object.keys(ratesObj).length });
+      saveRatesConfig(cfg);
+      setSaved(true);
+    } catch (err) {
+      setPreview({ error: err.message });
+    } finally {
+      setTesting(false);
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-5 mb-6", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-primary text-xl", children: "currency_exchange" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-sm font-bold text-on-surface", children: "Currency Rates Source" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted", children: "Configure which API provides live exchange rates for Finance & Orders pages." })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "API URL" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: cfg.url, onChange: (e) => setCfg((v2) => ({ ...v2, url: e.target.value })), placeholder: DEFAULT_RATES_URL }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[10px] text-text-muted mt-0.5", children: "Default: open.er-api.com (free, no key required)" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "JSON Path to Rates Object" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: cfg.ratesPath, onChange: (e) => setCfg((v2) => ({ ...v2, ratesPath: e.target.value })), placeholder: "rates" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-[10px] text-text-muted mt-0.5", children: [
+            "e.g. ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono", children: "rates" }),
+            " or ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono", children: "data.quotes" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Base Currency" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: cfg.base, onChange: (e) => setCfg((v2) => ({ ...v2, base: e.target.value.toUpperCase() })), placeholder: "USD", maxLength: 5 })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "API Key (if required)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: cfg.apiKey, onChange: (e) => setCfg((v2) => ({ ...v2, apiKey: e.target.value })), placeholder: "Leave blank if not needed" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "API Key Header" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: cfg.apiKeyHeader, onChange: (e) => setCfg((v2) => ({ ...v2, apiKeyHeader: e.target.value })), placeholder: "Authorization" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: testAndSave,
+          disabled: testing || !cfg.url,
+          className: "flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-50",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: testing ? "hourglass_empty" : "bolt" }),
+            testing ? "Testing…" : "Test & Save"
+          ]
+        }
+      ),
+      preview?.ok && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-green-50 dark:bg-green-900/10 border border-green-200 rounded-xl px-4 py-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs font-semibold text-green-700 flex items-center gap-1 mb-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm", children: "check_circle" }),
+          "Connected — ",
+          preview.total,
+          " currencies available. Config saved."
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-green-600 font-mono", children: preview.sample })
+      ] }),
+      preview?.error && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-error/10 border border-error/30 rounded-xl px-4 py-3 text-xs text-error", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold", children: "Error: " }),
+        preview.error
+      ] })
+    ] })
+  ] });
+}
+function ApiTab() {
+  const { token } = useAuth();
+  const [connections, setConnections] = reactExports.useState(loadConnections);
+  const [selected, setSelected] = reactExports.useState(null);
+  const [editing, setEditing] = reactExports.useState(null);
+  const [isNew, setIsNew] = reactExports.useState(false);
+  const [queryParams, setQueryParams] = reactExports.useState("");
+  const [reqBody, setReqBody] = reactExports.useState("");
+  const [result, setResult] = reactExports.useState(null);
+  const [loading, setLoading] = reactExports.useState(false);
+  const inp = "w-full bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition";
+  const selectedConn = connections.find((c2) => c2.id === selected);
+  function persist(list) {
+    setConnections(list);
+    saveConnections(list);
+  }
+  function openNew() {
+    const c2 = emptyConn();
+    setEditing(c2);
+    setIsNew(true);
+    setSelected(null);
+    setResult(null);
+  }
+  function openEdit(conn) {
+    setEditing({ ...conn });
+    setIsNew(false);
+    setSelected(conn.id);
+    setResult(null);
+  }
+  function cancelEdit() {
+    setEditing(null);
+    setIsNew(false);
+  }
+  function saveEdit() {
+    if (!editing.name.trim() || !editing.url.trim()) return;
+    if (isNew) {
+      persist([editing, ...connections]);
+      setSelected(editing.id);
+    } else {
+      persist(connections.map((c2) => c2.id === editing.id ? editing : c2));
+    }
+    setEditing(null);
+    setIsNew(false);
+  }
+  function deleteConn(id2) {
+    persist(connections.filter((c2) => c2.id !== id2));
+    if (selected === id2) {
+      setSelected(null);
+      setResult(null);
+    }
+  }
+  async function runRequest(conn) {
+    setLoading(true);
+    setResult(null);
+    try {
+      const headers = {};
+      if (conn.apiKey) headers[conn.apiKeyHeader || "Authorization"] = conn.apiKey;
+      if (conn.extraHeaders) {
+        try {
+          Object.assign(headers, JSON.parse(conn.extraHeaders));
+        } catch {
+        }
+      }
+      let url = conn.url;
+      if (queryParams.trim()) {
+        url += (url.includes("?") ? "&" : "?") + queryParams.trim();
+      }
+      const body = conn.method !== "GET" && reqBody.trim() ? reqBody.trim() : void 0;
+      const res = await fetch(`${API_URL}/proxy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url, headers, method: conn.method, body })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Proxy error");
+      setResult(json);
+    } catch (err) {
+      setResult({ error: err.message });
+    } finally {
+      setLoading(false);
+    }
+  }
+  const methodColor = { GET: "text-green-600", POST: "text-blue-600", PUT: "text-amber-600", DELETE: "text-red-500", PATCH: "text-purple-600" };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CurrencyRatesConfig, {}),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-6", style: { minHeight: 500 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-64 shrink-0", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: openNew,
+            className: "w-full flex items-center justify-center gap-2 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition mb-3",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "add" }),
+              "New Connection"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+          connections.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted text-center py-8", children: "No connections yet" }),
+          connections.map((c2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              onClick: () => {
+                setSelected(c2.id);
+                setEditing(null);
+                setIsNew(false);
+                setResult(null);
+              },
+              className: `w-full text-left px-3 py-2.5 rounded-xl border transition ${selected === c2.id && !editing ? "border-primary bg-primary/5" : "border-theme-border hover:bg-hover-bg"}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `text-[10px] font-bold ${methodColor[c2.method] || "text-text-muted"}`, children: c2.method }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm font-semibold text-on-surface truncate", children: c2.name })
+                ] }),
+                c2.description && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted truncate mt-0.5", children: c2.description })
+              ]
+            },
+            c2.id
+          ))
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1 min-w-0", children: editing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-5 space-y-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-sm font-bold text-on-surface mb-1", children: isNew ? "New Connection" : "Edit Connection" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Name *" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: editing.name, onChange: (e) => setEditing((v2) => ({ ...v2, name: e.target.value })), placeholder: "e.g. Exchange Rates API" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Method" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("select", { className: inp, value: editing.method, onChange: (e) => setEditing((v2) => ({ ...v2, method: e.target.value })), children: ["GET", "POST", "PUT", "PATCH", "DELETE"].map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: m2 }, m2)) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Base URL *" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: editing.url, onChange: (e) => setEditing((v2) => ({ ...v2, url: e.target.value })), placeholder: "https://api.example.com/endpoint" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "API Key / Token" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: editing.apiKey, onChange: (e) => setEditing((v2) => ({ ...v2, apiKey: e.target.value })), placeholder: "Bearer your-token or key" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "API Key Header" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: editing.apiKeyHeader, onChange: (e) => setEditing((v2) => ({ ...v2, apiKeyHeader: e.target.value })), placeholder: "Authorization" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: [
+            "Extra Headers ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-normal text-text-muted", children: "(JSON)" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: editing.extraHeaders, onChange: (e) => setEditing((v2) => ({ ...v2, extraHeaders: e.target.value })), placeholder: '{"X-Custom-Header": "value"}' })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Description" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { className: inp, value: editing.description, onChange: (e) => setEditing((v2) => ({ ...v2, description: e.target.value })), placeholder: "What does this API return?" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2 pt-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: cancelEdit, className: "flex-1 border border-theme-border rounded-xl py-2 text-sm text-text-muted hover:bg-hover-bg transition", children: "Cancel" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: saveEdit,
+              disabled: !editing.name.trim() || !editing.url.trim(),
+              className: "flex-1 bg-primary text-white rounded-xl py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-40",
+              children: "Save Connection"
+            }
+          )
+        ] })
+      ] }) : selectedConn ? (
+        /* ── Connection detail + runner ── */
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-0.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `text-xs font-bold px-2 py-0.5 rounded-full bg-surface-container-high ${methodColor[selectedConn.method]}`, children: selectedConn.method }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-base font-bold text-on-surface", children: selectedConn.name })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-xs text-text-muted break-all", children: selectedConn.url }),
+              selectedConn.description && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted mt-1", children: selectedConn.description }),
+              selectedConn.apiKey && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-text-muted mt-1 flex items-center gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-xs", children: "key" }),
+                selectedConn.apiKeyHeader,
+                ": ",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono", children: "•".repeat(Math.min(selectedConn.apiKey.length, 20)) })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1 shrink-0", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => openEdit(selectedConn), className: "p-2 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "edit" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => deleteConn(selectedConn.id), className: "p-2 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "delete" }) })
+            ] })
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-4 space-y-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "text-xs font-semibold text-text-muted uppercase tracking-wider", children: "Run Request" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Query Parameters" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  className: inp,
+                  value: queryParams,
+                  onChange: (e) => setQueryParams(e.target.value),
+                  placeholder: "key=value&another=value"
+                }
+              )
+            ] }),
+            selectedConn.method !== "GET" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "block text-xs font-semibold text-text-muted mb-1", children: "Request Body (JSON)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "textarea",
+                {
+                  rows: 3,
+                  className: inp + " font-mono text-xs",
+                  value: reqBody,
+                  onChange: (e) => setReqBody(e.target.value),
+                  placeholder: '{"key": "value"}'
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                onClick: () => runRequest(selectedConn),
+                disabled: loading,
+                className: "flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-50",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: loading ? "hourglass_empty" : "send" }),
+                  loading ? "Fetching…" : "Send Request"
+                ]
+              }
+            )
+          ] }),
+          result && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest border border-theme-border rounded-2xl p-4", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 mb-3", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "text-xs font-semibold text-text-muted uppercase tracking-wider", children: "Response" }),
+              result.error ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-semibold text-error bg-error/10 px-2 py-0.5 rounded-full", children: "Error" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `text-xs font-bold px-2 py-0.5 rounded-full ${result.status < 300 ? "bg-green-100 text-green-700" : result.status < 400 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`, children: [
+                  result.status,
+                  " ",
+                  result.statusText
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs text-text-muted", children: [
+                  result.elapsed,
+                  "ms"
+                ] }),
+                result.contentType && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-text-muted font-mono", children: result.contentType.split(";")[0] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("pre", { className: "bg-surface-container-high rounded-xl p-3 text-xs font-mono text-on-surface overflow-auto max-h-96 whitespace-pre-wrap break-all", children: result.error ? result.error : typeof result.data === "string" ? result.data : JSON.stringify(result.data, null, 2) })
+          ] })
+        ] })
+      ) : (
+        /* ── Empty state ── */
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center py-24 text-text-muted", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-6xl mb-4 opacity-30", children: "api" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-base font-medium", children: "No connection selected" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm mt-1", children: "Create a new connection or select one from the list." })
+        ] })
+      ) })
+    ] })
+  ] });
+}
 const TABS$1 = [
   { key: "users", label: "Users", icon: "manage_accounts" },
   { key: "roles", label: "User Roles", icon: "badge" },
   { key: "permissions", label: "Permissions", icon: "lock" },
-  { key: "machines", label: "Machines", icon: "precision_manufacturing" }
+  { key: "machines", label: "Machines", icon: "precision_manufacturing" },
+  { key: "api", label: "API Tools", icon: "api" }
 ];
 function Settings() {
   const [tab, setTab] = reactExports.useState("roles");
@@ -69335,7 +70403,8 @@ function Settings() {
     tab === "users" && /* @__PURE__ */ jsxRuntimeExports.jsx(Users, {}),
     tab === "roles" && /* @__PURE__ */ jsxRuntimeExports.jsx(UserRolesTab, {}),
     tab === "permissions" && /* @__PURE__ */ jsxRuntimeExports.jsx(PermissionsTab, {}),
-    tab === "machines" && /* @__PURE__ */ jsxRuntimeExports.jsx(MachinesTab, {})
+    tab === "machines" && /* @__PURE__ */ jsxRuntimeExports.jsx(MachinesTab, {}),
+    tab === "api" && /* @__PURE__ */ jsxRuntimeExports.jsx(ApiTab, {})
   ] });
 }
 const MAINTENANCE_TYPES = ["Preventive", "Corrective", "Predictive", "Emergency"];
@@ -69348,12 +70417,10 @@ const statusColor = {
   "Out of Service": "bg-red-100 text-red-700"
 };
 function MonthDetailPopup({ machine, year, month, onClose }) {
-  const { addMonthlyTask, updateMonthlyTask, deleteMonthlyTask, isAdmin } = useData();
+  const { addMonthlyTask, updateMonthlyTask, deleteMonthlyTask } = useData();
   const [newTask, setNewTask] = reactExports.useState("");
   const [adding, setAdding] = reactExports.useState(false);
   const [deletingId, setDeletingId] = reactExports.useState(null);
-  const [editingId, setEditingId] = reactExports.useState(null);
-  const [editText, setEditText] = reactExports.useState("");
   const inputRef = reactExports.useRef(null);
   const tasks = (machine.monthlyMaintenance || []).filter((t3) => t3.year === year && t3.month === month);
   const doneCount = tasks.filter((t3) => t3.completed).length;
@@ -69371,19 +70438,14 @@ function MonthDetailPopup({ machine, year, month, onClose }) {
   async function toggleTask(task) {
     await updateMonthlyTask(machine.id, task.id, { completed: !task.completed });
   }
+  async function saveDescription(task, value) {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === task.description) return;
+    await updateMonthlyTask(machine.id, task.id, { description: trimmed });
+  }
   async function handleDelete(taskId) {
     await deleteMonthlyTask(machine.id, taskId);
     setDeletingId(null);
-  }
-  function startEdit(task) {
-    setEditingId(task.id);
-    setEditText(task.description);
-    setDeletingId(null);
-  }
-  async function saveEdit(taskId) {
-    if (!editText.trim()) return;
-    await updateMonthlyTask(machine.id, taskId, { description: editText.trim() });
-    setEditingId(null);
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4", onClick: onClose, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col", onClick: (e) => e.stopPropagation(), children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between px-6 py-4 border-b border-theme-border shrink-0", children: [
@@ -69404,46 +70466,38 @@ function MonthDetailPopup({ machine, year, month, onClose }) {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, className: "text-text-muted hover:text-on-surface transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined", children: "close" }) })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-y-auto flex-1 px-6 py-4", children: tasks.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-text-muted text-center py-8", children: "No tasks for this month yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: tasks.map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `flex items-start gap-3 p-3 rounded-xl border transition ${t3.completed ? "border-green-200 bg-green-50/50" : "border-theme-border bg-surface-container-lowest"}`, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-y-auto flex-1 px-6 py-4", children: tasks.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-text-muted text-center py-8", children: "No tasks yet. Add one below." }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: tasks.map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `flex items-center gap-3 px-3 py-2 rounded-xl border transition group/row ${t3.completed ? "border-green-200 bg-green-50/50" : "border-theme-border bg-surface-container-lowest"}`, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "input",
         {
           type: "checkbox",
           checked: t3.completed,
           onChange: () => toggleTask(t3),
-          className: "w-4 h-4 mt-0.5 accent-primary cursor-pointer shrink-0",
-          disabled: !isAdmin
+          className: "w-4 h-4 accent-primary cursor-pointer shrink-0"
         }
       ),
-      editingId === t3.id ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 flex-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 flex items-center gap-1.5 min-w-0", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
           {
-            autoFocus: true,
-            className: "flex-1 text-sm border border-primary rounded-lg px-2 py-1 bg-surface-container-lowest outline-none",
-            value: editText,
-            onChange: (e) => setEditText(e.target.value),
+            type: "text",
+            defaultValue: t3.description,
+            onBlur: (e) => saveDescription(t3, e.target.value),
             onKeyDown: (e) => {
-              if (e.key === "Enter") saveEdit(t3.id);
-              if (e.key === "Escape") setEditingId(null);
-            }
-          }
+              if (e.key === "Enter") e.target.blur();
+            },
+            className: `flex-1 text-sm bg-transparent outline-none border-b border-transparent focus:border-primary transition-colors ${t3.completed ? "line-through text-text-muted" : "text-on-surface"}`
+          },
+          t3.id + "-" + t3.description
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => saveEdit(t3.id), disabled: !editText.trim(), className: "text-xs font-semibold text-primary disabled:opacity-40", children: "Save" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingId(null), className: "text-xs text-text-muted", children: "Cancel" })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `flex-1 text-sm ${t3.completed ? "line-through text-text-muted" : "text-on-surface"}`, children: t3.description }),
-      isAdmin && editingId !== t3.id && (deletingId === t3.id ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 shrink-0", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-sm text-text-muted opacity-0 group-hover/row:opacity-60 transition pointer-events-none shrink-0", children: "edit" })
+      ] }),
+      deletingId === t3.id ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 shrink-0", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => handleDelete(t3.id), className: "text-xs font-semibold text-white bg-error px-2 py-0.5 rounded transition", children: "Yes" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setDeletingId(null), className: "text-xs text-text-muted px-1", children: "No" })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 shrink-0", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => startEdit(t3), className: "text-text-muted hover:text-primary transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "edit" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setDeletingId(t3.id);
-          setEditingId(null);
-        }, className: "text-text-muted hover:text-error transition", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "delete" }) })
-      ] }))
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setDeletingId(t3.id), className: "text-text-muted hover:text-error transition shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "delete" }) })
     ] }, t3.id)) }) }),
-    isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-6 py-4 border-t border-theme-border shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-6 py-4 border-t border-theme-border shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "input",
         {
@@ -69513,60 +70567,88 @@ function MonthlyScheduleTab({ machine }) {
       return /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
-          className: `rounded-xl border p-3 transition ${allDone ? "border-green-300 bg-green-50" : hasAny ? "border-theme-border bg-surface-container-lowest" : "border-theme-border bg-surface-container-lowest"}`,
+          onClick: () => setDetailMonth(month),
+          className: `rounded-xl border p-3 transition cursor-pointer hover:border-primary/50 hover:shadow-sm ${allDone ? "border-green-300 bg-green-50" : "border-theme-border bg-surface-container-lowest"}`,
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  onClick: () => setDetailMonth(month),
-                  className: "text-sm font-semibold text-on-surface hover:text-primary transition flex items-center gap-1",
-                  children: [
-                    label,
-                    hasAny && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `text-xs font-normal ml-1 ${allDone ? "text-green-600" : "text-text-muted"}`, children: [
-                      done,
-                      "/",
-                      tasks.length
-                    ] })
-                  ]
-                }
-              ),
-              isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => {
-                    setAddingMonth(addingMonth === month ? null : month);
-                    setNewTaskText("");
-                    setTimeout(() => addInputRef.current?.focus(), 50);
-                  },
-                  className: "w-6 h-6 rounded-md flex items-center justify-center hover:bg-hover-bg text-text-muted hover:text-primary transition",
-                  title: "Add task",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "add" })
-                }
-              )
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-sm font-semibold text-on-surface flex items-center gap-1", children: [
+                label,
+                hasAny && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: `text-xs font-normal ml-1 ${allDone ? "text-green-600" : "text-text-muted"}`, children: [
+                  done,
+                  "/",
+                  tasks.length
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      setDetailMonth(month);
+                    },
+                    className: "w-6 h-6 rounded-md flex items-center justify-center hover:bg-hover-bg text-text-muted hover:text-primary transition",
+                    title: "Open & edit",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "open_in_new" })
+                  }
+                ),
+                isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      setAddingMonth(addingMonth === month ? null : month);
+                      setNewTaskText("");
+                      setTimeout(() => addInputRef.current?.focus(), 50);
+                    },
+                    className: "w-6 h-6 rounded-md flex items-center justify-center hover:bg-hover-bg text-text-muted hover:text-primary transition",
+                    title: "Add task",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined text-base", children: "add" })
+                  }
+                )
+              ] })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1", children: [
-              tasks.slice(0, 4).map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+              tasks.slice(0, 4).map((t3) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 group/task", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "input",
                   {
                     type: "checkbox",
                     checked: t3.completed,
-                    onChange: () => toggleTask(t3),
+                    onChange: (e) => {
+                      e.stopPropagation();
+                      toggleTask(t3);
+                    },
+                    onClick: (e) => e.stopPropagation(),
                     className: "w-3.5 h-3.5 accent-primary cursor-pointer shrink-0",
                     disabled: !isAdmin
                   }
                 ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `text-xs truncate ${t3.completed ? "line-through text-text-muted" : "text-on-surface"}`, children: t3.description })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: `text-xs truncate flex-1 ${t3.completed ? "line-through text-text-muted" : "text-on-surface"}`, children: t3.description }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      setDetailMonth(month);
+                    },
+                    className: "shrink-0 opacity-0 group-hover/task:opacity-100 text-text-muted hover:text-primary transition",
+                    title: "Edit",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "material-symbols-outlined", style: { fontSize: "13px" }, children: "edit" })
+                  }
+                )
               ] }, t3.id)),
-              tasks.length > 4 && /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => setDetailMonth(month), className: "text-xs text-primary hover:underline", children: [
+              tasks.length > 4 && /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: (e) => {
+                e.stopPropagation();
+                setDetailMonth(month);
+              }, className: "text-xs text-primary hover:underline", children: [
                 "+",
                 tasks.length - 4,
                 " more…"
               ] }),
-              tasks.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted italic", children: "No tasks" })
+              tasks.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-text-muted italic", children: "No tasks — click to add" })
             ] }),
-            addingMonth === month && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-1 mt-2", children: [
+            addingMonth === month && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-1 mt-2", onClick: (e) => e.stopPropagation(), children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "input",
                 {
@@ -69795,7 +70877,6 @@ function Maintenance() {
     ] })
   ] });
 }
-const API_URL = "http://localhost:3001/api";
 const LEAVE_TYPES = ["Annual", "Sick", "Personal", "Unpaid"];
 function daysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();

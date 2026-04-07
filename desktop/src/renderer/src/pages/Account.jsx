@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const API_URL = 'http://localhost:3001/api'
+import { API_URL } from '../config'
 
 function ChangePasswordModal({ token, onClose }) {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })

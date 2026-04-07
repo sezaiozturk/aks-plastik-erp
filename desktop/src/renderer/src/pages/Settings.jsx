@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import Users from './Users'
 import { loadRatesConfig, saveRatesConfig, DEFAULT_RATES_URL, DEFAULT_RATES_PATH, DEFAULT_BASE } from '../hooks/useCurrencyRates'
 
-const API_URL = 'http://localhost:3001/api'
+import { API_URL } from '../config'
 
 const MACHINE_STATUSES = ['Active', 'Under Maintenance', 'Out of Service']
 

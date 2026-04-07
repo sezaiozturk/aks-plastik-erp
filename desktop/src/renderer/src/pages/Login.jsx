@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import aksLogoLight from '../assets/aks_logo.png'
 import aksLogoDark from '../assets/aks_logo_dark.png'
 
-const API = 'http://localhost:3001/api'
+import { API_URL as API } from '../config'
 
 export default function Login() {
   const { login } = useAuth()

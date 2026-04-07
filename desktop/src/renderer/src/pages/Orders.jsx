@@ -6,6 +6,7 @@ import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import aksLogoUrl from '../assets/aks_logo.png'
 import robotoFontUrl from '../assets/Roboto-Regular.ttf'
+import { API_URL } from '../config'
 
 const ITEMS_PER_PAGE = 10
 const ORDER_STATUSES = ['Processing', 'Confirmed', 'In-Production', 'Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
@@ -486,7 +487,7 @@ export default function Orders() {
 
   useEffect(() => {
     if (!token) return
-    fetch('http://localhost:3001/api/auth/salesteam', {
+    fetch(`${API_URL}/auth/salesteam`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

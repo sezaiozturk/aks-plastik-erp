@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
-
-const API_URL = 'http://localhost:3001/api'
+import { API_URL } from '../config'
 
 export default function Users() {
   const { token } = useAuth()
