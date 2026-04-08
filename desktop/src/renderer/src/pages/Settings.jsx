@@ -429,6 +429,8 @@ const PAGES = [
   { key: 'orders',      label: 'Orders',      icon: 'shopping_cart' },
   { key: 'work-orders', label: 'Site Visits', icon: 'location_on' },
   { key: 'reports',     label: 'Tasks',       icon: 'analytics' },
+  { key: 'employees',   label: 'Employees',   icon: 'badge' },
+  { key: 'finance',     label: 'Finance',     icon: 'account_balance_wallet' },
   { key: 'production',  label: 'Production',  icon: 'precision_manufacturing' },
   { key: 'maintenance', label: 'Maintenance', icon: 'build' },
   { key: 'logistics',   label: 'Logistics',   icon: 'local_shipping' },

@@ -434,7 +434,7 @@ export function DataProvider({ children }) {
       products, addProduct, updateProduct, deleteProduct,
       employees, addEmployee, updateEmployee, deleteEmployee,
       orders, addOrder, updateOrder, deleteOrder, refreshOrders,
-      financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord,
+      financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, refreshFinanceRecords,
       roles, addRole, deleteRole,
       permissions, updateRolePermissions, refreshPermissions,
       statusPermissions, updateRoleStatusPermissions, refreshStatusPermissions,

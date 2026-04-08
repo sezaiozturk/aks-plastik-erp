@@ -4,6 +4,110 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const router = Router()
 
+function buildEmployeeData(body) {
+  const {
+    // Identity
+    firstName, lastName, tckn, birthDate, birthPlace,
+    gender, maritalStatus, motherName, fatherName,
+    registryProvince, registryDistrict,
+    // Contact
+    phone, email, address, emergencyContact, emergencyPhone,
+    // Job
+    personnelNo, department, position, title,
+    hireDate, exitDate, workType, workLocation, supervisorId,
+    status,
+    // Salary & Finance
+    salary, netSalary, salaryType, iban, bankName,
+    premium, bonus, sideRights,
+    // SGK & Legal
+    sgkNo, insuranceType, occupationCode, disabilityStatus, retirementStatus,
+    // Education
+    educationLevel, graduationDept, foreignLanguage, certificates, militaryStatus,
+    // Documents
+    docIdCopy, docResidency, docDiploma, docHealthReport,
+    docCriminalRecord, docEmploymentContract, docSgkDeclaration,
+    // Operational
+    shift, leaveRights, performanceNotes,
+    // System
+    userRole, companyConnection,
+  } = body
+
+  const first = (firstName || '').trim()
+  const last = (lastName || '').trim()
+  const name = [first, last].filter(Boolean).join(' ') || 'Unknown'
+  const initials = name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')
+
+  return {
+    name,
+    initials,
+    status: status || 'Active',
+    // Identity
+    firstName: first || null,
+    lastName: last || null,
+    tckn: tckn || null,
+    birthDate: birthDate || null,
+    birthPlace: birthPlace || null,
+    gender: gender || null,
+    maritalStatus: maritalStatus || null,
+    motherName: motherName || null,
+    fatherName: fatherName || null,
+    registryProvince: registryProvince || null,
+    registryDistrict: registryDistrict || null,
+    // Contact
+    phone: phone || null,
+    email: email || null,
+    address: address || null,
+    emergencyContact: emergencyContact || null,
+    emergencyPhone: emergencyPhone || null,
+    // Job
+    personnelNo: personnelNo || null,
+    department: department || 'General',
+    position: position || '',
+    title: title || null,
+    hireDate: hireDate || null,
+    exitDate: exitDate || null,
+    workType: workType || null,
+    workLocation: workLocation || null,
+    supervisorId: supervisorId || null,
+    // Salary & Finance
+    salary: parseFloat(salary) || 0,
+    netSalary: netSalary ? parseFloat(netSalary) : null,
+    salaryType: salaryType || null,
+    iban: iban || null,
+    bankName: bankName || null,
+    premium: premium ? parseFloat(premium) : null,
+    bonus: bonus ? parseFloat(bonus) : null,
+    sideRights: sideRights || null,
+    // SGK & Legal
+    sgkNo: sgkNo || null,
+    insuranceType: insuranceType || null,
+    occupationCode: occupationCode || null,
+    disabilityStatus: disabilityStatus || null,
+    retirementStatus: retirementStatus || null,
+    // Education
+    educationLevel: educationLevel || null,
+    graduationDept: graduationDept || null,
+    foreignLanguage: foreignLanguage || null,
+    certificates: certificates || null,
+    militaryStatus: militaryStatus || null,
+    // Documents
+    docIdCopy: !!docIdCopy,
+    docResidency: !!docResidency,
+    docDiploma: !!docDiploma,
+    docHealthReport: !!docHealthReport,
+    docCriminalRecord: !!docCriminalRecord,
+    docEmploymentContract: !!docEmploymentContract,
+    docSgkDeclaration: !!docSgkDeclaration,
+    // Operational
+    shift: shift || null,
+    leaveRights: leaveRights || null,
+    performanceNotes: performanceNotes || null,
+    // System
+    userRole: userRole || null,
+    companyConnection: companyConnection || null,
+  }
+}
+
 router.get('/', async (req, res) => {
   try {
     const employees = await prisma.employee.findMany({
@@ -18,7 +122,10 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const employee = await prisma.employee.findUnique({ where: { id: req.params.id } })
+    const employee = await prisma.employee.findUnique({
+      where: { id: req.params.id },
+      include: { supervisor: { select: { id: true, name: true } } },
+    })
     if (!employee) return res.status(404).json({ error: 'Employee not found' })
     res.json(employee)
   } catch (err) {
@@ -28,27 +135,10 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { name, department, position, phone, email, salary, status, hireDate, supervisorId } = req.body
+    const data = buildEmployeeData(req.body)
     const code = `EMP-${String(Date.now()).slice(-5)}`
-    const initials = name
-      .split(' ')
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join('')
     const employee = await prisma.employee.create({
-      data: {
-        code,
-        name,
-        initials,
-        department: department || 'General',
-        position: position || '',
-        phone: phone || null,
-        email: email || null,
-        salary: parseFloat(salary) || 0,
-        status: status || 'Active',
-        hireDate: hireDate || null,
-        supervisorId: supervisorId || null,
-      },
+      data: { code, ...data },
       include: { supervisor: { select: { id: true, name: true } } },
     })
     res.status(201).json(employee)
@@ -59,26 +149,10 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { name, department, position, phone, email, salary, status, hireDate, supervisorId } = req.body
-    const initials = name
-      .split(' ')
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join('')
+    const data = buildEmployeeData(req.body)
     const employee = await prisma.employee.update({
       where: { id: req.params.id },
-      data: {
-        name,
-        initials,
-        department: department || 'General',
-        position: position || '',
-        phone: phone || null,
-        email: email || null,
-        salary: parseFloat(salary) || 0,
-        status: status || 'Active',
-        hireDate: hireDate || null,
-        supervisorId: supervisorId || null,
-      },
+      data,
       include: { supervisor: { select: { id: true, name: true } } },
     })
     res.json(employee)

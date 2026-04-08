@@ -31,110 +31,7 @@ function fmt(n) {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// ─── 6-Month Bar Chart ───────────────────────────────────────────────────────
-function MonthlyChart({ records }) {
-  const months = useMemo(() => {
-    const now = new Date()
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
-      return {
-        year: d.getFullYear(),
-        month: d.getMonth() + 1,
-        label: d.toLocaleDateString('en-US', { month: 'short' }),
-      }
-    })
-  }, [])
 
-  const data = useMemo(() => months.map(({ year, month, label }) => {
-    const prefix = `${year}-${String(month).padStart(2, '0')}`
-    const recs = records.filter(r => r.date?.startsWith(prefix))
-    const income = recs.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0)
-    const expense = recs.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0)
-    return { label, income, expense }
-  }), [months, records])
-
-  const maxVal = Math.max(...data.flatMap(d => [d.income, d.expense]), 1)
-  const H = 96
-  const barW = 16
-  const gap = 3
-  const groupGap = 22
-  const groupW = barW * 2 + gap + groupGap
-  const W = groupW * 6 + groupGap
-
-  return (
-    <div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H + 20}`} style={{ overflow: 'visible' }}>
-        <line x1="0" y1={H} x2={W} y2={H} stroke="currentColor" opacity="0.08" strokeWidth="1" />
-        {data.map((d, i) => {
-          const x = i * groupW + groupGap / 2
-          const incH = Math.max(3, (d.income / maxVal) * H)
-          const expH = Math.max(3, (d.expense / maxVal) * H)
-          return (
-            <g key={i}>
-              <rect x={x} y={H - incH} width={barW} height={incH} rx="3"
-                fill="var(--md-sys-color-primary, #4f82f7)" opacity="0.8">
-                <title>{d.label} Income: ${fmt(d.income)}</title>
-              </rect>
-              <rect x={x + barW + gap} y={H - expH} width={barW} height={expH} rx="3"
-                fill="#f87171" opacity="0.85">
-                <title>{d.label} Expense: ${fmt(d.expense)}</title>
-              </rect>
-              <text x={x + barW} y={H + 14} textAnchor="middle"
-                fill="currentColor" opacity="0.45" style={{ fontSize: 9 }}>{d.label}</text>
-            </g>
-          )
-        })}
-      </svg>
-      <div className="flex items-center gap-4 mt-2">
-        <span className="flex items-center gap-1.5 text-xs text-text-muted">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block opacity-80" style={{ background: 'var(--md-sys-color-primary, #4f82f7)' }} />
-          Income
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-text-muted">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block bg-red-400 opacity-85" />
-          Expense
-        </span>
-      </div>
-    </div>
-  )
-}
-
-// ─── Category Breakdown ──────────────────────────────────────────────────────
-function CategoryBreakdown({ records, type }) {
-  const breakdown = useMemo(() => {
-    const filtered = records.filter(r => r.type === type)
-    const total = filtered.reduce((s, r) => s + r.amount, 0)
-    const map = {}
-    filtered.forEach(r => { map[r.category] = (map[r.category] || 0) + r.amount })
-    return Object.entries(map)
-      .map(([cat, amt]) => ({ cat, amt, pct: total > 0 ? (amt / total) * 100 : 0 }))
-      .sort((a, b) => b.amt - a.amt)
-      .slice(0, 6)
-  }, [records, type])
-
-  if (breakdown.length === 0) {
-    return <p className="text-xs text-text-muted text-center py-6">No {type} data yet</p>
-  }
-
-  return (
-    <div className="space-y-3">
-      {breakdown.map(({ cat, amt, pct }) => (
-        <div key={cat}>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-on-surface font-medium truncate max-w-[130px]">{cat}</span>
-            <span className="text-text-muted ml-2 shrink-0 tabular-nums">${fmt(amt)}</span>
-          </div>
-          <div className="h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${type === 'income' ? 'bg-primary' : 'bg-red-400'}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 // ─── Currency Ticker ─────────────────────────────────────────────────────────
 const TICKER_CURRENCIES = ['EUR', 'GBP', 'TRY', 'AED', 'SAR', 'JPY', 'CNY', 'CAD', 'AUD', 'INR']
@@ -297,9 +194,256 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
   )
 }
 
+// ─── Record Detail Modal ─────────────────────────────────────────────────────
+function DetailRow({ icon, label, value }) {
+  if (value === null || value === undefined || value === '') return null
+  return (
+    <div className="flex items-start gap-2">
+      <span className="material-symbols-outlined text-sm text-text-muted mt-0.5 shrink-0">{icon}</span>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{label}</p>
+        <p className="text-sm text-on-surface break-words">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function RecordDetailModal({ record, onClose, orders, customers }) {
+  const [tab, setTab] = useState('details')
+
+  const linkedOrder = record.orderId ? orders.find(o => o.id === record.orderId) : null
+  const linkedCustomer = linkedOrder?.customer?.id
+    ? customers.find(c => c.id === linkedOrder.customer.id)
+    : null
+
+  const tabs = [
+    { id: 'details',  label: 'Transaction',  icon: 'receipt_long'  },
+    ...(linkedOrder    ? [{ id: 'order',    label: 'Linked Order', icon: 'shopping_cart' }] : []),
+    ...(linkedCustomer ? [{ id: 'customer', label: 'Customer',     icon: 'business'      }] : []),
+  ]
+
+  const orderStatusColor = {
+    Draft:     'bg-surface-container-high text-on-surface-variant',
+    Pending:   'bg-yellow-100 text-yellow-700',
+    Active:    'bg-primary/10 text-primary',
+    Completed: 'bg-green-100 text-green-700',
+    Cancelled: 'bg-error/10 text-error',
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-theme-border shrink-0">
+          <div className="flex items-center gap-4">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${record.type === 'income' ? 'bg-primary/10' : 'bg-error/10'}`}>
+              <span className={`material-symbols-outlined text-xl ${record.type === 'income' ? 'text-primary' : 'text-error'}`}>
+                {record.type === 'income' ? 'trending_up' : 'trending_down'}
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="font-mono text-sm font-bold text-on-surface">{record.code}</p>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${record.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
+                  <span className="material-symbols-outlined text-xs">{record.type === 'income' ? 'arrow_circle_down' : 'arrow_circle_up'}</span>
+                  {record.type === 'income' ? 'Income' : 'Expense'}
+                </span>
+              </div>
+              <p className={`text-2xl font-bold tabular-nums leading-none ${record.type === 'income' ? 'text-primary' : 'text-error'}`}>
+                {record.type === 'income' ? '+' : '-'}{fmt(record.amount)}
+                <span className="text-sm font-normal text-text-muted ml-1.5">{record.currency || 'USD'}</span>
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-error transition p-1">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Tabs */}
+        {tabs.length > 1 && (
+          <div className="flex px-6 shrink-0 border-b border-theme-border">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 transition -mb-px ${
+                  tab === t.id ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-on-surface'
+                }`}>
+                <span className="material-symbols-outlined text-sm">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto px-6 py-5">
+
+          {/* ── Transaction Tab ── */}
+          {tab === 'details' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Transaction Info</p>
+                <DetailRow icon="calendar_today"     label="Date"        value={record.date} />
+                <DetailRow icon="category"           label="Category"    value={record.category} />
+                <DetailRow icon="currency_exchange"  label="Currency"    value={record.currency || 'USD'} />
+                <DetailRow icon="tag"                label="Reference"   value={record.reference} />
+              </div>
+              <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Links & Notes</p>
+                <DetailRow
+                  icon="shopping_cart"
+                  label="Linked Order"
+                  value={linkedOrder
+                    ? `${linkedOrder.code}${linkedOrder.customer?.name ? ` — ${linkedOrder.customer.name}` : ''}`
+                    : 'No linked order'}
+                />
+                <DetailRow icon="edit_note" label="Description" value={record.description} />
+                <DetailRow icon="schedule"  label="Created"     value={record.createdAt ? new Date(record.createdAt).toLocaleString() : null} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Linked Order Tab ── */}
+          {tab === 'order' && linkedOrder && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-surface-container-high rounded-xl flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-on-surface-variant">shopping_cart</span>
+                </div>
+                <div>
+                  <p className="font-mono text-base font-bold text-on-surface">{linkedOrder.code}</p>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${orderStatusColor[linkedOrder.status] || 'bg-surface-container-high text-on-surface-variant'}`}>
+                    {linkedOrder.status}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Order Details</p>
+                  <DetailRow icon="business"      label="Customer"      value={linkedOrder.customer?.name} />
+                  <DetailRow icon="attach_money"  label="Total Amount"  value={linkedOrder.totalAmount != null ? fmt(linkedOrder.totalAmount) : null} />
+                  <DetailRow icon="percent"       label="VAT"           value={linkedOrder.vat != null ? `${linkedOrder.vat}%` : null} />
+                  <DetailRow icon="schedule"      label="Created"       value={linkedOrder.createdAt ? new Date(linkedOrder.createdAt).toLocaleDateString() : null} />
+                </div>
+                <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Notes</p>
+                  <p className="text-sm text-on-surface">{linkedOrder.notes || 'No notes'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Customer Tab ── */}
+          {tab === 'customer' && linkedCustomer && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-primary font-bold text-sm">{linkedCustomer.initials || '?'}</span>
+                </div>
+                <div>
+                  <p className="text-base font-bold text-on-surface">{linkedCustomer.name}</p>
+                  <p className="text-xs text-text-muted">{linkedCustomer.customerType} · {linkedCustomer.code}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Contact & Address */}
+                <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Contact & Address</p>
+                  <DetailRow icon="phone"              label="Phone"       value={linkedCustomer.phone} />
+                  <DetailRow icon="mail"               label="Email"       value={linkedCustomer.email} />
+                  <DetailRow icon="home"               label="Address"     value={linkedCustomer.address} />
+                  <DetailRow icon="location_city"      label="City / District" value={[linkedCustomer.city, linkedCustomer.district].filter(Boolean).join(', ') || null} />
+                  <DetailRow icon="public"             label="Country"     value={linkedCustomer.country} />
+                  <DetailRow icon="markunread_mailbox" label="Postal Code" value={linkedCustomer.postalCode} />
+                </div>
+
+                {/* Tax & Financial */}
+                <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Tax & Financial</p>
+                  <DetailRow icon="fingerprint"    label="Tax ID (TIN)"   value={linkedCustomer.taxId} />
+                  <DetailRow icon="account_balance" label="Tax Office"    value={linkedCustomer.taxOffice} />
+                  <DetailRow icon="tag"             label="Account Code"  value={linkedCustomer.accountCode} />
+                  <DetailRow icon="currency_exchange" label="Currency"    value={linkedCustomer.currency} />
+                  <DetailRow icon="credit_score"    label="Credit Limit"  value={linkedCustomer.creditLimit != null ? fmt(linkedCustomer.creditLimit) : null} />
+                  <DetailRow icon="schedule"        label="Payment Term"  value={linkedCustomer.paymentTerm} />
+                </div>
+
+                {/* e-Document Status */}
+                <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">e-Document Status</p>
+                  {[
+                    { key: 'eInvoiceStatus',  label: 'e-Invoice'  },
+                    { key: 'eArchiveStatus',  label: 'e-Archive'  },
+                    { key: 'eDispatchStatus', label: 'e-Dispatch' },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${linkedCustomer[key] ? 'bg-green-500' : 'bg-surface-container-highest'}`} />
+                      <span className="text-sm text-on-surface">
+                        {label}:{' '}
+                        <span className={`font-semibold ${linkedCustomer[key] ? 'text-green-600' : 'text-text-muted'}`}>
+                          {linkedCustomer[key] ? 'Active' : 'Inactive'}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                  <DetailRow icon="description" label="Invoice Scenario" value={linkedCustomer.invoiceScenario} />
+                  <DetailRow icon="description" label="Invoice Type"     value={linkedCustomer.invoiceType} />
+                  <DetailRow icon="payments"    label="Payment Method"   value={linkedCustomer.paymentMethod} />
+                  <DetailRow icon="schedule_send" label="Payment Terms"  value={linkedCustomer.paymentTerms} />
+                </div>
+
+                {/* Contact Person */}
+                <div className="bg-surface-container-high rounded-xl p-4 space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Contact Person</p>
+                  <DetailRow icon="person"          label="Name"     value={linkedCustomer.contactName} />
+                  <DetailRow icon="phone_in_talk"   label="Phone"    value={linkedCustomer.contactPhone} />
+                  <DetailRow icon="forward_to_inbox" label="Email"   value={linkedCustomer.contactEmail} />
+                  <DetailRow icon="work"            label="Position" value={linkedCustomer.contactPosition} />
+                </div>
+
+                {/* Bank */}
+                {(linkedCustomer.bankName || linkedCustomer.iban) && (
+                  <div className="bg-surface-container-high rounded-xl p-4 space-y-3 col-span-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Bank Information</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailRow icon="account_balance" label="Bank Name"       value={linkedCustomer.bankName} />
+                      <DetailRow icon="credit_card"     label="IBAN"            value={linkedCustomer.iban} />
+                      <DetailRow icon="store"           label="Branch Code"     value={linkedCustomer.branchCode} />
+                      <DetailRow icon="person"          label="Account Holder"  value={linkedCustomer.accountHolder} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Info */}
+                {(linkedCustomer.industry || linkedCustomer.customerCategory || linkedCustomer.salesRepName || linkedCustomer.notes) && (
+                  <div className="bg-surface-container-high rounded-xl p-4 space-y-3 col-span-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Additional Info</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <DetailRow icon="factory"       label="Industry"    value={linkedCustomer.industry} />
+                      <DetailRow icon="grade"         label="Category"    value={linkedCustomer.customerCategory} />
+                      <DetailRow icon="badge"         label="Sales Rep"   value={linkedCustomer.salesRepName} />
+                      <DetailRow icon="verified_user" label="GDPR Consent" value={linkedCustomer.gdprConsent ? 'Yes / Active' : 'No / Not given'} />
+                    </div>
+                    {linkedCustomer.notes && (
+                      <DetailRow icon="edit_note" label="Notes" value={linkedCustomer.notes} />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function Finance() {
-  const { financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, orders, isAdmin } = useData()
+  const { financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, refreshFinanceRecords, orders, customers, isAdmin } = useData()
   const { rates, base: ratesBase } = useCurrencyRates()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -311,7 +455,7 @@ export default function Finance() {
   const [form, setForm] = useState({ ...emptyForm })
   const [errors, setErrors] = useState({})
   const [deletingId, setDeletingId] = useState(null)
-  const [breakdownType, setBreakdownType] = useState('expense')
+  const [detailRecord, setDetailRecord] = useState(null)
 
   const now = new Date()
   const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -435,6 +579,11 @@ export default function Finance() {
           <p className="text-xs text-text-muted mt-0.5">Track income, expenses and cash flow</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={refreshFinanceRecords}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
+            <span className="material-symbols-outlined text-sm">refresh</span>
+            Refresh
+          </button>
           <button onClick={exportCSV}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-sm">download</span>
@@ -511,28 +660,6 @@ export default function Finance() {
               )}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Charts row */}
-      <div className="grid grid-cols-3 gap-3 mb-3 shrink-0">
-        <div className="col-span-2 bg-surface-container-lowest border border-theme-border rounded-xl px-4 pt-3 pb-2">
-          <h3 className="text-xs font-semibold text-on-surface mb-2">6-Month Cash Flow</h3>
-          <MonthlyChart records={financeRecords} />
-        </div>
-        <div className="bg-surface-container-lowest border border-theme-border rounded-xl px-4 pt-3 pb-2">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold text-on-surface">Top Categories</h3>
-            <div className="flex gap-0.5 bg-surface-container-high rounded-lg p-0.5">
-              {['income', 'expense'].map(t => (
-                <button key={t} onClick={() => setBreakdownType(t)}
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition capitalize ${breakdownType === t ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-text-muted'}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-          <CategoryBreakdown records={financeRecords} type={breakdownType} />
         </div>
       </div>
 
@@ -620,7 +747,7 @@ export default function Finance() {
                 </tr>
               ) : (
                 paginated.map(r => (
-                  <tr key={r.id} className="border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors">
+                  <tr key={r.id} onClick={() => setDetailRecord(r)} className="border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors cursor-pointer">
                     <td className="px-4 py-2.5 font-mono text-xs text-text-muted">{r.code}</td>
                     <td className="px-4 py-2.5">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${r.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
@@ -637,7 +764,7 @@ export default function Finance() {
                       <span className="text-[10px] font-normal text-text-muted ml-1">{r.currency || 'USD'}</span>
                     </td>
                     {isAdmin && (
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                         {deletingId === r.id ? (
                           <div className="flex items-center gap-1 justify-end">
                             <button onClick={() => handleDelete(r.id)} className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">Yes</button>
@@ -684,6 +811,14 @@ export default function Finance() {
         <Modal title="Edit Transaction" form={form} setForm={setForm} errors={errors}
           onClose={() => setEditItem(null)} onSave={handleEdit} orders={orders}
           rates={rates} ratesBase={ratesBase} />
+      )}
+      {detailRecord && (
+        <RecordDetailModal
+          record={detailRecord}
+          onClose={() => setDetailRecord(null)}
+          orders={orders}
+          customers={customers}
+        />
       )}
     </div>
   )
