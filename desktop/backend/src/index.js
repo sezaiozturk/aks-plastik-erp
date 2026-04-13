@@ -18,6 +18,7 @@ const statusPermissionRoutes = require('./routes/statusPermissions')
 const attendanceRoutes = require('./routes/attendance')
 const leaveRequestRoutes = require('./routes/leaveRequests')
 const proxyRoutes = require('./routes/proxy')
+const purchasingRoutes = require('./routes/purchasing')
 const app = express()
 const PORT = process.env.PORT || 3001
 
@@ -48,6 +49,7 @@ app.use('/api/status-permissions', authenticate, statusPermissionRoutes)
 app.use('/api/attendance', authenticate, attendanceRoutes)
 app.use('/api/leave-requests', authenticate, leaveRequestRoutes)
 app.use('/api/proxy', authenticate, proxyRoutes)
+app.use('/api/purchasing', authenticate, purchasingRoutes)
 
 app.listen(PORT, () => {
   console.log(`Field Hub API running on http://localhost:${PORT}`)

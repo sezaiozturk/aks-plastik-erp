@@ -367,6 +367,82 @@ model FinanceRecord {
   orderId String?
 }
 
+model Supplier {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  category     String   @default("General")
+  contactName  String   @default("")
+  contactPhone String   @default("")
+  contactEmail String   @default("")
+  address      String   @default("")
+  country      String   @default("")
+  currency     String   @default("TRY")
+  status       String   @default("Active")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  quotations PurchasingQuotation[]
+}
+
+model PurchasingRequest {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  title           String
+  description     String   @default("")
+  department      String   @default("")
+  requestedBy     String   @default("")
+  priority        String   @default("Medium")
+  category        String   @default("General")
+  estimatedAmount Float    @default(0)
+  currency        String   @default("TRY")
+  budgetCode      String   @default("")
+  notes           String   @default("")
+  status          String   @default("Request")
+  budgetApproved  Boolean  @default(false)
+  budgetNotes     String   @default("")
+  rejectionReason String   @default("")
+  poCreatedDate   String?
+  shippingCompany String   @default("")
+  trackingNumber  String   @default("")
+  qcResult        String   @default("")
+  qcDate          String?
+  qcNotes         String   @default("")
+  invoiceNo       String   @default("")
+  invoiceDate     String?
+  invoiceAmount   Float    @default(0)
+  invoiceMatched  Boolean  @default(false)
+  paymentDueDate  String?
+  paymentDate     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  quotations PurchasingQuotation[]
+}
+
+model PurchasingQuotation {
+  id            String   @id @default(cuid())
+  quotationNo   String   @default("")
+  quotationDate String?
+  amount        Float    @default(0)
+  currency      String   @default("TRY")
+  vat           Float    @default(20)
+  deliveryDays  Int?
+  paymentTerms  String   @default("")
+  warranty      String   @default("")
+  notes         String   @default("")
+  selected      Boolean  @default(false)
+  supplierName  String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  request    PurchasingRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId  String
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  supplierId String?
+}
+
 model Attendance {
   id         String   @id @default(cuid())
   date       String

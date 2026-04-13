@@ -15,6 +15,7 @@ const ALL_NAV_ITEMS = [
   { key: 'production',  to: '/production',  icon: 'precision_manufacturing',label: 'Production' },
   { key: 'maintenance', to: '/maintenance', icon: 'build',                  label: 'Maintenance & Repair' },
   { key: 'logistics',   to: '/logistics',   icon: 'local_shipping',         label: 'Logistics' },
+  { key: 'purchasing',  to: '/purchasing',  icon: 'shopping_bag',           label: 'Purchasing' },
 ]
 
 const adminNavItems = [
@@ -37,7 +38,7 @@ export default function Sidebar() {
   const dept = user?.department
   const canSee = (page) => isAdmin || (permissions[dept] || []).includes(page)
 
-  const base = ALL_NAV_ITEMS.filter((item) => item.key === 'dashboard' || canSee(item.key))
+  const base = ALL_NAV_ITEMS.filter((item) => item.key === 'dashboard' || item.key === 'purchasing' || canSee(item.key))
   const items = isAdmin ? [...ALL_NAV_ITEMS, ...adminNavItems] : base
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import Users from './Users'
@@ -434,86 +434,383 @@ const PAGES = [
   { key: 'production',  label: 'Production',  icon: 'precision_manufacturing' },
   { key: 'maintenance', label: 'Maintenance', icon: 'build' },
   { key: 'logistics',   label: 'Logistics',   icon: 'local_shipping' },
+  { key: 'purchasing',  label: 'Purchasing',  icon: 'shopping_bag' },
 ]
 
-// ─── User Roles Tab ───────────────────────────────────────────────────────────
-function UserRolesTab() {
-  const { roles, addRole, deleteRole } = useData()
-  const [input, setInput] = useState('')
-  const [error, setError] = useState('')
-  const [deletingId, setDeletingId] = useState(null)
+// ─── Employee Assign Modal ────────────────────────────────────────────────────
+function EmployeeAssignModal({ employee, allEmployees, onClose, onSave }) {
+  const { roles } = useData()
+  const [form, setForm] = useState({
+    department: employee.department || '',
+    supervisorId: employee.supervisorId || '',
+  })
+  const [saving, setSaving] = useState(false)
 
-  async function handleAdd() {
-    if (!input.trim()) return
-    try {
-      setError('')
-      await addRole(input.trim())
-      setInput('')
-    } catch (e) {
-      setError(e.message)
-    }
+  const possibleSupervisors = allEmployees.filter((e) => e.id !== employee.id)
+
+  async function handleSave() {
+    setSaving(true)
+    await onSave(employee.id, {
+      ...employee,
+      department: form.department,
+      supervisorId: form.supervisorId || null,
+    })
+    setSaving(false)
   }
 
   return (
-    <div className="max-w-lg">
-      <p className="text-sm text-text-muted mb-6">Manage department roles that can be assigned to users.</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-bold text-on-surface">{employee.name}</h3>
+            <p className="text-xs text-text-muted">{employee.position || '—'}</p>
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-error">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Department</label>
+            <select
+              className="w-full bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
+              value={form.department}
+              onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))}
+            >
+              <option value="">— Select Department —</option>
+              {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Manager (Supervisor)</label>
+            <select
+              className="w-full bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
+              value={form.supervisorId}
+              onChange={(e) => setForm((p) => ({ ...p, supervisorId: e.target.value }))}
+            >
+              <option value="">— None (is a Manager) —</option>
+              {possibleSupervisors.map((e) => (
+                <option key={e.id} value={e.id}>{e.name} ({e.department})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-40">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-      <div className="flex gap-2 mb-4">
+// ─── User Roles Tab ───────────────────────────────────────────────────────────
+function UserRolesTab() {
+  const { token } = useAuth()
+  const { roles, addRole, renameRole, deleteRole } = useData()
+  const [employees, setEmployees] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editModal, setEditModal] = useState(null)
+  const [newDept, setNewDept] = useState('')
+  const [addError, setAddError] = useState('')
+  const [deletingRole, setDeletingRole] = useState(null) // { id, name }
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [renamingRole, setRenamingRole] = useState(null) // { id, name }
+  const [renameText, setRenameText] = useState('')
+  const [renameError, setRenameError] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/employees`, { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      setEmployees(Array.isArray(data) ? data : [])
+    } catch {}
+    setLoading(false)
+  }, [token])
+
+  useEffect(() => { load() }, [load])
+
+  async function saveEmployee(id, updates) {
+    await fetch(`${API_URL}/employees/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(updates),
+    })
+    setEditModal(null)
+    load()
+  }
+
+  async function handleAddDept() {
+    const name = newDept.trim()
+    if (!name) return
+    try {
+      setAddError('')
+      await addRole(name)
+      setNewDept('')
+    } catch (e) {
+      setAddError(e.message)
+    }
+  }
+
+  async function handleDeleteDept() {
+    await deleteRole(deletingRole.id)
+    setDeletingRole(null)
+    setDeleteConfirmText('')
+    load()
+  }
+
+  async function handleRenameDept() {
+    const name = renameText.trim()
+    if (!name || name === renamingRole.name) return
+    try {
+      setRenameError('')
+      await renameRole(renamingRole.id, name)
+      setRenamingRole(null)
+      setRenameText('')
+      load()
+    } catch (e) {
+      setRenameError(e.message)
+    }
+  }
+
+  // Merge: role names from permissions + employee departments
+  const roleDeptNames = roles.map((r) => r.name)
+  const empDeptNames = employees.map((e) => e.department || 'Unassigned')
+  const departments = [...new Set([...roleDeptNames, ...empDeptNames])].sort()
+
+  function isManager(emp, deptEmps) {
+    return deptEmps.some((other) => other.supervisorId === emp.id)
+  }
+
+  if (loading) return (
+    <div className="flex items-center gap-2 text-text-muted text-sm py-8">
+      <span className="material-symbols-outlined animate-spin">refresh</span> Loading…
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-text-muted">Department hierarchy — managers and their team members. Click edit to reassign.</p>
+
+      {/* Add Department */}
+      <div className="flex gap-2">
         <input
           className="flex-1 bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-          placeholder="Role name…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          placeholder="New department name…"
+          value={newDept}
+          onChange={(e) => setNewDept(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAddDept()}
         />
         <button
-          onClick={handleAdd}
+          onClick={handleAddDept}
           className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition"
         >
           <span className="material-symbols-outlined text-base">add</span>
-          Add
+          Add Department
         </button>
       </div>
-      {error && <p className="text-xs text-error mb-3">{error}</p>}
+      {addError && <p className="text-xs text-error -mt-2">{addError}</p>}
 
-      <div className="bg-surface-container-lowest rounded-2xl border border-theme-border overflow-hidden">
-        {roles.length === 0 ? (
-          <p className="text-center py-10 text-sm text-text-muted">No roles defined yet</p>
-        ) : (
-          roles.map((r) => (
-            <div key={r.id} className="flex items-center justify-between px-4 py-3 border-b border-theme-border last:border-0">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-text-muted">badge</span>
-                <span className="text-sm font-medium text-on-surface">{r.name}</span>
+      {departments.length === 0 && (
+        <p className="text-sm text-text-muted py-4">No departments yet. Add one above.</p>
+      )}
+
+      {departments.map((dept) => {
+        const deptEmps = employees.filter((e) => (e.department || 'Unassigned') === dept)
+        const managers = deptEmps.filter((e) => isManager(e, deptEmps))
+        const managedIds = new Set(managers.map((m) => m.id))
+
+        // Employees who report to a manager in this dept
+        const subordinates = deptEmps.filter((e) => e.supervisorId && managedIds.has(e.supervisorId))
+        // Employees with no manager assigned within this dept
+        const unassigned = deptEmps.filter((e) => !managedIds.has(e.id) && !subordinates.find((s) => s.id === e.id))
+
+        return (
+          <div key={dept} className="bg-surface-container-lowest border border-theme-border rounded-2xl overflow-hidden">
+            {/* Department header */}
+            <div className="flex items-center gap-3 px-5 py-3 bg-surface-container border-b border-theme-border">
+              <span className="material-symbols-outlined text-base text-primary">corporate_fare</span>
+              <span className="font-bold text-on-surface">{dept}</span>
+              <span className="text-xs text-text-muted bg-surface-container-high px-2 py-0.5 rounded-full ml-1">{deptEmps.length} {deptEmps.length === 1 ? 'person' : 'people'}</span>
+              <div className="ml-auto flex items-center gap-1">
+                {(() => {
+                  const role = roles.find((r) => r.name === dept)
+                  if (!role) return null
+                  return (
+                    <>
+                      <button onClick={() => { setRenamingRole({ id: role.id, name: role.name }); setRenameText(role.name); setRenameError('') }} className="text-text-muted hover:text-primary transition p-1 rounded hover:bg-hover-bg">
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
+                      <button onClick={() => { setDeletingRole({ id: role.id, name: role.name }); setDeleteConfirmText('') }} className="text-text-muted hover:text-error transition p-1 rounded hover:bg-hover-bg">
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </>
+                  )
+                })()}
               </div>
-              {deletingId === r.id ? (
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-text-muted mr-1">Sure?</span>
-                  <button
-                    onClick={async () => { await deleteRole(r.id); setDeletingId(null) }}
-                    className="text-xs font-semibold text-white bg-error hover:opacity-90 px-2 py-1 rounded-lg transition"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => setDeletingId(null)}
-                    className="text-xs text-text-muted hover:text-on-surface px-2 py-1 rounded transition"
-                  >
-                    No
+            </div>
+
+            {/* Managers + their subordinates */}
+            {managers.map((mgr) => (
+              <div key={mgr.id}>
+                {/* Manager row */}
+                <div className="flex items-center justify-between px-5 py-3 border-b border-theme-border/60 bg-amber-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-sm text-amber-600">manage_accounts</span>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-on-surface">{mgr.name}</span>
+                        <span className="text-[10px] font-bold bg-amber-500/15 text-amber-600 px-1.5 py-0.5 rounded-full">MANAGER</span>
+                      </div>
+                      <p className="text-xs text-text-muted">{mgr.position || '—'}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setEditModal(mgr)} className="text-text-muted hover:text-primary p-1 rounded hover:bg-hover-bg transition">
+                    <span className="material-symbols-outlined text-sm">edit</span>
                   </button>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setDeletingId(r.id)}
-                  className="text-text-muted hover:text-error transition"
-                >
-                  <span className="material-symbols-outlined text-base">delete</span>
-                </button>
-              )}
+
+                {/* Subordinates of this manager */}
+                {deptEmps.filter((e) => e.supervisorId === mgr.id).map((emp, i, arr) => (
+                  <div key={emp.id} className={`flex items-center justify-between pl-12 pr-5 py-2.5 ${i < arr.length - 1 || unassigned.length > 0 || managers.length > 1 ? 'border-b border-theme-border/40' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-sm text-text-muted">person</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-on-surface">{emp.name}</span>
+                        <p className="text-xs text-text-muted">{emp.position || '—'}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setEditModal(emp)} className="text-text-muted hover:text-primary p-1 rounded hover:bg-hover-bg transition">
+                      <span className="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            {/* Unassigned employees (no manager relationship) */}
+            {unassigned.length > 0 && (
+              <div>
+                {managers.length > 0 && (
+                  <div className="px-5 py-1.5 bg-surface-container/50 border-b border-theme-border/40">
+                    <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">No manager assigned</span>
+                  </div>
+                )}
+                {unassigned.map((emp, i) => (
+                  <div key={emp.id} className={`flex items-center justify-between px-5 py-2.5 ${i < unassigned.length - 1 ? 'border-b border-theme-border/40' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-sm text-text-muted">person</span>
+                      </div>
+                      <div>
+                        <span className="text-sm text-on-surface">{emp.name}</span>
+                        <p className="text-xs text-text-muted">{emp.position || '—'}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setEditModal(emp)} className="text-text-muted hover:text-primary p-1 rounded hover:bg-hover-bg transition">
+                      <span className="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {deptEmps.length === 0 && (
+              <p className="text-sm text-text-muted text-center py-4">No employees</p>
+            )}
+          </div>
+        )
+      })}
+
+      {editModal && (
+        <EmployeeAssignModal
+          employee={editModal}
+          allEmployees={employees}
+          onClose={() => setEditModal(null)}
+          onSave={saveEmployee}
+        />
+      )}
+
+      {renamingRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-primary">edit</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-on-surface">Rename Department</h3>
+                <p className="text-xs text-text-muted">Current name: <span className="font-semibold text-on-surface">{renamingRole.name}</span></p>
+              </div>
             </div>
-          ))
-        )}
-      </div>
+            <p className="text-sm text-text-muted mb-3">Type the new department name to confirm rename.</p>
+            <input
+              className="w-full bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-primary mb-1"
+              placeholder="New department name…"
+              value={renameText}
+              onChange={(e) => setRenameText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRenameDept()}
+              autoFocus
+            />
+            {renameError && <p className="text-xs text-error mb-3">{renameError}</p>}
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => { setRenamingRole(null); setRenameText(''); setRenameError('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+              <button
+                onClick={handleRenameDept}
+                disabled={!renameText.trim() || renameText.trim() === renamingRole.name}
+                className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-error">delete</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-on-surface">Delete Department</h3>
+                <p className="text-xs text-text-muted">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-text-muted mb-3">
+              Type <span className="font-semibold text-on-surface">{deletingRole.name}</span> to confirm deletion.
+            </p>
+            <input
+              className="w-full bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-error mb-4"
+              placeholder={deletingRole.name}
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && deleteConfirmText === deletingRole.name && handleDeleteDept()}
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button onClick={() => { setDeletingRole(null); setDeleteConfirmText('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+              <button
+                onClick={handleDeleteDept}
+                disabled={deleteConfirmText !== deletingRole.name}
+                className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

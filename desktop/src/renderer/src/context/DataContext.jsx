@@ -231,12 +231,20 @@ export function DataProvider({ children }) {
   // ── Employees ──
   async function addEmployee(form) {
     const res = await fetch(`${API_URL}/employees`, { method: 'POST', headers, body: JSON.stringify(form) })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to add employee')
+    }
     const employee = await res.json()
     setEmployees((prev) => [employee, ...prev])
   }
 
   async function updateEmployee(id, form) {
     const res = await fetch(`${API_URL}/employees/${id}`, { method: 'PUT', headers, body: JSON.stringify(form) })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to update employee')
+    }
     const updated = await res.json()
     setEmployees((prev) => prev.map((e) => (e.id === id ? updated : e)))
   }
@@ -273,6 +281,14 @@ export function DataProvider({ children }) {
     if (!res.ok) throw new Error((await res.json()).error || 'Failed')
     const role = await res.json()
     setRoles((prev) => [...prev, role].sort((a, b) => a.name.localeCompare(b.name)))
+  }
+
+  async function renameRole(id, name) {
+    const res = await fetch(`${API_URL}/roles/${id}`, { method: 'PUT', headers, body: JSON.stringify({ name }) })
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed')
+    const updated = await res.json()
+    setRoles((prev) => prev.map((r) => r.id === id ? updated : r).sort((a, b) => a.name.localeCompare(b.name)))
+    refreshEmployees()
   }
 
   async function deleteRole(id) {
@@ -435,7 +451,7 @@ export function DataProvider({ children }) {
       employees, addEmployee, updateEmployee, deleteEmployee,
       orders, addOrder, updateOrder, deleteOrder, refreshOrders,
       financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, refreshFinanceRecords,
-      roles, addRole, deleteRole,
+      roles, addRole, renameRole, deleteRole,
       permissions, updateRolePermissions, refreshPermissions,
       statusPermissions, updateRoleStatusPermissions, refreshStatusPermissions,
       machines, addMachine, updateMachine, deleteMachine,

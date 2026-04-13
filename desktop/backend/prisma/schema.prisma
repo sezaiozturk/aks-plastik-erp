@@ -115,7 +115,8 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  orderItems OrderItem[]
+  orderItems         OrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
 }
 
 model Employee {
@@ -293,4 +294,120 @@ model LeaveRequest {
 
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   employeeId String
+}
+
+model Supplier {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  category     String   @default("General")
+  contactName  String   @default("")
+  contactPhone String   @default("")
+  contactEmail String   @default("")
+  address      String   @default("")
+  country      String   @default("")
+  currency     String   @default("USD")
+  status       String   @default("Active")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  quotations     PurchaseQuotation[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model PurchaseRequest {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  title           String
+  description     String   @default("")
+  department      String   @default("")
+  requestedBy     String   @default("")
+  priority        String   @default("Medium")
+  category        String   @default("General")
+  estimatedAmount Float    @default(0)
+  currency        String   @default("TRY")
+  budgetCode      String   @default("")
+  notes           String   @default("")
+  status          String   @default("Request")
+  budgetApproved  Boolean  @default(false)
+  budgetNotes     String   @default("")
+  approvedBy      String   @default("")
+  approvedAt      String?
+  rejectionReason String   @default("")
+  receivedDate    String?
+  receivedBy      String   @default("")
+  qcResult        String   @default("")
+  qcNotes         String   @default("")
+  qcDate          String?
+  invoiceNo       String   @default("")
+  invoiceDate     String?
+  invoiceAmount   Float    @default(0)
+  invoiceMatched  Boolean  @default(false)
+  paymentDueDate  String?
+  paymentStatus   String   @default("")
+  paymentDate     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  quotations    PurchaseQuotation[]
+  purchaseOrder PurchaseOrder?
+}
+
+model PurchaseQuotation {
+  id            String   @id @default(cuid())
+  supplierName  String   @default("")
+  quotationNo   String   @default("")
+  quotationDate String   @default("")
+  amount        Float    @default(0)
+  currency      String   @default("TRY")
+  vat           Float    @default(0)
+  deliveryDays  Int      @default(0)
+  paymentTerms  String   @default("")
+  warranty      String   @default("")
+  notes         String   @default("")
+  selected      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  request    PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId  String
+  supplier   Supplier?       @relation(fields: [supplierId], references: [id])
+  supplierId String?
+}
+
+model PurchaseOrder {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  status       String   @default("Draft")
+  currency     String   @default("USD")
+  vat          Float    @default(0)
+  totalAmount  Float    @default(0)
+  notes        String   @default("")
+  expectedDate String   @default("")
+  receivedDate String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  supplier   Supplier?        @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  request    PurchaseRequest? @relation(fields: [requestId], references: [id])
+  requestId  String?          @unique
+
+  items PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              String   @id @default(cuid())
+  productName     String
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  currency        String   @default("USD")
+  receivedQty     Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrderId String
+  product         Product?      @relation(fields: [productId], references: [id])
+  productId       String?
 }

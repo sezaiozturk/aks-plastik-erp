@@ -9,17 +9,17 @@ const CATEGORIES = ['General', 'Raw Materials', 'Equipment', 'Services', 'IT & S
 const SUPPLIER_CATEGORIES = ['General', 'Raw Materials', 'Equipment', 'Services', 'IT & Software', 'Logistics', 'Other']
 
 const WORKFLOW_STAGES = [
-  { key: 'Request',           label: 'Talep Girisi',       icon: 'edit_note',          color: 'text-blue-500',   bg: 'bg-blue-500' },
-  { key: 'Budget Review',     label: 'Butce Kontrolu',     icon: 'account_balance',    color: 'text-amber-500',  bg: 'bg-amber-500' },
-  { key: 'Collecting Quotes', label: 'Teklif Toplama',     icon: 'request_quote',      color: 'text-purple-500', bg: 'bg-purple-500' },
-  { key: 'Comparison',        label: 'Karsilastirma',      icon: 'compare_arrows',     color: 'text-indigo-500', bg: 'bg-indigo-500' },
-  { key: 'Pending Approval',  label: 'Yonetim Onayi',      icon: 'approval',           color: 'text-orange-500', bg: 'bg-orange-500' },
-  { key: 'PO Created',        label: 'Siparis (PO)',       icon: 'receipt_long',       color: 'text-cyan-600',   bg: 'bg-cyan-600' },
-  { key: 'In Logistics',      label: 'Lojistik / Mal Kabul', icon: 'local_shipping',  color: 'text-teal-500',   bg: 'bg-teal-500' },
-  { key: 'Quality Check',     label: 'Kalite Kontrol',     icon: 'verified',           color: 'text-lime-600',   bg: 'bg-lime-600' },
-  { key: 'Invoice Matching',  label: 'E-Fatura Eslestirme', icon: 'receipt',           color: 'text-pink-500',   bg: 'bg-pink-500' },
-  { key: 'Payment',           label: 'Odeme Programi',     icon: 'payments',           color: 'text-emerald-500', bg: 'bg-emerald-500' },
-  { key: 'Completed',         label: 'Tamamlandi',         icon: 'check_circle',       color: 'text-green-600',  bg: 'bg-green-600' },
+  { key: 'Request',           label: 'Request',            icon: 'edit_note',          color: 'text-blue-500',   bg: 'bg-blue-500' },
+  { key: 'Budget Review',     label: 'Budget Review',      icon: 'account_balance',    color: 'text-amber-500',  bg: 'bg-amber-500' },
+  { key: 'Collecting Quotes', label: 'Collecting Quotes',  icon: 'request_quote',      color: 'text-purple-500', bg: 'bg-purple-500' },
+  { key: 'Comparison',        label: 'Comparison',         icon: 'compare_arrows',     color: 'text-indigo-500', bg: 'bg-indigo-500' },
+  { key: 'Pending Approval',  label: 'Pending Approval',   icon: 'approval',           color: 'text-orange-500', bg: 'bg-orange-500' },
+  { key: 'PO Created',        label: 'PO Created',         icon: 'receipt_long',       color: 'text-cyan-600',   bg: 'bg-cyan-600' },
+  { key: 'In Logistics',      label: 'In Logistics',       icon: 'local_shipping',     color: 'text-teal-500',   bg: 'bg-teal-500' },
+  { key: 'Quality Check',     label: 'Quality Check',      icon: 'verified',           color: 'text-lime-600',   bg: 'bg-lime-600' },
+  { key: 'Invoice Matching',  label: 'Invoice Matching',   icon: 'receipt',            color: 'text-pink-500',   bg: 'bg-pink-500' },
+  { key: 'Payment',           label: 'Payment',            icon: 'payments',           color: 'text-emerald-500', bg: 'bg-emerald-500' },
+  { key: 'Completed',         label: 'Completed',          icon: 'check_circle',       color: 'text-green-600',  bg: 'bg-green-600' },
 ]
 
 const TERMINAL = ['Completed', 'Rejected', 'Cancelled']
@@ -49,7 +49,7 @@ const PRIORITY_COLOR = {
   Urgent: 'bg-red-500/10 text-red-600',
 }
 
-function fmt(n) { return Number(n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+function fmt(n) { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 
 // ── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, sub, color = 'text-primary' }) {
@@ -67,54 +67,13 @@ function StatCard({ icon, label, value, sub, color = 'text-primary' }) {
   )
 }
 
-// ── Pipeline Bar ─────────────────────────────────────────────────────────────
-function PipelineBar({ requests, activeStage, onStageClick }) {
-  const counts = {}
-  requests.forEach((r) => { counts[r.status] = (counts[r.status] || 0) + 1 })
-
-  return (
-    <div className="bg-surface-container-lowest border border-theme-border rounded-2xl p-4 overflow-x-auto">
-      <div className="flex items-center gap-1 min-w-max">
-        {WORKFLOW_STAGES.map((stage, i) => {
-          const count = counts[stage.key] || 0
-          const isActive = activeStage === stage.key
-          return (
-            <div key={stage.key} className="flex items-center">
-              <button
-                onClick={() => onStageClick(isActive ? null : stage.key)}
-                className={`flex flex-col items-center px-3 py-2 rounded-xl transition min-w-[90px] ${
-                  isActive
-                    ? 'bg-primary/10 border border-primary/30'
-                    : 'hover:bg-hover-bg border border-transparent'
-                }`}
-              >
-                <span className={`material-symbols-outlined text-lg ${isActive ? 'text-primary' : stage.color}`}>
-                  {stage.icon}
-                </span>
-                <span className="text-[10px] font-semibold text-text-muted mt-0.5 leading-tight text-center">
-                  {stage.label}
-                </span>
-                <span className={`text-xs font-bold mt-0.5 ${count > 0 ? 'text-on-surface' : 'text-text-muted/40'}`}>
-                  {count}
-                </span>
-              </button>
-              {i < WORKFLOW_STAGES.length - 1 && (
-                <span className="material-symbols-outlined text-xs text-text-muted/30 mx-0.5">chevron_right</span>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // ── Request Modal ────────────────────────────────────────────────────────────
 function RequestModal({ initial, onClose, onSave }) {
-  const [form, setForm] = useState(initial || {
+  const [form, setForm] = useState({
     title: '', description: '', department: '', requestedBy: '',
     priority: 'Medium', category: 'General', estimatedAmount: '',
     currency: 'TRY', budgetCode: '', notes: '',
+    ...(initial || {}),
   })
   const [errors, setErrors] = useState({})
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }))
@@ -131,67 +90,67 @@ function RequestModal({ initial, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-lg p-7 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Talep Duzenle' : 'Yeni Satin Alma Talebi'}</h2>
+          <h2 className="text-lg font-bold text-on-surface">{initial?.id ? 'Edit Request' : 'New Purchase Request'}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Baslik *</label>
-            <input className={inp('title')} value={form.title} onChange={set('title')} placeholder="Ornek: CNC Freze Yedek Parca Alimi" />
+            <label className="block text-xs font-semibold text-text-muted mb-1">Title *</label>
+            <input className={inp('title')} value={form.title} onChange={set('title')} placeholder="e.g. CNC Machine Spare Parts Purchase" />
             {errors.title && <p className="text-xs text-error mt-1">{errors.title}</p>}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Aciklama</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Description</label>
             <textarea rows={2} className={inp('description')} value={form.description} onChange={set('description')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Departman</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Department</label>
               <input className={inp('department')} value={form.department} onChange={set('department')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Talep Eden</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Requested By</label>
               <input className={inp('requestedBy')} value={form.requestedBy} onChange={set('requestedBy')} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Oncelik</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Priority</label>
               <select className={inp('priority')} value={form.priority} onChange={set('priority')}>
                 {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Kategori</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Category</label>
               <select className={inp('category')} value={form.category} onChange={set('category')}>
                 {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Butce Kodu</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Budget Code</label>
               <input className={inp('budgetCode')} value={form.budgetCode} onChange={set('budgetCode')} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Tahmini Tutar</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Estimated Amount</label>
               <input type="number" min="0" step="0.01" className={inp('estimatedAmount')} value={form.estimatedAmount} onChange={set('estimatedAmount')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Para Birimi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
               <select className={inp('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notlar</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
             <textarea rows={2} className={inp('notes')} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Iptal</button>
-          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Kaydet</button>
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
         </div>
       </div>
     </div>
@@ -220,44 +179,44 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-md p-7 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Teklif Duzenle' : 'Yeni Teklif Ekle'}</h2>
+          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Edit Quotation' : 'Add New Quotation'}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Tedarikci</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Supplier</label>
             <select className={inp('supplierId')} value={form.supplierId} onChange={set('supplierId')}>
-              <option value="">-- Manuel Giris --</option>
+              <option value="">-- Manual Entry --</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           {!form.supplierId && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Tedarikci Adi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Supplier Adi</label>
               <input className={inp('supplierName')} value={form.supplierName} onChange={set('supplierName')} />
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Teklif No</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Quote No</label>
               <input className={inp('quotationNo')} value={form.quotationNo} onChange={set('quotationNo')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Teklif Tarihi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Quote Date</label>
               <input type="date" className={inp('quotationDate')} value={form.quotationDate} onChange={set('quotationDate')} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Tutar *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Amount *</label>
               <input type="number" min="0" step="0.01" className={inp('amount')} value={form.amount} onChange={set('amount')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">KDV %</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">VAT %</label>
               <input type="number" min="0" max="100" className={inp('vat')} value={form.vat} onChange={set('vat')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Para Birimi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
               <select className={inp('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
@@ -265,26 +224,26 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Teslimat (gun)</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Delivery (days)</label>
               <input type="number" min="0" className={inp('deliveryDays')} value={form.deliveryDays} onChange={set('deliveryDays')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Garanti</label>
-              <input className={inp('warranty')} value={form.warranty} onChange={set('warranty')} placeholder="Ornek: 2 Yil" />
+              <label className="block text-xs font-semibold text-text-muted mb-1">Warranty</label>
+              <input className={inp('warranty')} value={form.warranty} onChange={set('warranty')} placeholder="e.g. 2 Years" />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Odeme Kosullari</label>
-            <input className={inp('paymentTerms')} value={form.paymentTerms} onChange={set('paymentTerms')} placeholder="Ornek: 30 gun vadeli" />
+            <label className="block text-xs font-semibold text-text-muted mb-1">Payment Terms</label>
+            <input className={inp('paymentTerms')} value={form.paymentTerms} onChange={set('paymentTerms')} placeholder="e.g. Net 30 days" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notlar</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
             <textarea rows={2} className={inp('notes')} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Iptal</button>
-          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Kaydet</button>
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
         </div>
       </div>
     </div>
@@ -312,24 +271,24 @@ function SupplierModal({ initial, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-lg p-7 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Tedarikci Duzenle' : 'Yeni Tedarikci'}</h2>
+          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Edit Supplier' : 'New Supplier'}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Firma Adi *</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Company Name *</label>
             <input className={inp('name')} value={form.name} onChange={set('name')} />
             {errors.name && <p className="text-xs text-error mt-1">{errors.name}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Kategori</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Category</label>
               <select className={inp('category')} value={form.category} onChange={set('category')}>
                 {SUPPLIER_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Durum</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Status</label>
               <select className={inp('status')} value={form.status} onChange={set('status')}>
                 <option>Active</option><option>Inactive</option><option>Blacklisted</option>
               </select>
@@ -337,42 +296,42 @@ function SupplierModal({ initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Yetkili Kisi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Contact Person</label>
               <input className={inp('contactName')} value={form.contactName} onChange={set('contactName')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Telefon</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Phone</label>
               <input className={inp('contactPhone')} value={form.contactPhone} onChange={set('contactPhone')} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">E-posta</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">E-Mail</label>
             <input className={inp('contactEmail')} value={form.contactEmail} onChange={set('contactEmail')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Ulke</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Country</label>
               <input className={inp('country')} value={form.country} onChange={set('country')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Para Birimi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
               <select className={inp('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Adres</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Address</label>
             <input className={inp('address')} value={form.address} onChange={set('address')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notlar</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
             <textarea rows={2} className={inp('notes')} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Iptal</button>
-          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Kaydet</button>
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
         </div>
       </div>
     </div>
@@ -380,7 +339,7 @@ function SupplierModal({ initial, onClose, onSave }) {
 }
 
 // ── Detail Drawer ────────────────────────────────────────────────────────────
-function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, onSelectQuotation, onDeleteQuotation }) {
+function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate, onAddQuotation, onSelectQuotation, onDeleteQuotation }) {
   const r = request
   const stageIdx = WORKFLOW_STAGES.findIndex((s) => s.key === r.status)
   const quotations = r.quotations || []
@@ -412,25 +371,25 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
 
   function advanceLabel() {
     const labels = {
-      'Request': 'Butce Kontrolune Gonder',
-      'Budget Review': 'Butce Onayla & Teklif Topla',
-      'Collecting Quotes': 'Karsilastirmaya Gec',
-      'Comparison': 'Yonetim Onayina Gonder',
-      'Pending Approval': 'Onayla & PO Olustur',
-      'PO Created': 'Lojistige Gonder',
-      'In Logistics': 'Kalite Kontrole Gonder',
-      'Quality Check': 'Kabul Et & Fatura Eslestir',
-      'Invoice Matching': 'Odeme Programina Al',
-      'Payment': 'Tamamla',
+      'Request': 'Send to Budget Review',
+      'Budget Review': 'Approve Budget & Collect Quotes',
+      'Collecting Quotes': 'Go to Comparison',
+      'Comparison': 'Send for Management Approval',
+      'Pending Approval': 'Approve & Create PO',
+      'PO Created': 'Send to Logistics',
+      'In Logistics': 'Send to Quality Check',
+      'Quality Check': 'Accept & Match Invoice',
+      'Invoice Matching': 'Move to Payment',
+      'Payment': 'Complete',
     }
-    return labels[r.status] || 'Ilerle'
+    return labels[r.status] || 'Advance'
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
-      <div className="bg-surface-container-lowest w-full max-w-2xl h-full overflow-y-auto shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-surface-container-lowest w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl rounded-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-surface-container-lowest z-10 px-6 pt-6 pb-4 border-b border-theme-border">
+        <div className="px-6 pt-6 pb-4 border-b border-theme-border">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <span className="font-mono text-sm text-text-muted">{r.code}</span>
@@ -441,7 +400,11 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                 {r.priority}
               </span>
             </div>
-            <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
+            <div className="flex items-center gap-1">
+              <button onClick={onEdit} className="text-text-muted hover:text-primary transition p-1 rounded-lg hover:bg-hover-bg" title="Edit"><span className="material-symbols-outlined text-sm">edit</span></button>
+              <button onClick={onDelete} className="text-text-muted hover:text-error transition p-1 rounded-lg hover:bg-hover-bg" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>
+              <button onClick={onClose} className="text-text-muted hover:text-error p-1 rounded-lg hover:bg-hover-bg"><span className="material-symbols-outlined">close</span></button>
+            </div>
           </div>
           <h2 className="text-lg font-bold text-on-surface">{r.title}</h2>
           {r.description && <p className="text-sm text-text-muted mt-1">{r.description}</p>}
@@ -450,7 +413,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
         <div className="px-6 py-5 space-y-5">
           {/* Progress bar */}
           <div>
-            <p className="text-xs font-semibold text-text-muted mb-2">Surec Durumu</p>
+            <p className="text-xs font-semibold text-text-muted mb-2">Process Status</p>
             <div className="flex items-center gap-0.5">
               {WORKFLOW_STAGES.map((stage, i) => (
                 <div key={stage.key} className="flex items-center flex-1">
@@ -467,12 +430,12 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {/* Info grid */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              ['Departman', r.department],
-              ['Talep Eden', r.requestedBy],
-              ['Kategori', r.category],
-              ['Tahmini Tutar', `${r.currency} ${fmt(r.estimatedAmount)}`],
-              ['Butce Kodu', r.budgetCode],
-              ['Tarih', new Date(r.createdAt).toLocaleDateString('tr-TR')],
+              ['Department', r.department],
+              ['Requested By', r.requestedBy],
+              ['Category', r.category],
+              ['Estimated Amount', `${r.currency} ${fmt(r.estimatedAmount)}`],
+              ['Budget Code', r.budgetCode],
+              ['Date', new Date(r.createdAt).toLocaleDateString('en-US')],
             ].map(([label, val]) => (
               <div key={label} className="bg-surface-container rounded-lg p-3">
                 <p className="text-[10px] font-semibold text-text-muted uppercase">{label}</p>
@@ -485,22 +448,22 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {r.status === 'Budget Review' && (
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
               <p className="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">account_balance</span> Butce Kontrolu
+                <span className="material-symbols-outlined text-sm">account_balance</span> Budget Review
               </p>
               <p className="text-xs text-text-muted mb-3">Tahmini tutar: <strong>{r.currency} {fmt(r.estimatedAmount)}</strong></p>
               <textarea
                 className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none mb-2"
                 rows={2}
-                placeholder="Butce notu (opsiyonel)..."
+                placeholder="Budget note (optional)..."
                 value={r.budgetNotes || ''}
                 onChange={(e) => onUpdate({ budgetNotes: e.target.value })}
               />
               <div className="flex gap-2">
                 <button
-                  onClick={() => onUpdate({ status: 'Rejected', rejectionReason: 'Butce uygun degil', budgetApproved: false })}
+                  onClick={() => onUpdate({ status: 'Rejected', rejectionReason: 'Budget not approved', budgetApproved: false })}
                   className="px-4 py-1.5 rounded-lg bg-error/10 text-error text-xs font-semibold hover:bg-error/20 transition"
                 >
-                  Butce Reddet
+                  Reject Budget
                 </button>
               </div>
             </div>
@@ -512,30 +475,30 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-bold text-on-surface flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm text-purple-500">request_quote</span>
-                  Teklifler ({quotations.length}/3 min.)
+                  Quotations ({quotations.length}/3 min.)
                 </p>
                 {r.status === 'Collecting Quotes' && (
                   <button onClick={onAddQuotation} className="flex items-center gap-1 text-xs text-primary hover:opacity-80 font-semibold">
-                    <span className="material-symbols-outlined text-sm">add</span> Teklif Ekle
+                    <span className="material-symbols-outlined text-sm">add</span> Add Quote
                   </button>
                 )}
               </div>
               {quotations.length === 0 ? (
                 <div className="border border-dashed border-theme-border rounded-lg p-6 text-center text-xs text-text-muted">
-                  Henuz teklif eklenmedi
+                  No quotations added yet
                 </div>
               ) : (
                 <div className="border border-theme-border rounded-xl overflow-hidden">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-surface-container text-text-muted">
-                        <th className="px-3 py-2 text-left font-semibold">Tedarikci</th>
+                        <th className="px-3 py-2 text-left font-semibold">Supplier</th>
                         <th className="px-3 py-2 text-left font-semibold">Tutar</th>
                         <th className="px-3 py-2 text-left font-semibold">KDV</th>
-                        <th className="px-3 py-2 text-left font-semibold">Toplam</th>
-                        <th className="px-3 py-2 text-left font-semibold">Teslimat</th>
-                        <th className="px-3 py-2 text-left font-semibold">Garanti</th>
-                        <th className="px-3 py-2 text-left font-semibold">Odeme</th>
+                        <th className="px-3 py-2 text-left font-semibold">Total</th>
+                        <th className="px-3 py-2 text-left font-semibold">Delivery</th>
+                        <th className="px-3 py-2 text-left font-semibold">Warranty</th>
+                        <th className="px-3 py-2 text-left font-semibold">Payment</th>
                         <th className="px-3 py-2" />
                       </tr>
                     </thead>
@@ -556,20 +519,20 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                             <td className="px-3 py-2.5 text-text-muted">%{q.vat}</td>
                             <td className="px-3 py-2.5 font-mono font-semibold">
                               <span className={isBest ? 'text-green-600' : ''}>{q.currency} {fmt(total)}</span>
-                              {isBest && <span className="ml-1 text-[9px] text-green-600 font-bold">EN DUSUK</span>}
+                              {isBest && <span className="ml-1 text-[9px] text-green-600 font-bold">LOWEST</span>}
                             </td>
-                            <td className="px-3 py-2.5 text-text-muted">{q.deliveryDays ? `${q.deliveryDays} gun` : '—'}</td>
+                            <td className="px-3 py-2.5 text-text-muted">{q.deliveryDays ? `${q.deliveryDays} days` : '—'}</td>
                             <td className="px-3 py-2.5 text-text-muted">{q.warranty || '—'}</td>
                             <td className="px-3 py-2.5 text-text-muted">{q.paymentTerms || '—'}</td>
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-1">
                                 {r.status === 'Comparison' && !q.selected && (
-                                  <button onClick={() => onSelectQuotation(q.id)} className="text-primary hover:opacity-80" title="Bu teklifi sec">
+                                  <button onClick={() => onSelectQuotation(q.id)} className="text-primary hover:opacity-80" title="Select this quote">
                                     <span className="material-symbols-outlined text-sm">task_alt</span>
                                   </button>
                                 )}
                                 {r.status === 'Collecting Quotes' && (
-                                  <button onClick={() => onDeleteQuotation(q.id)} className="text-text-muted hover:text-error" title="Sil">
+                                  <button onClick={() => onDeleteQuotation(q.id)} className="text-text-muted hover:text-error" title="Delete">
                                     <span className="material-symbols-outlined text-sm">delete</span>
                                   </button>
                                 )}
@@ -585,7 +548,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
               {r.status === 'Collecting Quotes' && quotations.length > 0 && quotations.length < 3 && (
                 <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                   <span className="material-symbols-outlined text-sm">warning</span>
-                  En az 3 teklif gerekli (mevcut: {quotations.length})
+                  At least 3 quotations required (current: {quotations.length})
                 </p>
               )}
             </div>
@@ -595,12 +558,12 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {r.status === 'Quality Check' && (
             <div className="bg-lime-500/5 border border-lime-500/20 rounded-xl p-4">
               <p className="text-sm font-bold text-lime-700 mb-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">verified</span> Kalite Kontrol
+                <span className="material-symbols-outlined text-sm">verified</span> Quality Check
               </p>
               <textarea
                 className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none mb-2"
                 rows={2}
-                placeholder="Kalite kontrol notlari..."
+                placeholder="Quality check notes..."
                 value={r.qcNotes || ''}
                 onChange={(e) => onUpdate({ qcNotes: e.target.value })}
               />
@@ -609,7 +572,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                   onClick={() => onUpdate({ status: 'QC Rejected', qcResult: 'Rejected', qcDate: new Date().toISOString().split('T')[0] })}
                   className="px-4 py-1.5 rounded-lg bg-error/10 text-error text-xs font-semibold hover:bg-error/20 transition"
                 >
-                  Reddet
+                  Reject
                 </button>
               </div>
             </div>
@@ -619,11 +582,11 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {r.status === 'Invoice Matching' && (
             <div className="bg-pink-500/5 border border-pink-500/20 rounded-xl p-4 space-y-3">
               <p className="text-sm font-bold text-pink-600 mb-1 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">receipt</span> E-Fatura Eslestirme
+                <span className="material-symbols-outlined text-sm">receipt</span> Invoice Matching
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Fatura No</label>
+                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Invoice No</label>
                   <input
                     className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-1.5 text-sm text-on-surface outline-none"
                     value={r.invoiceNo || ''}
@@ -631,7 +594,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Fatura Tarihi</label>
+                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Invoice Date</label>
                   <input
                     type="date"
                     className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-1.5 text-sm text-on-surface outline-none"
@@ -641,7 +604,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Fatura Tutari</label>
+                <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Invoice Amount</label>
                 <input
                   type="number" min="0" step="0.01"
                   className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-1.5 text-sm text-on-surface outline-none"
@@ -656,11 +619,11 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {r.status === 'Payment' && (
             <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 space-y-3">
               <p className="text-sm font-bold text-emerald-600 mb-1 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">payments</span> Odeme Programi
+                <span className="material-symbols-outlined text-sm">payments</span> Payment Schedule
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Odeme Vadesi</label>
+                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Payment Due Date</label>
                   <input
                     type="date"
                     className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-1.5 text-sm text-on-surface outline-none"
@@ -669,7 +632,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Odeme Tarihi</label>
+                  <label className="block text-[10px] font-semibold text-text-muted mb-0.5">Payment Date</label>
                   <input
                     type="date"
                     className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-1.5 text-sm text-on-surface outline-none"
@@ -684,7 +647,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {/* Notes */}
           {r.notes && (
             <div className="bg-surface-container rounded-xl p-4">
-              <p className="text-[10px] font-semibold text-text-muted uppercase mb-1">Notlar</p>
+              <p className="text-[10px] font-semibold text-text-muted uppercase mb-1">Notes</p>
               <p className="text-sm text-on-surface whitespace-pre-wrap">{r.notes}</p>
             </div>
           )}
@@ -692,21 +655,21 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
           {/* Rejection reason */}
           {['Rejected', 'Budget Rejected', 'QC Rejected'].includes(r.status) && r.rejectionReason && (
             <div className="bg-error/5 border border-error/20 rounded-xl p-4">
-              <p className="text-xs font-bold text-error mb-1">Red Sebebi</p>
+              <p className="text-xs font-bold text-error mb-1">Rejection Reason</p>
               <p className="text-sm text-on-surface">{r.rejectionReason}</p>
             </div>
           )}
         </div>
 
         {/* Action bar */}
-        <div className="sticky bottom-0 bg-surface-container-lowest border-t border-theme-border px-6 py-4 flex items-center gap-3">
+        <div className="bg-surface-container-lowest border-t border-theme-border px-6 py-4 flex items-center gap-3 rounded-b-2xl">
           {!isTerminal && (
             <>
               <button
                 onClick={() => onUpdate({ status: 'Cancelled' })}
                 className="px-4 py-2 rounded-lg border border-error/30 text-error text-xs font-semibold hover:bg-error/5 transition"
               >
-                Iptal Et
+                Cancel Request
               </button>
               <div className="flex-1" />
               <button
@@ -738,7 +701,7 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
                 r.status === 'Completed' ? 'bg-green-500/10 text-green-700' : 'bg-error/10 text-error'
               }`}>
                 <span className="material-symbols-outlined text-sm">{r.status === 'Completed' ? 'check_circle' : 'cancel'}</span>
-                {r.status === 'Completed' ? 'Surec Tamamlandi' : `Surec Sonlandirildi (${r.status})`}
+                {r.status === 'Completed' ? 'Process Completed' : `Process Ended (${r.status})`}
               </span>
             </div>
           )}
@@ -750,7 +713,8 @@ function DetailDrawer({ request, suppliers, onClose, onUpdate, onAddQuotation, o
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Purchasing() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
+  const BASE = `${API_URL}/purchasing`
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   const authH = { Authorization: `Bearer ${token}` }
 
@@ -759,8 +723,6 @@ export default function Purchasing() {
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [stageFilter, setStageFilter] = useState(null)
-
   const [requestModal, setRequestModal] = useState(null)
   const [supplierModal, setSupplierModal] = useState(null)
   const [quotationModal, setQuotationModal] = useState(null)
@@ -771,8 +733,8 @@ export default function Purchasing() {
     setLoading(true)
     try {
       const [reqRes, supRes] = await Promise.all([
-        fetch(`${API_URL}/purchasing/requests`, { headers: authH }),
-        fetch(`${API_URL}/purchasing/suppliers`, { headers: authH }),
+        fetch(`${BASE}/requests`, { headers: authH }),
+        fetch(`${BASE}/suppliers`, { headers: authH }),
       ])
       const [reqData, supData] = await Promise.all([reqRes.json(), supRes.json()])
       setRequests(Array.isArray(reqData) ? reqData : [])
@@ -790,9 +752,7 @@ export default function Purchasing() {
   // Filtered
   const filteredRequests = requests.filter((r) => {
     const q = search.toLowerCase()
-    const matchQ = !q || r.code?.toLowerCase().includes(q) || r.title?.toLowerCase().includes(q) || r.department?.toLowerCase().includes(q) || r.requestedBy?.toLowerCase().includes(q)
-    const matchS = !stageFilter || r.status === stageFilter
-    return matchQ && matchS
+    return !q || r.code?.toLowerCase().includes(q) || r.title?.toLowerCase().includes(q) || r.department?.toLowerCase().includes(q) || r.requestedBy?.toLowerCase().includes(q)
   })
 
   const filteredSuppliers = suppliers.filter((s) => {
@@ -802,8 +762,8 @@ export default function Purchasing() {
 
   // CRUD
   async function saveRequest(form) {
-    const isEdit = requestModal && requestModal !== 'new'
-    const url = isEdit ? `${API_URL}/purchasing/requests/${requestModal.id}` : `${API_URL}/purchasing/requests`
+    const isEdit = requestModal && !requestModal._isNew && requestModal !== 'new'
+    const url = isEdit ? `${BASE}/requests/${requestModal.id}` : `${BASE}/requests`
     await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers, body: JSON.stringify(form) })
     setRequestModal(null)
     load()
@@ -811,14 +771,14 @@ export default function Purchasing() {
 
   async function saveSupplier(form) {
     const isEdit = supplierModal && supplierModal !== 'new'
-    const url = isEdit ? `${API_URL}/purchasing/suppliers/${supplierModal.id}` : `${API_URL}/purchasing/suppliers`
+    const url = isEdit ? `${BASE}/suppliers/${supplierModal.id}` : `${BASE}/suppliers`
     await fetch(url, { method: isEdit ? 'PUT' : 'POST', headers, body: JSON.stringify(form) })
     setSupplierModal(null)
     load()
   }
 
   async function updateRequest(id, updates) {
-    const res = await fetch(`${API_URL}/purchasing/requests/${id}`, {
+    const res = await fetch(`${BASE}/requests/${id}`, {
       method: 'PUT', headers, body: JSON.stringify(updates),
     })
     const updated = await res.json()
@@ -827,13 +787,13 @@ export default function Purchasing() {
   }
 
   async function addQuotation(form) {
-    await fetch(`${API_URL}/purchasing/requests/${detailDrawer.id}/quotations`, {
+    await fetch(`${BASE}/requests/${detailDrawer.id}/quotations`, {
       method: 'POST', headers, body: JSON.stringify(form),
     })
     setQuotationModal(null)
     load().then(() => {
       // Refresh detail drawer
-      fetch(`${API_URL}/purchasing/requests`, { headers: authH })
+      fetch(`${BASE}/requests`, { headers: authH })
         .then((r) => r.json())
         .then((data) => {
           const updated = data.find((r) => r.id === detailDrawer.id)
@@ -843,9 +803,9 @@ export default function Purchasing() {
   }
 
   async function selectQuotation(qId) {
-    await fetch(`${API_URL}/purchasing/quotations/${qId}/select`, { method: 'PUT', headers })
+    await fetch(`${BASE}/quotations/${qId}/select`, { method: 'PUT', headers })
     load().then(() => {
-      fetch(`${API_URL}/purchasing/requests`, { headers: authH })
+      fetch(`${BASE}/requests`, { headers: authH })
         .then((r) => r.json())
         .then((data) => {
           const updated = data.find((r) => r.id === detailDrawer.id)
@@ -855,9 +815,9 @@ export default function Purchasing() {
   }
 
   async function deleteQuotation(qId) {
-    await fetch(`${API_URL}/purchasing/quotations/${qId}`, { method: 'DELETE', headers: authH })
+    await fetch(`${BASE}/quotations/${qId}`, { method: 'DELETE', headers: authH })
     load().then(() => {
-      fetch(`${API_URL}/purchasing/requests`, { headers: authH })
+      fetch(`${BASE}/requests`, { headers: authH })
         .then((r) => r.json())
         .then((data) => {
           const updated = data.find((r) => r.id === detailDrawer.id)
@@ -869,7 +829,7 @@ export default function Purchasing() {
   async function handleDelete() {
     if (!deleteConfirm) return
     const { type, id } = deleteConfirm
-    await fetch(`${API_URL}/purchasing/${type}/${id}`, { method: 'DELETE', headers: authH })
+    await fetch(`${BASE}/${type}/${id}`, { method: 'DELETE', headers: authH })
     setDeleteConfirm(null)
     if (detailDrawer?.id === id) setDetailDrawer(null)
     load()
@@ -880,42 +840,38 @@ export default function Purchasing() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Satin Alma & Tedarik</h1>
-          <p className="text-sm text-text-muted mt-0.5">Satin alma sureclerini bastan sona yonet</p>
+          <h1 className="text-2xl font-bold text-on-surface">Purchasing & Supply</h1>
+          <p className="text-sm text-text-muted mt-0.5">Manage purchasing processes end to end</p>
         </div>
         <button
-          onClick={() => tab === 'suppliers' ? setSupplierModal('new') : setRequestModal('new')}
+          onClick={() => tab === 'suppliers' ? setSupplierModal('new') : setRequestModal({ _isNew: true, requestedBy: user?.name || '' })}
           className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition"
         >
           <span className="material-symbols-outlined text-sm">add</span>
-          {tab === 'suppliers' ? 'Yeni Tedarikci' : 'Yeni Talep'}
+          {tab === 'suppliers' ? 'New Supplier' : 'New Request'}
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-5 gap-3">
-        <StatCard icon="assignment" label="Toplam Talep" value={requests.length} sub={`${activeReqs.length} aktif`} />
-        <StatCard icon="pending_actions" label="Devam Eden" value={activeReqs.length} color="text-amber-500" />
-        <StatCard icon="check_circle" label="Tamamlanan" value={requests.filter((r) => r.status === 'Completed').length} color="text-green-500" />
-        <StatCard icon="storefront" label="Tedarikciler" value={suppliers.filter((s) => s.status === 'Active').length} sub={`${suppliers.length} toplam`} color="text-purple-500" />
-        <StatCard icon="payments" label="Toplam Tahmini" value={`${fmt(totalEst)}`} sub="TRY" color="text-blue-500" />
+        <StatCard icon="assignment" label="Total Requests" value={requests.length} sub={`${activeReqs.length} active`} />
+        <StatCard icon="pending_actions" label="In Progress" value={activeReqs.length} color="text-amber-500" />
+        <StatCard icon="check_circle" label="Completed" value={requests.filter((r) => r.status === 'Completed').length} color="text-green-500" />
+        <StatCard icon="storefront" label="Suppliers" value={suppliers.filter((s) => s.status === 'Active').length} sub={`${suppliers.length} total`} color="text-purple-500" />
+        <StatCard icon="payments" label="Total Estimated" value={`${fmt(totalEst)}`} sub="TRY" color="text-blue-500" />
       </div>
 
-      {/* Pipeline */}
-      {tab === 'requests' && (
-        <PipelineBar requests={requests} activeStage={stageFilter} onStageClick={setStageFilter} />
-      )}
 
       {/* Tabs + Table */}
       <div className="bg-surface-container-lowest border border-theme-border rounded-2xl">
         <div className="flex items-center gap-4 px-6 pt-4 border-b border-theme-border">
           {[
-            { key: 'requests', label: 'Satin Alma Talepleri' },
-            { key: 'suppliers', label: 'Tedarikciler' },
+            { key: 'requests', label: 'Purchase Requests' },
+            { key: 'suppliers', label: 'Suppliers' },
           ].map((t) => (
             <button
               key={t.key}
-              onClick={() => { setTab(t.key); setSearch(''); setStageFilter(null) }}
+              onClick={() => { setTab(t.key); setSearch('') }}
               className={`pb-3 text-sm font-semibold border-b-2 transition ${tab === t.key ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-on-surface'}`}
             >
               {t.label}
@@ -926,33 +882,22 @@ export default function Purchasing() {
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted">search</span>
               <input
                 className="bg-surface-container border border-theme-border rounded-lg pl-8 pr-3 py-1.5 text-sm text-on-surface outline-none focus:border-primary w-48"
-                placeholder="Ara..."
+                placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            {stageFilter && (
-              <button
-                onClick={() => setStageFilter(null)}
-                className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition"
-              >
-                <span className="material-symbols-outlined text-xs">close</span>
-                {stageFilter}
-              </button>
-            )}
           </div>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center h-40 text-text-muted text-sm gap-2">
-            <span className="material-symbols-outlined animate-spin">refresh</span> Yukleniyor...
+            <span className="material-symbols-outlined animate-spin">refresh</span> Loading...
           </div>
         ) : tab === 'requests' ? (
           <RequestTable
             requests={filteredRequests}
             onOpen={(r) => setDetailDrawer(r)}
-            onEdit={(r) => setRequestModal(r)}
-            onDelete={(id) => setDeleteConfirm({ type: 'requests', id })}
           />
         ) : (
           <SupplierTable
@@ -964,7 +909,7 @@ export default function Purchasing() {
       </div>
 
       {/* Modals */}
-      {requestModal && <RequestModal initial={requestModal === 'new' ? null : requestModal} onClose={() => setRequestModal(null)} onSave={saveRequest} />}
+      {requestModal && <RequestModal initial={requestModal === 'new' || requestModal._isNew ? { requestedBy: requestModal?.requestedBy || '' } : requestModal} onClose={() => setRequestModal(null)} onSave={saveRequest} />}
       {supplierModal && <SupplierModal initial={supplierModal === 'new' ? null : supplierModal} onClose={() => setSupplierModal(null)} onSave={saveSupplier} />}
       {quotationModal && <QuotationModal suppliers={suppliers} initial={null} onClose={() => setQuotationModal(null)} onSave={addQuotation} />}
       {detailDrawer && (
@@ -972,6 +917,8 @@ export default function Purchasing() {
           request={detailDrawer}
           suppliers={suppliers}
           onClose={() => setDetailDrawer(null)}
+          onEdit={() => { setRequestModal(detailDrawer); setDetailDrawer(null) }}
+          onDelete={() => setDeleteConfirm({ type: 'requests', id: detailDrawer.id })}
           onUpdate={(updates) => updateRequest(detailDrawer.id, updates)}
           onAddQuotation={() => setQuotationModal('new')}
           onSelectQuotation={selectQuotation}
@@ -981,11 +928,11 @@ export default function Purchasing() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-container-lowest rounded-2xl shadow-xl p-8 max-w-sm w-full">
-            <h2 className="text-lg font-bold text-on-surface mb-2">Silme Onayi</h2>
-            <p className="text-sm text-text-muted mb-6">Bu islem geri alinamaz.</p>
+            <h2 className="text-lg font-bold text-on-surface mb-2">Confirm Delete</h2>
+            <p className="text-sm text-text-muted mb-6">This action cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Iptal</button>
-              <button onClick={handleDelete} className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Sil</button>
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+              <button onClick={handleDelete} className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Delete</button>
             </div>
           </div>
         </div>
@@ -995,11 +942,11 @@ export default function Purchasing() {
 }
 
 // ── Request Table ─────────────────────────────────────────────────────────────
-function RequestTable({ requests, onOpen, onEdit, onDelete }) {
+function RequestTable({ requests, onOpen }) {
   if (requests.length === 0) return (
     <div className="flex flex-col items-center justify-center h-40 text-text-muted gap-2">
       <span className="material-symbols-outlined text-3xl">assignment</span>
-      <p className="text-sm">Talep bulunamadi</p>
+      <p className="text-sm">No requests found</p>
     </div>
   )
 
@@ -1008,15 +955,14 @@ function RequestTable({ requests, onOpen, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-text-muted border-b border-theme-border">
-            <th className="px-6 py-3 font-semibold">Kod</th>
-            <th className="px-4 py-3 font-semibold">Baslik</th>
-            <th className="px-4 py-3 font-semibold">Departman</th>
-            <th className="px-4 py-3 font-semibold">Oncelik</th>
-            <th className="px-4 py-3 font-semibold">Durum</th>
-            <th className="px-4 py-3 font-semibold">Tahmini Tutar</th>
-            <th className="px-4 py-3 font-semibold">Teklifler</th>
-            <th className="px-4 py-3 font-semibold">Tarih</th>
-            <th className="px-4 py-3" />
+            <th className="px-6 py-3 font-semibold">Code</th>
+            <th className="px-4 py-3 font-semibold">Title</th>
+            <th className="px-4 py-3 font-semibold">Department</th>
+            <th className="px-4 py-3 font-semibold">Priority</th>
+            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold">Estimated Amount</th>
+            <th className="px-4 py-3 font-semibold">Quotes</th>
+            <th className="px-4 py-3 font-semibold">Date</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-theme-border">
@@ -1038,17 +984,7 @@ function RequestTable({ requests, onOpen, onEdit, onDelete }) {
                   <span className="material-symbols-outlined text-green-500 text-xs ml-1">check_circle</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-text-muted text-xs">{new Date(r.createdAt).toLocaleDateString('tr-TR')}</td>
-              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => onEdit(r)} className="text-text-muted hover:text-primary transition">
-                    <span className="material-symbols-outlined text-sm">edit</span>
-                  </button>
-                  <button onClick={() => onDelete(r.id)} className="text-text-muted hover:text-error transition">
-                    <span className="material-symbols-outlined text-sm">delete</span>
-                  </button>
-                </div>
-              </td>
+              <td className="px-4 py-3 text-text-muted text-xs">{new Date(r.createdAt).toLocaleDateString('en-US')}</td>
             </tr>
           ))}
         </tbody>
@@ -1062,7 +998,7 @@ function SupplierTable({ suppliers, onEdit, onDelete }) {
   if (suppliers.length === 0) return (
     <div className="flex flex-col items-center justify-center h-40 text-text-muted gap-2">
       <span className="material-symbols-outlined text-3xl">storefront</span>
-      <p className="text-sm">Tedarikci bulunamadi</p>
+      <p className="text-sm">No suppliers found</p>
     </div>
   )
 
@@ -1071,13 +1007,13 @@ function SupplierTable({ suppliers, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-text-muted border-b border-theme-border">
-            <th className="px-6 py-3 font-semibold">Kod</th>
-            <th className="px-4 py-3 font-semibold">Firma Adi</th>
-            <th className="px-4 py-3 font-semibold">Kategori</th>
-            <th className="px-4 py-3 font-semibold">Yetkili</th>
-            <th className="px-4 py-3 font-semibold">Ulke</th>
-            <th className="px-4 py-3 font-semibold">Para Birimi</th>
-            <th className="px-4 py-3 font-semibold">Durum</th>
+            <th className="px-6 py-3 font-semibold">Code</th>
+            <th className="px-4 py-3 font-semibold">Company Name</th>
+            <th className="px-4 py-3 font-semibold">Category</th>
+            <th className="px-4 py-3 font-semibold">Contact</th>
+            <th className="px-4 py-3 font-semibold">Country</th>
+            <th className="px-4 py-3 font-semibold">Currency</th>
+            <th className="px-4 py-3 font-semibold">Status</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>

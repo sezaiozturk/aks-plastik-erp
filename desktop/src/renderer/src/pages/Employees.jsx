@@ -4,7 +4,6 @@ import InitialsAvatar from '../components/InitialsAvatar'
 
 const ITEMS_PER_PAGE = 10
 
-const DEPARTMENTS = ['General', 'Sales', 'Finance', 'Operations', 'IT', 'HR', 'Management', 'Logistics', 'Production', 'Maintenance']
 const STATUSES    = ['Active', 'On Leave', 'Inactive', 'Terminated']
 const GENDERS     = ['Male', 'Female', 'Other']
 const MARITAL     = ['Single', 'Married', 'Divorced', 'Widowed']
@@ -22,7 +21,7 @@ const emptyForm = {
   // Contact
   phone: '', email: '', address: '', emergencyContact: '', emergencyPhone: '',
   // Job
-  personnelNo: '', department: 'General', position: '', title: '',
+  personnelNo: '', department: '', position: '', title: '',
   hireDate: '', exitDate: '', workType: '', workLocation: '', supervisorId: '',
   status: 'Active',
   // Salary & Finance
@@ -100,8 +99,9 @@ function DocCheckbox({ label, checked, onChange }) {
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-function EmployeeModal({ title, form, setForm, onClose, onSave, errors, employees, editingId }) {
+function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveError, employees, editingId }) {
   const [tab, setTab] = useState('identity')
+  const { roles } = useData()
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
   const setVal = (field) => (val) => setForm(f => ({ ...f, [field]: val }))
 
@@ -217,7 +217,8 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, employee
               </Field>
               <Field label="Department">
                 <select className={inp(errors, 'department')} value={form.department} onChange={set('department')}>
-                  {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
+                  <option value="">— Select Department —</option>
+                  {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                 </select>
               </Field>
               <Field label="Position">
@@ -383,8 +384,11 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, employee
               <Field label="User Role (Kullanıcı Rolü)">
                 <input className={inp(errors, 'userRole')} value={form.userRole} onChange={set('userRole')} placeholder="e.g. admin / staff" />
               </Field>
-              <Field label="Company Connection (Şirket Bağlantısı)">
-                <input className={inp(errors, 'companyConnection')} value={form.companyConnection} onChange={set('companyConnection')} placeholder="Branch / subsidiary" />
+              <Field label="Company Connection">
+                <select className={inp(errors, 'companyConnection')} value={form.companyConnection} onChange={set('companyConnection')}>
+                  <option value="">— Select Department —</option>
+                  {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+                </select>
               </Field>
             </div>
           )}
@@ -392,13 +396,16 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, employee
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-theme-border shrink-0">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-xl py-2.5 text-sm text-text-muted hover:bg-hover-bg transition">
-            Cancel
-          </button>
-          <button onClick={onSave} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition">
-            Save Employee
-          </button>
+        <div className="px-6 py-4 border-t border-theme-border shrink-0">
+          {saveError && <p className="text-xs text-error mb-3">{saveError}</p>}
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 border border-theme-border rounded-xl py-2.5 text-sm text-text-muted hover:bg-hover-bg transition">
+              Cancel
+            </button>
+            <button onClick={onSave} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition">
+              Save Employee
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -414,8 +421,11 @@ const statusStyle = {
 }
 
 function formFromEmployee(emp) {
+  const parts = (emp.name || '').trim().split(/\s+/)
+  const firstName = emp.firstName || (parts.length > 1 ? parts.slice(0, -1).join(' ') : parts[0]) || ''
+  const lastName  = emp.lastName  || (parts.length > 1 ? parts[parts.length - 1] : '') || ''
   return {
-    firstName: emp.firstName || '', lastName: emp.lastName || '',
+    firstName, lastName,
     tckn: emp.tckn || '', birthDate: emp.birthDate || '',
     birthPlace: emp.birthPlace || '', gender: emp.gender || '',
     maritalStatus: emp.maritalStatus || '', motherName: emp.motherName || '',
@@ -423,7 +433,7 @@ function formFromEmployee(emp) {
     registryDistrict: emp.registryDistrict || '',
     phone: emp.phone || '', email: emp.email || '', address: emp.address || '',
     emergencyContact: emp.emergencyContact || '', emergencyPhone: emp.emergencyPhone || '',
-    personnelNo: emp.personnelNo || '', department: emp.department || 'General',
+    personnelNo: emp.personnelNo || '', department: emp.department || '',
     position: emp.position || '', title: emp.title || '',
     hireDate: emp.hireDate || '', exitDate: emp.exitDate || '',
     workType: emp.workType || '', workLocation: emp.workLocation || '',
@@ -457,6 +467,7 @@ export default function Employees() {
   const [editItem, setEditItem] = useState(null)
   const [form, setForm]       = useState(emptyForm)
   const [errors, setErrors]   = useState({})
+  const [saveError, setSaveError] = useState('')
 
   function validate(f) {
     const e = {}
@@ -464,26 +475,42 @@ export default function Employees() {
     return e
   }
 
-  function openAdd() { setForm(emptyForm); setErrors({}); setShowAdd(true) }
+  function openAdd() { setForm(emptyForm); setErrors({}); setSaveError(''); setShowAdd(true) }
 
   function openEdit(emp) {
     setForm(formFromEmployee(emp))
     setErrors({})
+    setSaveError('')
     setEditItem(emp)
+  }
+
+  function withName(f) {
+    const name = [f.firstName, f.lastName].filter(Boolean).join(' ') || f.name || 'Unnamed'
+    return { ...f, name }
   }
 
   async function handleAdd() {
     const e = validate(form)
     if (Object.keys(e).length) { setErrors(e); return }
-    await addEmployee(form)
-    setShowAdd(false)
+    try {
+      setSaveError('')
+      await addEmployee(withName(form))
+      setShowAdd(false)
+    } catch (err) {
+      setSaveError(err.message)
+    }
   }
 
   async function handleEdit() {
     const e = validate(form)
     if (Object.keys(e).length) { setErrors(e); return }
-    await updateEmployee(editItem.id, form)
-    setEditItem(null)
+    try {
+      setSaveError('')
+      await updateEmployee(editItem.id, withName(form))
+      setEditItem(null)
+    } catch (err) {
+      setSaveError(err.message)
+    }
   }
 
   async function handleDelete(id) {
@@ -611,11 +638,11 @@ export default function Employees() {
       )}
 
       {showAdd && (
-        <EmployeeModal title="Add Employee" form={form} setForm={setForm} errors={errors}
+        <EmployeeModal title="Add Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => setShowAdd(false)} onSave={handleAdd} employees={employees} editingId={null} />
       )}
       {editItem && (
-        <EmployeeModal title="Edit Employee" form={form} setForm={setForm} errors={errors}
+        <EmployeeModal title="Edit Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => setEditItem(null)} onSave={handleEdit} employees={employees} editingId={editItem.id} />
       )}
     </div>
