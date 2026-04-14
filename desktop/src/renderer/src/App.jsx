@@ -42,7 +42,7 @@ function InnerRoutes() {
         {canSee('logistics')   && <Route path="logistics"   element={<Logistics />} />}
         {canSee('maintenance') && <Route path="maintenance" element={<Maintenance />} />}
         <Route path="attendance" element={<Attendance />} />
-        <Route path="purchasing" element={<Purchasing />} />
+        {canSee('purchasing') && <Route path="purchasing" element={<Purchasing />} />}
         {isAdmin && <Route path="finance" element={<Finance />} />}
         {isAdmin && <Route path="employees" element={<Employees />} />}
 {isAdmin && <Route path="settings" element={<Settings />} />}

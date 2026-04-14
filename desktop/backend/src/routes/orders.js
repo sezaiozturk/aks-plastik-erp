@@ -46,15 +46,15 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { customerId, employeeId, salesRepId, status, notes, vat, items, shipmentType, paymentMethod } = req.body
+    const { customerId, employeeId, salesRepId, status, notes, items, shipmentType, paymentMethod } = req.body
     const code = `ORD-${String(Date.now()).slice(-6)}`
 
-    const subtotal = (items || []).reduce(
-      (sum, item) => sum + (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1),
-      0
-    )
-    const vatRate = parseFloat(vat) || 0
-    const totalAmount = subtotal * (1 + vatRate / 100)
+    const totalAmount = (items || []).reduce((sum, item) => {
+      const qty = parseInt(item.quantity) || 1
+      const price = parseFloat(item.unitPrice) || 0
+      const vatRate = parseFloat(item.vat) || 0
+      return sum + qty * price * (1 + vatRate / 100)
+    }, 0)
 
     const order = await prisma.order.create({
       data: {
@@ -63,7 +63,7 @@ router.post('/', async (req, res) => {
         ...(employeeId ? { employee: { connect: { id: employeeId } } } : {}),
         ...(salesRepId ? { salesRep: { connect: { id: salesRepId } } } : {}),
         status: status || 'Processing',
-        vat: vatRate,
+        vat: 0,
         totalAmount,
         notes: notes || '',
         items: {
@@ -72,6 +72,7 @@ router.post('/', async (req, res) => {
             quantity: parseInt(item.quantity) || 1,
             unitPrice: parseFloat(item.unitPrice) || 0,
             currency: item.currency || 'USD',
+            vat: parseFloat(item.vat) || 0,
             ...(item.productId ? { product: { connect: { id: item.productId } } } : {}),
           })),
         },
@@ -98,7 +99,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { customerId, employeeId, salesRepId, status, notes, vat, items, shipmentType, paymentMethod } = req.body
+    const { customerId, employeeId, salesRepId, status, notes, items, shipmentType, paymentMethod } = req.body
 
     // Sales Managers can only set status to 'Confirmed'
     if (req.user.department === 'Sales Manager' && status) {
@@ -108,12 +109,12 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    const subtotal = (items || []).reduce(
-      (sum, item) => sum + (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1),
-      0
-    )
-    const vatRate = parseFloat(vat) || 0
-    const totalAmount = subtotal * (1 + vatRate / 100)
+    const totalAmount = (items || []).reduce((sum, item) => {
+      const qty = parseInt(item.quantity) || 1
+      const price = parseFloat(item.unitPrice) || 0
+      const vatRate = parseFloat(item.vat) || 0
+      return sum + qty * price * (1 + vatRate / 100)
+    }, 0)
 
     // Delete existing items and recreate
     await prisma.orderItem.deleteMany({ where: { orderId: req.params.id } })
@@ -125,7 +126,7 @@ router.put('/:id', async (req, res) => {
         employee: employeeId ? { connect: { id: employeeId } } : { disconnect: true },
         salesRep: salesRepId ? { connect: { id: salesRepId } } : { disconnect: true },
         status: status || 'Processing',
-        vat: vatRate,
+        vat: 0,
         totalAmount,
         notes: notes || '',
         items: {
@@ -134,6 +135,7 @@ router.put('/:id', async (req, res) => {
             quantity: parseInt(item.quantity) || 1,
             unitPrice: parseFloat(item.unitPrice) || 0,
             currency: item.currency || 'USD',
+            vat: parseFloat(item.vat) || 0,
             ...(item.productId ? { product: { connect: { id: item.productId } } } : {}),
           })),
         },

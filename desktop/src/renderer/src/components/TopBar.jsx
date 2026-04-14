@@ -40,7 +40,9 @@ export default function TopBar() {
   const timezone = `UTC${utcOffset >= 0 ? '+' : ''}${utcOffset}`
   const date = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-  const matchedEmployee = user?.email
+  const matchedEmployee = user?.employeeId
+    ? (employees || []).find((e) => e.id === user.employeeId)
+    : user?.email
     ? (employees || []).find((e) => e.email && e.email.toLowerCase() === user.email.toLowerCase())
     : null
 

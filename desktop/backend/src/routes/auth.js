@@ -30,14 +30,14 @@ router.post('/login', async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Invalid email or password' })
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department || null },
+      { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department || null, employeeId: user.employeeId || null },
       JWT_SECRET,
       { expiresIn: '24h' }
     )
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department || null },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department || null, employeeId: user.employeeId || null },
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -192,7 +192,7 @@ router.get('/users', authenticate, adminOnly, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
-      select: { id: true, email: true, name: true, phone: true, role: true, department: true, createdAt: true },
+      select: { id: true, email: true, name: true, phone: true, role: true, department: true, employeeId: true, createdAt: true },
     })
     res.json(users)
   } catch (err) {
@@ -203,14 +203,27 @@ router.get('/users', authenticate, adminOnly, async (req, res) => {
 // POST create user (admin only)
 router.post('/users', authenticate, adminOnly, async (req, res) => {
   try {
-    const { email, password, name, phone, role, department } = req.body
+    const { email, password, name, phone, role, department, employeeId } = req.body
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return res.status(400).json({ error: 'Email already exists' })
 
+    if (employeeId) {
+      const taken = await prisma.user.findUnique({ where: { employeeId } })
+      if (taken) return res.status(400).json({ error: 'This employee already has a user account' })
+    }
+
     const hashed = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: { email, password: hashed, name, phone: phone || null, role: role || 'user', department: role === 'user' ? (department || null) : null },
-      select: { id: true, email: true, name: true, phone: true, role: true, department: true, createdAt: true },
+      data: {
+        email,
+        password: hashed,
+        name,
+        phone: phone || null,
+        role: role || 'user',
+        department: role === 'user' ? (department || null) : null,
+        employeeId: employeeId || null,
+      },
+      select: { id: true, email: true, name: true, phone: true, role: true, department: true, employeeId: true, createdAt: true },
     })
     res.status(201).json(user)
   } catch (err) {
@@ -229,7 +242,7 @@ router.put('/users/:id', authenticate, adminOnly, async (req, res) => {
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data,
-      select: { id: true, email: true, name: true, phone: true, role: true, department: true, createdAt: true },
+      select: { id: true, email: true, name: true, phone: true, role: true, department: true, employeeId: true, createdAt: true },
     })
     res.json(user)
   } catch (err) {

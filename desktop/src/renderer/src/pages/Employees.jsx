@@ -1,6 +1,23 @@
 import { useState } from 'react'
 import { useData } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
+import { API_URL } from '../config'
 import InitialsAvatar from '../components/InitialsAvatar'
+
+const PAGES = [
+  { key: 'customers',   label: 'Customers',   icon: 'groups' },
+  { key: 'products',    label: 'Products',    icon: 'inventory_2' },
+  { key: 'orders',      label: 'Orders',      icon: 'shopping_cart' },
+  { key: 'work-orders', label: 'Site Visits', icon: 'location_on' },
+  { key: 'reports',     label: 'Tasks',       icon: 'analytics' },
+  { key: 'employees',   label: 'Employees',   icon: 'badge' },
+  { key: 'finance',     label: 'Finance',     icon: 'account_balance_wallet' },
+  { key: 'production',  label: 'Production',  icon: 'precision_manufacturing' },
+  { key: 'maintenance', label: 'Maintenance', icon: 'build' },
+  { key: 'logistics',   label: 'Logistics',   icon: 'local_shipping' },
+  { key: 'purchasing',  label: 'Purchasing',  icon: 'shopping_bag' },
+  { key: 'attendance',  label: 'Attendance',  icon: 'schedule' },
+]
 
 const ITEMS_PER_PAGE = 10
 
@@ -22,7 +39,7 @@ const emptyForm = {
   phone: '', email: '', address: '', emergencyContact: '', emergencyPhone: '',
   // Job
   personnelNo: '', department: '', position: '', title: '',
-  hireDate: '', exitDate: '', workType: '', workLocation: '', supervisorId: '',
+  hireDate: '', exitDate: '', workType: '', workLocation: '',
   status: 'Active',
   // Salary & Finance
   salary: '', netSalary: '', salaryType: '', iban: '', bankName: '',
@@ -39,17 +56,17 @@ const emptyForm = {
   docEmploymentContract: false, docSgkDeclaration: false,
   // Operational
   shift: '', leaveRights: '', performanceNotes: '',
-  // System
-  userRole: '', companyConnection: '',
 }
 
 const TABS = [
-  { id: 'identity',    label: 'Identity',       icon: 'badge'                  },
-  { id: 'contact',     label: 'Contact & Job',   icon: 'contact_phone'          },
+  { id: 'identity',    label: 'Identity',        icon: 'badge'                  },
+  { id: 'contact',     label: 'Contact',          icon: 'contact_phone'          },
   { id: 'finance',     label: 'Salary & Finance', icon: 'account_balance_wallet' },
-  { id: 'legal',       label: 'SGK & Legal',     icon: 'gavel'                  },
-  { id: 'education',   label: 'Education',       icon: 'school'                 },
-  { id: 'operational', label: 'Docs & System',   icon: 'folder_managed'         },
+  { id: 'legal',       label: 'SGK & Legal',      icon: 'gavel'                  },
+  { id: 'education',   label: 'Education',        icon: 'school'                 },
+  { id: 'operational', label: 'Docs & System',    icon: 'folder_managed'         },
+  { id: 'job',         label: 'Job Info',         icon: 'work'                   },
+  { id: 'access',      label: 'Access & Role',    icon: 'shield_person'          },
 ]
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
@@ -99,11 +116,61 @@ function DocCheckbox({ label, checked, onChange }) {
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveError, employees, editingId }) {
+function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveError, employee, allEmployees }) {
   const [tab, setTab] = useState('identity')
-  const { roles } = useData()
+  const { roles, permissions, updateRolePermissions } = useData()
+  const { token } = useAuth()
+  const [isManagerLocal, setIsManagerLocal] = useState(!!employee?.isManager)
+  const [managerSaving, setManagerSaving] = useState(false)
+  const [confirmManager, setConfirmManager] = useState(null) // { next: bool, existingManager: obj|null }
+  const [permSaving, setPermSaving] = useState({})
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
   const setVal = (field) => (val) => setForm(f => ({ ...f, [field]: val }))
+
+  const dept = form.department
+
+  function requestManagerToggle() {
+    if (!employee?.id || !dept) return
+    const next = !isManagerLocal
+    const existingManager = next
+      ? (allEmployees || []).find(e => e.isManager && e.department === dept && e.id !== employee.id)
+      : null
+    setConfirmManager({ next, existingManager })
+  }
+
+  async function confirmManagerToggle() {
+    if (!confirmManager || !employee?.id || !dept) return
+    const { next } = confirmManager
+    setConfirmManager(null)
+    setManagerSaving(true)
+    try {
+      if (next) {
+        await fetch(`${API_URL}/employees/setmanager`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ employeeId: employee.id, department: dept }),
+        })
+      } else {
+        await fetch(`${API_URL}/employees/${employee.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...form, isManager: false }),
+        })
+      }
+      setIsManagerLocal(next)
+    } finally {
+      setManagerSaving(false)
+    }
+  }
+
+  async function togglePermission(pageKey) {
+    if (!dept) return
+    const current = permissions[dept] || []
+    const next = current.includes(pageKey) ? current.filter(p => p !== pageKey) : [...current, pageKey]
+    setPermSaving(s => ({ ...s, [pageKey]: true }))
+    try { await updateRolePermissions(dept, next) }
+    finally { setPermSaving(s => ({ ...s, [pageKey]: false })) }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -211,45 +278,6 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
                 <input type="tel" className={inp(errors, 'emergencyPhone')} value={form.emergencyPhone} onChange={set('emergencyPhone')} placeholder="+90 (555) 000-0000" />
               </Field>
 
-              <Divider label="Job Information" />
-              <Field label="Personnel No.">
-                <input className={inp(errors, 'personnelNo')} value={form.personnelNo} onChange={set('personnelNo')} placeholder="e.g. P-001" />
-              </Field>
-              <Field label="Department">
-                <select className={inp(errors, 'department')} value={form.department} onChange={set('department')}>
-                  <option value="">— Select Department —</option>
-                  {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Position">
-                <input className={inp(errors, 'position')} value={form.position} onChange={set('position')} placeholder="e.g. Engineer" />
-              </Field>
-              <Field label="Title (Ünvan)">
-                <input className={inp(errors, 'title')} value={form.title} onChange={set('title')} placeholder="e.g. Senior, Director" />
-              </Field>
-              <Field label="Hire Date">
-                <input type="date" className={inp(errors, 'hireDate')} value={form.hireDate} onChange={set('hireDate')} />
-              </Field>
-              <Field label="Exit Date">
-                <input type="date" className={inp(errors, 'exitDate')} value={form.exitDate} onChange={set('exitDate')} />
-              </Field>
-              <Field label="Work Type">
-                <select className={inp(errors, 'workType')} value={form.workType} onChange={set('workType')}>
-                  <option value="">Select…</option>
-                  {WORK_TYPES.map(t => <option key={t}>{t}</option>)}
-                </select>
-              </Field>
-              <Field label="Work Location">
-                <input className={inp(errors, 'workLocation')} value={form.workLocation} onChange={set('workLocation')} placeholder="Office / Remote / Branch" />
-              </Field>
-              <Field label="Manager / Supervisor">
-                <select className={inp(errors, 'supervisorId')} value={form.supervisorId} onChange={set('supervisorId')}>
-                  <option value="">— None —</option>
-                  {employees.filter(e => e.id !== editingId).map(e => (
-                    <option key={e.id} value={e.id}>{e.name}</option>
-                  ))}
-                </select>
-              </Field>
             </div>
           )}
 
@@ -380,16 +408,175 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
                 </Field>
               </div>
 
-              <Divider label="System" />
-              <Field label="User Role (Kullanıcı Rolü)">
-                <input className={inp(errors, 'userRole')} value={form.userRole} onChange={set('userRole')} placeholder="e.g. admin / staff" />
+            </div>
+          )}
+
+          {/* ── Access & Role ── */}
+          {/* ── Job Info ── */}
+          {tab === 'job' && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Personnel No.">
+                <input className={inp(errors, 'personnelNo')} value={form.personnelNo} onChange={set('personnelNo')} placeholder="e.g. P-001" />
               </Field>
-              <Field label="Company Connection">
-                <select className={inp(errors, 'companyConnection')} value={form.companyConnection} onChange={set('companyConnection')}>
+              <Field label="Department">
+                <select className={inp(errors, 'department')} value={form.department} onChange={set('department')}>
                   <option value="">— Select Department —</option>
                   {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                 </select>
               </Field>
+              <Field label="Position">
+                <input className={inp(errors, 'position')} value={form.position} onChange={set('position')} placeholder="e.g. Engineer" />
+              </Field>
+              <Field label="Title (Ünvan)">
+                <input className={inp(errors, 'title')} value={form.title} onChange={set('title')} placeholder="e.g. Senior, Director" />
+              </Field>
+              <Field label="Hire Date">
+                <input type="date" className={inp(errors, 'hireDate')} value={form.hireDate} onChange={set('hireDate')} />
+              </Field>
+              <Field label="Exit Date">
+                <input type="date" className={inp(errors, 'exitDate')} value={form.exitDate} onChange={set('exitDate')} />
+              </Field>
+              <Field label="Work Type">
+                <select className={inp(errors, 'workType')} value={form.workType} onChange={set('workType')}>
+                  <option value="">Select…</option>
+                  {WORK_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </Field>
+              <Field label="Work Location">
+                <input className={inp(errors, 'workLocation')} value={form.workLocation} onChange={set('workLocation')} placeholder="Office / Remote / Branch" />
+              </Field>
+            </div>
+          )}
+
+          {tab === 'access' && (
+            <div className="space-y-5">
+              {!employee?.id ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center text-text-muted">
+                  <span className="material-symbols-outlined text-4xl mb-2 opacity-30">shield_person</span>
+                  <p className="text-sm">Save the employee first to configure access and role settings.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Manager checkbox */}
+                  <div className={`flex items-center gap-4 p-4 rounded-xl border-2 transition cursor-pointer ${isManagerLocal ? 'border-amber-400 bg-amber-500/5' : 'border-theme-border bg-surface-container hover:bg-hover-bg'}`}
+                    onClick={!managerSaving ? requestManagerToggle : undefined}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isManagerLocal ? 'bg-amber-500/15' : 'bg-surface-container-high'}`}>
+                      {managerSaving
+                        ? <span className="material-symbols-outlined text-text-muted animate-spin">progress_activity</span>
+                        : <span className={`material-symbols-outlined ${isManagerLocal ? 'text-amber-600' : 'text-text-muted'}`}>manage_accounts</span>
+                      }
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold ${isManagerLocal ? 'text-amber-700' : 'text-on-surface'}`}>
+                        {dept
+                          ? `This employee is "${dept}" department manager`
+                          : 'This employee is a department manager'}
+                      </p>
+                      <p className="text-xs text-text-muted mt-0.5">
+                        {isManagerLocal ? 'Currently set as manager of this department' : 'Click to set as manager of their department'}
+                      </p>
+                    </div>
+                    <span className={`material-symbols-outlined text-xl ${isManagerLocal ? 'text-amber-500' : 'text-text-muted'}`}>
+                      {isManagerLocal ? 'check_circle' : 'radio_button_unchecked'}
+                    </span>
+                  </div>
+
+                  {/* Manager confirmation dialog */}
+                  {confirmManager && (
+                    <div className="rounded-xl border-2 border-amber-400 bg-amber-500/5 p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                          <span className="material-symbols-outlined text-amber-600">warning</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-on-surface">
+                            {confirmManager.next ? 'Set as department manager?' : 'Remove manager role?'}
+                          </p>
+                          {confirmManager.next && confirmManager.existingManager ? (
+                            <p className="text-xs text-text-muted mt-1">
+                              <span className="font-semibold text-amber-700">{confirmManager.existingManager.name}</span> is currently the manager of <span className="font-semibold">{dept}</span>. They will be removed as manager when you confirm.
+                            </p>
+                          ) : (
+                            <p className="text-xs text-text-muted mt-1">
+                              Are you sure you want to {confirmManager.next ? `set this employee as manager of ${dept}` : 'remove this employee\'s manager role'}?
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setConfirmManager(null)}
+                          className="flex-1 py-2 rounded-lg border border-theme-border text-sm text-text-muted hover:bg-hover-bg transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={confirmManagerToggle}
+                          className="flex-1 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:opacity-90 transition"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Page access */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3">Page Access {dept ? `— ${dept}` : ''}</p>
+                    {!dept ? (
+                      <p className="text-sm text-text-muted">Assign a department first to configure page access.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {PAGES.map((page) => {
+                          const enabled = (permissions[dept] || []).includes(page.key)
+                          const saving = !!permSaving[page.key]
+                          const subEnabled = page.key === 'orders' && enabled && (permissions[dept] || []).includes('orders-create')
+                          const subSaving = !!permSaving['orders-create']
+                          return (
+                            <div key={page.key}>
+                              <button
+                                onClick={() => togglePermission(page.key)}
+                                disabled={saving}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition text-sm ${
+                                  enabled
+                                    ? 'bg-primary/10 border-primary text-primary'
+                                    : 'bg-surface-container border-theme-border text-text-muted hover:bg-hover-bg'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-base">{page.icon}</span>
+                                <span className="flex-1 text-left font-medium">{page.label}</span>
+                                {saving
+                                  ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                  : <span className="material-symbols-outlined text-sm">{enabled ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                }
+                              </button>
+                              {page.key === 'orders' && enabled && (
+                                <button
+                                  onClick={() => togglePermission('orders-create')}
+                                  disabled={subSaving}
+                                  className={`w-full flex items-center gap-3 pl-8 pr-3 py-2 rounded-xl border transition text-sm mt-1 ${
+                                    subEnabled
+                                      ? 'bg-primary/10 border-primary text-primary'
+                                      : 'bg-surface-container border-theme-border text-text-muted hover:bg-hover-bg'
+                                  }`}
+                                >
+                                  <span className="material-symbols-outlined text-base">add_circle</span>
+                                  <span className="flex-1 text-left font-medium">Can create &amp; edit orders</span>
+                                  {subSaving
+                                    ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                    : <span className="material-symbols-outlined text-sm">{subEnabled ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                  }
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -437,7 +624,7 @@ function formFromEmployee(emp) {
     position: emp.position || '', title: emp.title || '',
     hireDate: emp.hireDate || '', exitDate: emp.exitDate || '',
     workType: emp.workType || '', workLocation: emp.workLocation || '',
-    supervisorId: emp.supervisorId || '', status: emp.status || 'Active',
+    status: emp.status || 'Active',
     salary: emp.salary || '', netSalary: emp.netSalary || '',
     salaryType: emp.salaryType || '', iban: emp.iban || '',
     bankName: emp.bankName || '', premium: emp.premium || '',
@@ -454,7 +641,6 @@ function formFromEmployee(emp) {
     docSgkDeclaration: !!emp.docSgkDeclaration,
     shift: emp.shift || '', leaveRights: emp.leaveRights || '',
     performanceNotes: emp.performanceNotes || '',
-    userRole: emp.userRole || '', companyConnection: emp.companyConnection || '',
   }
 }
 
@@ -465,6 +651,7 @@ export default function Employees() {
   const [page, setPage]       = useState(1)
   const [showAdd, setShowAdd] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [viewEmployee, setViewEmployee] = useState(null)
   const [form, setForm]       = useState(emptyForm)
   const [errors, setErrors]   = useState({})
   const [saveError, setSaveError] = useState('')
@@ -564,7 +751,6 @@ export default function Employees() {
               <th className="text-left px-6 py-4 font-semibold">Position</th>
               <th className="text-left px-6 py-4 font-semibold">Contact</th>
               <th className="text-left px-6 py-4 font-semibold">Supervisor</th>
-              <th className="text-right px-6 py-4 font-semibold">Gross Salary</th>
               <th className="text-left px-6 py-4 font-semibold">Status</th>
               {isAdmin && <th className="text-right px-6 py-4 font-semibold">Actions</th>}
             </tr>
@@ -572,14 +758,14 @@ export default function Employees() {
           <tbody>
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 8 : 7} className="text-center py-16 text-text-muted">
+                <td colSpan={isAdmin ? 7 : 6} className="text-center py-16 text-text-muted">
                   <span className="material-symbols-outlined text-4xl block mb-2 opacity-30">badge</span>
                   No employees found
                 </td>
               </tr>
             ) : (
               paginated.map(emp => (
-                <tr key={emp.id} className="border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors">
+                <tr key={emp.id} onClick={() => setViewEmployee(emp)} className="border-b border-theme-border last:border-0 hover:bg-hover-bg transition-colors cursor-pointer">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <InitialsAvatar initials={emp.initials} size="sm" />
@@ -598,9 +784,11 @@ export default function Employees() {
                     <div>{emp.phone || '—'}</div>
                     <div className="text-xs">{emp.email || ''}</div>
                   </td>
-                  <td className="px-6 py-4 text-text-muted">{emp.supervisor?.name || '—'}</td>
-                  <td className="px-6 py-4 text-right font-medium text-on-surface">
-                    {emp.salary ? `$${parseFloat(emp.salary).toLocaleString()}` : '—'}
+                  <td className="px-6 py-4">
+                    {emp.isManager
+                      ? <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-600"><span className="material-symbols-outlined text-sm">manage_accounts</span>Manager</span>
+                      : <span className="text-text-muted">{employees.find(m => m.isManager && m.department === emp.department && m.id !== emp.id)?.name || '—'}</span>
+                    }
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle[emp.status] || statusStyle.Inactive}`}>
@@ -608,7 +796,7 @@ export default function Employees() {
                     </span>
                   </td>
                   {isAdmin && (
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => openEdit(emp)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
                           <span className="material-symbols-outlined text-base">edit</span>
@@ -637,13 +825,160 @@ export default function Employees() {
         </div>
       )}
 
+      {/* Employee Detail Modal */}
+      {viewEmployee && (() => {
+        const e = viewEmployee
+        function Section({ label }) {
+          return (
+            <div className="col-span-2 flex items-center gap-3 pt-2">
+              <div className="flex-1 h-px bg-surface-container-high" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">{label}</span>
+              <div className="flex-1 h-px bg-surface-container-high" />
+            </div>
+          )
+        }
+        function Row({ label, value, full }) {
+          if (!value && value !== 0) return null
+          return (
+            <div className={full ? 'col-span-2' : ''}>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-0.5">{label}</p>
+              <p className="text-sm text-on-surface">{value}</p>
+            </div>
+          )
+        }
+        function DocBadge({ label, checked }) {
+          return (
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${checked ? 'bg-primary/10 border-primary text-primary' : 'bg-surface-container border-theme-border text-text-muted line-through'}`}>
+              <span className="material-symbols-outlined text-sm">{checked ? 'check_circle' : 'cancel'}</span>
+              {label}
+            </span>
+          )
+        }
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setViewEmployee(null)}>
+            <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col" onClick={e2 => e2.stopPropagation()}>
+              {/* Banner */}
+              <div className="primary-gradient px-6 pt-6 pb-7 shrink-0">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold text-white/60 uppercase tracking-widest">Employee Profile</span>
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <button
+                        onClick={() => { setViewEmployee(null); openEdit(viewEmployee) }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>Edit
+                      </button>
+                    )}
+                    <button onClick={() => setViewEmployee(null)} className="p-1.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition">
+                      <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-white text-xl font-black shrink-0">{e.initials}</div>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-white leading-tight">{e.name}</h2>
+                    <p className="text-white/70 text-sm mt-0.5">{e.position || '—'}{e.title ? ` · ${e.title}` : ''}</p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle[e.status] || statusStyle.Inactive}`}>{e.status}</span>
+                      {e.isManager && <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-200">Manager</span>}
+                      {e.department && <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white">{e.department}</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+
+                  <Section label="Identity" />
+                  <Row label="Personnel No." value={e.personnelNo} />
+                  <Row label="TCKN" value={e.tckn} />
+                  <Row label="Date of Birth" value={e.birthDate} />
+                  <Row label="Place of Birth" value={e.birthPlace} />
+                  <Row label="Gender" value={e.gender} />
+                  <Row label="Marital Status" value={e.maritalStatus} />
+                  <Row label="Mother's Name" value={e.motherName} />
+                  <Row label="Father's Name" value={e.fatherName} />
+                  <Row label="Registry Province" value={e.registryProvince} />
+                  <Row label="Registry District" value={e.registryDistrict} />
+
+                  <Section label="Contact" />
+                  <Row label="Phone" value={e.phone} />
+                  <Row label="Email" value={e.email} />
+                  <Row label="Address" value={e.address} full />
+                  <Row label="Emergency Contact" value={e.emergencyContact} />
+                  <Row label="Emergency Phone" value={e.emergencyPhone} />
+
+                  <Section label="Job" />
+                  <Row label="Hire Date" value={e.hireDate} />
+                  <Row label="Exit Date" value={e.exitDate} />
+                  <Row label="Work Type" value={e.workType} />
+                  <Row label="Work Location" value={e.workLocation} />
+
+                  <Section label="Salary & Finance" />
+                  <Row label="Gross Salary" value={e.salary ? `$${parseFloat(e.salary).toLocaleString()}` : null} />
+                  <Row label="Net Salary" value={e.netSalary ? `$${parseFloat(e.netSalary).toLocaleString()}` : null} />
+                  <Row label="Salary Type" value={e.salaryType} />
+                  <Row label="Premium" value={e.premium ? `$${parseFloat(e.premium).toLocaleString()}` : null} />
+                  <Row label="Bonus" value={e.bonus ? `$${parseFloat(e.bonus).toLocaleString()}` : null} />
+                  <Row label="Side Benefits" value={e.sideRights} full />
+                  <Row label="Bank Name" value={e.bankName} />
+                  <Row label="IBAN" value={e.iban} />
+
+                  <Section label="SGK & Legal" />
+                  <Row label="SGK Sicil No" value={e.sgkNo} />
+                  <Row label="Insurance Type" value={e.insuranceType} />
+                  <Row label="Occupation Code" value={e.occupationCode} />
+                  <Row label="Disability Status" value={e.disabilityStatus} />
+                  <Row label="Retirement Status" value={e.retirementStatus} />
+
+                  <Section label="Education" />
+                  <Row label="Education Level" value={e.educationLevel} />
+                  <Row label="Graduation Dept." value={e.graduationDept} />
+                  <Row label="Foreign Language" value={e.foreignLanguage} />
+                  <Row label="Military Status" value={e.militaryStatus} />
+                  <Row label="Certificates" value={e.certificates} full />
+
+                  <Section label="Operational" />
+                  <Row label="Shift" value={e.shift} />
+                  <Row label="Leave Rights" value={e.leaveRights} />
+                  <Row label="Performance Notes" value={e.performanceNotes} full />
+
+                  <Section label="Documents" />
+                  <div className="col-span-2 flex flex-wrap gap-2">
+                    <DocBadge label="ID Copy" checked={e.docIdCopy} />
+                    <DocBadge label="Residency" checked={e.docResidency} />
+                    <DocBadge label="Diploma" checked={e.docDiploma} />
+                    <DocBadge label="Health Report" checked={e.docHealthReport} />
+                    <DocBadge label="Criminal Record" checked={e.docCriminalRecord} />
+                    <DocBadge label="Employment Contract" checked={e.docEmploymentContract} />
+                    <DocBadge label="SGK Declaration" checked={e.docSgkDeclaration} />
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-theme-border shrink-0">
+                <button onClick={() => setViewEmployee(null)} className="w-full py-2.5 rounded-xl primary-gradient text-white text-sm font-bold hover:opacity-90 transition">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {showAdd && (
         <EmployeeModal title="Add Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
-          onClose={() => setShowAdd(false)} onSave={handleAdd} employees={employees} editingId={null} />
+          onClose={() => setShowAdd(false)} onSave={handleAdd} employee={null} allEmployees={employees} />
       )}
       {editItem && (
         <EmployeeModal title="Edit Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
-          onClose={() => setEditItem(null)} onSave={handleEdit} employees={employees} editingId={editItem.id} />
+          onClose={() => setEditItem(null)} onSave={handleEdit} employee={editItem} allEmployees={employees} />
       )}
     </div>
   )

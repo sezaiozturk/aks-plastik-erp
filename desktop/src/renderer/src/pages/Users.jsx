@@ -7,10 +7,11 @@ export default function Users() {
   const { token } = useAuth()
   const { roles } = useData()
   const [users, setUsers] = useState([])
+  const [employees, setEmployees] = useState([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'user', department: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'user', department: '', employeeId: '' })
   const [editingUser, setEditingUser] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'user', department: '' })
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: 'user' })
   const [resetEmailStatus, setResetEmailStatus] = useState(null) // null | 'sending' | 'sent' | 'error'
   const [error, setError] = useState('')
   const [editError, setEditError] = useState('')
@@ -22,7 +23,34 @@ export default function Users() {
       .then((r) => r.json())
       .then(setUsers)
       .catch(() => {})
+
+    fetch(`${API_URL}/employees`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then(setEmployees)
+      .catch(() => {})
   }, [token])
+
+  // Employees without a linked user account
+  const availableEmployees = employees.filter((e) => !users.some((u) => u.employeeId === e.id))
+
+  function handleEmployeePick(employeeId) {
+    if (!employeeId) {
+      setForm((f) => ({ ...f, employeeId: '', name: '', email: '', phone: '', department: '' }))
+      return
+    }
+    const emp = employees.find((e) => e.id === employeeId)
+    if (!emp) return
+    setForm((f) => ({
+      ...f,
+      employeeId: emp.id,
+      name: emp.name || f.name,
+      email: emp.email || f.email,
+      phone: emp.phone || f.phone,
+      department: emp.department || f.department,
+    }))
+  }
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -36,7 +64,7 @@ export default function Users() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setUsers((prev) => [data, ...prev])
-      setForm({ name: '', email: '', password: '', phone: '', role: 'user', department: '' })
+      setForm({ name: '', email: '', password: '', phone: '', role: 'user', department: '', employeeId: '' })
       setShowForm(false)
     } catch (err) {
       setError(err.message)
@@ -68,7 +96,7 @@ export default function Users() {
 
   function startEdit(u) {
     setEditingUser(u.id)
-    setEditForm({ name: u.name, email: u.email, phone: u.phone || '', role: u.role, department: u.department || '' })
+    setEditForm({ name: u.name, email: u.email, phone: u.phone || '', role: u.role })
     setEditError('')
     setConfirmEdit(false)
   }
@@ -100,7 +128,7 @@ export default function Users() {
       const res = await fetch(`${API_URL}/auth/users/${editingUser}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ name: editForm.name, email: editForm.email, phone: editForm.phone, role: editForm.role }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -159,6 +187,27 @@ export default function Users() {
               {error}
             </div>
           )}
+
+          {/* Employee picker */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Link to Employee <span className="text-text-subtle">(required)</span>
+            </label>
+            <select
+              value={form.employeeId}
+              onChange={(e) => handleEmployeePick(e.target.value)}
+              required
+              className="w-full px-3.5 py-2.5 rounded-lg border border-input-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="">— Select an employee —</option>
+              {availableEmployees.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name} {e.department ? `(${e.department})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-text-muted mb-1.5">Full Name</label>
@@ -208,24 +257,20 @@ export default function Users() {
               <label className="block text-xs font-medium text-text-muted mb-1.5">Role</label>
               <select
                 value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value, department: '' })}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-input-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-            {form.role === 'user' && (
+            {form.department && (
               <div>
                 <label className="block text-xs font-medium text-text-muted mb-1.5">Department</label>
-                <select
-                  value={form.department}
-                  onChange={(e) => setForm({ ...form, department: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-input-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">— Select department —</option>
-                  {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
-                </select>
+                <div className="w-full px-3.5 py-2.5 rounded-lg border border-input-border bg-surface-container-high text-on-surface-variant text-sm flex items-center gap-2">
+                  <span className="material-symbols-outlined text-base text-text-muted">apartment</span>
+                  {form.department}
+                </div>
               </div>
             )}
           </div>
@@ -307,24 +352,22 @@ export default function Users() {
                     <label className="block text-xs font-medium text-text-muted mb-1.5">Role</label>
                     <select
                       value={editForm.role}
-                      onChange={(e) => setEditForm({ ...editForm, role: e.target.value, department: '' })}
+                      onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
                       className="w-full px-3.5 py-2.5 rounded-lg border border-input-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
                       <option value="user">User</option>
+                      <option value="manager">Department Manager</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
-                  {editForm.role === 'user' && (
+                  {users.find((u) => u.id === editingUser)?.department && (
                     <div>
                       <label className="block text-xs font-medium text-text-muted mb-1.5">Department</label>
-                      <select
-                        value={editForm.department}
-                        onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-lg border border-input-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="">— Select department —</option>
-                        {roles.map((r) => <option key={r.id} value={r.name}>{r.name}</option>)}
-                      </select>
+                      <div className="w-full px-3.5 py-2.5 rounded-lg border border-input-border bg-surface-container-high text-on-surface-variant text-sm flex items-center gap-2">
+                        <span className="material-symbols-outlined text-base text-text-muted">apartment</span>
+                        {users.find((u) => u.id === editingUser)?.department}
+                        <span className="ml-auto text-xs text-text-muted">Change in Employee Detail</span>
+                      </div>
                     </div>
                   )}
                   <div className="flex gap-3 justify-end pt-2">
@@ -382,7 +425,7 @@ export default function Users() {
                   <span className={`inline-flex mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                     viewUser.role === 'admin' ? 'bg-surface-container-lowest/30 text-white' : 'bg-surface-container-lowest/20 text-white/80'
                   }`}>
-                    {viewUser.role.charAt(0).toUpperCase() + viewUser.role.slice(1)}
+                    {viewUser.role === 'manager' ? 'Dept. Manager' : viewUser.role.charAt(0).toUpperCase() + viewUser.role.slice(1)}
                   </span>
                 </div>
               </div>
@@ -534,9 +577,11 @@ export default function Users() {
                   <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
                     u.role === 'admin'
                       ? 'status-scheduled-badge'
+                      : u.role === 'manager'
+                      ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
                       : 'bg-surface-container-high text-on-surface-variant'
                   }`}>
-                    {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
+                    {u.role === 'manager' ? 'Dept. Manager' : u.role.charAt(0).toUpperCase() + u.role.slice(1)}
                   </span>
                   {u.department && (
                     <p className="text-xs text-text-muted mt-1">{u.department}</p>

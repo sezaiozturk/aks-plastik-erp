@@ -222,7 +222,11 @@ router.post('/users', authenticate, adminOnly, async (req, res) => {
 router.put('/users/:id', authenticate, adminOnly, async (req, res) => {
   try {
     const { name, email, phone, role, password, department } = req.body
-    const data = { name, email, phone: phone || null, role, department: role === 'user' ? (department || null) : null }
+    const data = { name, email, phone: phone || null, role }
+    // Only update department if explicitly provided (e.g. from employee detail sync)
+    if (department !== undefined) {
+      data.department = department || null
+    }
     if (password && password.length >= 6) {
       data.password = await bcrypt.hash(password, 10)
     }

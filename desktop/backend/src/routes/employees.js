@@ -26,6 +26,19 @@ router.get('/:id', async (req, res) => {
   }
 })
 
+// POST /employees/setmanager — set one employee as dept manager, clear others
+router.post('/setmanager', async (req, res) => {
+  try {
+    const { employeeId, department } = req.body
+    if (!employeeId || !department) return res.status(400).json({ error: 'employeeId and department are required' })
+    await prisma.employee.updateMany({ where: { department }, data: { isManager: false } })
+    await prisma.employee.update({ where: { id: employeeId }, data: { isManager: true } })
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 router.post('/', async (req, res) => {
   try {
     const { name, department, position, phone, email, salary, status, hireDate, supervisorId } = req.body
@@ -48,6 +61,7 @@ router.post('/', async (req, res) => {
         status: status || 'Active',
         hireDate: hireDate || null,
         supervisorId: supervisorId || null,
+        isManager: false,
       },
       include: { supervisor: { select: { id: true, name: true } } },
     })

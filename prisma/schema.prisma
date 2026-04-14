@@ -236,6 +236,7 @@ model Employee {
   // ── System ──────────────────────────────────────────
   userRole          String?
   companyConnection String?
+  isManager         Boolean @default(false)
 
   supervisor   Employee?  @relation("EmployeeSupervisor", fields: [supervisorId], references: [id])
   subordinates Employee[] @relation("EmployeeSupervisor")

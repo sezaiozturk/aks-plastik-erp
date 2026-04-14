@@ -435,6 +435,7 @@ const PAGES = [
   { key: 'maintenance', label: 'Maintenance', icon: 'build' },
   { key: 'logistics',   label: 'Logistics',   icon: 'local_shipping' },
   { key: 'purchasing',  label: 'Purchasing',  icon: 'shopping_bag' },
+  { key: 'attendance',  label: 'Attendance',  icon: 'schedule' },
 ]
 
 // ─── Employee Assign Modal ────────────────────────────────────────────────────
@@ -582,8 +583,8 @@ function UserRolesTab() {
   const empDeptNames = employees.map((e) => e.department || 'Unassigned')
   const departments = [...new Set([...roleDeptNames, ...empDeptNames])].sort()
 
-  function isManager(emp, deptEmps) {
-    return deptEmps.some((other) => other.supervisorId === emp.id)
+  function isManager(emp) {
+    return !!emp.isManager
   }
 
   if (loading) return (
@@ -594,7 +595,7 @@ function UserRolesTab() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-text-muted">Department hierarchy — managers and their team members. Click edit to reassign.</p>
+      <p className="text-sm text-text-muted">Department hierarchy — managers and their team members. Edit an employee to configure their access and manager role.</p>
 
       {/* Add Department */}
       <div className="flex gap-2">
@@ -621,31 +622,27 @@ function UserRolesTab() {
 
       {departments.map((dept) => {
         const deptEmps = employees.filter((e) => (e.department || 'Unassigned') === dept)
-        const managers = deptEmps.filter((e) => isManager(e, deptEmps))
-        const managedIds = new Set(managers.map((m) => m.id))
-
-        // Employees who report to a manager in this dept
-        const subordinates = deptEmps.filter((e) => e.supervisorId && managedIds.has(e.supervisorId))
-        // Employees with no manager assigned within this dept
-        const unassigned = deptEmps.filter((e) => !managedIds.has(e.id) && !subordinates.find((s) => s.id === e.id))
+        const managers = deptEmps.filter((e) => isManager(e))
+        const managerIds = new Set(managers.map((m) => m.id))
+        const unassigned = deptEmps.filter((e) => !managerIds.has(e.id))
 
         return (
-          <div key={dept} className="bg-surface-container-lowest border border-theme-border rounded-2xl overflow-hidden">
+          <div key={dept} className="bg-surface-container-lowest border border-primary/30 rounded-2xl overflow-hidden">
             {/* Department header */}
-            <div className="flex items-center gap-3 px-5 py-3 bg-surface-container border-b border-theme-border">
-              <span className="material-symbols-outlined text-base text-primary">corporate_fare</span>
-              <span className="font-bold text-on-surface">{dept}</span>
-              <span className="text-xs text-text-muted bg-surface-container-high px-2 py-0.5 rounded-full ml-1">{deptEmps.length} {deptEmps.length === 1 ? 'person' : 'people'}</span>
-              <div className="ml-auto flex items-center gap-1">
+            <div className="flex items-center gap-3 px-5 py-3 bg-primary border-b border-primary/30">
+              <span className="material-symbols-outlined text-base text-white">corporate_fare</span>
+              <span className="font-bold text-white">{dept}</span>
+              <span className="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full ml-1">{deptEmps.length} {deptEmps.length === 1 ? 'person' : 'people'}</span>
+              <div className="ml-auto flex items-center gap-2">
                 {(() => {
                   const role = roles.find((r) => r.name === dept)
                   if (!role) return null
                   return (
                     <>
-                      <button onClick={() => { setRenamingRole({ id: role.id, name: role.name }); setRenameText(role.name); setRenameError('') }} className="text-text-muted hover:text-primary transition p-1 rounded hover:bg-hover-bg">
+                      <button onClick={() => { setRenamingRole({ id: role.id, name: role.name }); setRenameText(role.name); setRenameError('') }} className="text-white/70 hover:text-white transition p-1 rounded hover:bg-white/20">
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
-                      <button onClick={() => { setDeletingRole({ id: role.id, name: role.name }); setDeleteConfirmText('') }} className="text-text-muted hover:text-error transition p-1 rounded hover:bg-hover-bg">
+                      <button onClick={() => { setDeletingRole({ id: role.id, name: role.name }); setDeleteConfirmText('') }} className="text-white/70 hover:text-white transition p-1 rounded hover:bg-white/20">
                         <span className="material-symbols-outlined text-sm">delete</span>
                       </button>
                     </>
@@ -658,7 +655,7 @@ function UserRolesTab() {
             {managers.map((mgr) => (
               <div key={mgr.id}>
                 {/* Manager row */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-theme-border/60 bg-amber-500/5">
+                <div className="flex items-center px-5 py-3 border-b border-theme-border/60 bg-amber-500/5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
                       <span className="material-symbols-outlined text-sm text-amber-600">manage_accounts</span>
@@ -671,28 +668,8 @@ function UserRolesTab() {
                       <p className="text-xs text-text-muted">{mgr.position || '—'}</p>
                     </div>
                   </div>
-                  <button onClick={() => setEditModal(mgr)} className="text-text-muted hover:text-primary p-1 rounded hover:bg-hover-bg transition">
-                    <span className="material-symbols-outlined text-sm">edit</span>
-                  </button>
                 </div>
 
-                {/* Subordinates of this manager */}
-                {deptEmps.filter((e) => e.supervisorId === mgr.id).map((emp, i, arr) => (
-                  <div key={emp.id} className={`flex items-center justify-between pl-12 pr-5 py-2.5 ${i < arr.length - 1 || unassigned.length > 0 || managers.length > 1 ? 'border-b border-theme-border/40' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-sm text-text-muted">person</span>
-                      </div>
-                      <div>
-                        <span className="text-sm text-on-surface">{emp.name}</span>
-                        <p className="text-xs text-text-muted">{emp.position || '—'}</p>
-                      </div>
-                    </div>
-                    <button onClick={() => setEditModal(emp)} className="text-text-muted hover:text-primary p-1 rounded hover:bg-hover-bg transition">
-                      <span className="material-symbols-outlined text-sm">edit</span>
-                    </button>
-                  </div>
-                ))}
               </div>
             ))}
 
@@ -705,7 +682,10 @@ function UserRolesTab() {
                   </div>
                 )}
                 {unassigned.map((emp, i) => (
-                  <div key={emp.id} className={`flex items-center justify-between px-5 py-2.5 ${i < unassigned.length - 1 ? 'border-b border-theme-border/40' : ''}`}>
+                  <div
+                    key={emp.id}
+                    className={`flex items-center px-5 py-2.5 ${i < unassigned.length - 1 ? 'border-b border-theme-border/40' : ''}`}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center shrink-0">
                         <span className="material-symbols-outlined text-sm text-text-muted">person</span>
@@ -715,9 +695,6 @@ function UserRolesTab() {
                         <p className="text-xs text-text-muted">{emp.position || '—'}</p>
                       </div>
                     </div>
-                    <button onClick={() => setEditModal(emp)} className="text-text-muted hover:text-primary p-1 rounded hover:bg-hover-bg transition">
-                      <span className="material-symbols-outlined text-sm">edit</span>
-                    </button>
                   </div>
                 ))}
               </div>
@@ -1538,12 +1515,101 @@ function ApiTab() {
   )
 }
 
+const ORDER_STATUSES = ['Processing', 'Confirmed', 'In-Production', 'Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
+
+const statusColor = {
+  Processing:             'bg-amber-100 text-amber-700',
+  Confirmed:              'bg-primary-fixed text-on-primary-fixed-variant',
+  'In-Production':        'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+  'Production Completed': 'bg-green-100 text-green-700',
+  'E-WayBill':            'bg-orange-100 text-orange-700',
+  'In Delivery':          'bg-blue-100 text-blue-700',
+  'E-Invoice':            'bg-teal-100 text-teal-700',
+  Delivered:              'bg-green-200 text-green-900',
+}
+
+function OrderStatusTab() {
+  const { token } = useAuth()
+  const { userStatusPermissions, updateUserStatusPermissions } = useData()
+  const [users, setUsers] = useState([])
+  const [saving, setSaving] = useState({})
+
+  useEffect(() => {
+    fetch(`${API_URL}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => setUsers(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [token])
+
+  async function toggle(userId, status) {
+    const current = userStatusPermissions[userId] || []
+    const next = current.includes(status) ? current.filter((s) => s !== status) : [...current, status]
+    const key = `${userId}-${status}`
+    setSaving((s) => ({ ...s, [key]: true }))
+    try { await updateUserStatusPermissions(userId, next) }
+    finally { setSaving((s) => ({ ...s, [key]: false })) }
+  }
+
+  return (
+    <div>
+      <p className="text-sm text-text-muted mb-6">
+        Configure which users can transition orders to each status.
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        {ORDER_STATUSES.map((status) => (
+          <div key={status} className="bg-surface-container-lowest rounded-xl border border-theme-border overflow-hidden">
+            {/* Status header */}
+            <div className="px-4 py-3 border-b border-theme-border flex items-center gap-2">
+              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColor[status] || 'bg-surface-container-high text-text-muted'}`}>
+                {status}
+              </span>
+            </div>
+            {/* User list */}
+            <div className="divide-y divide-theme-border-light">
+              {users.length === 0 && (
+                <p className="px-4 py-3 text-xs text-text-muted">No users found</p>
+              )}
+              {users.map((user) => {
+                const enabled = (userStatusPermissions[user.id] || []).includes(status)
+                const key = `${user.id}-${status}`
+                return (
+                  <label
+                    key={user.id}
+                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-hover-bg transition"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={() => toggle(user.id, status)}
+                      disabled={!!saving[key]}
+                      className="w-4 h-4 accent-primary cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-on-surface truncate">{user.name}</p>
+                      <p className="text-xs text-text-muted">
+                        {user.role === 'admin' ? 'Admin' : user.department || 'User'}
+                      </p>
+                    </div>
+                    {saving[key] && (
+                      <span className="material-symbols-outlined text-sm text-text-muted animate-spin">progress_activity</span>
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const TABS = [
-  { key: 'users',       label: 'Users',        icon: 'manage_accounts' },
-  { key: 'roles',       label: 'User Roles',   icon: 'badge' },
-  { key: 'permissions', label: 'Permissions',  icon: 'lock' },
-  { key: 'machines',    label: 'Machines',     icon: 'precision_manufacturing' },
-  { key: 'api',         label: 'API Tools',    icon: 'api' },
+  { key: 'users',         label: 'Users',                    icon: 'manage_accounts' },
+  { key: 'roles',         label: 'User Roles & Permissions', icon: 'badge' },
+  { key: 'order-status',  label: 'Order Status',             icon: 'swap_horiz' },
+  { key: 'machines',      label: 'Machines',                 icon: 'precision_manufacturing' },
+  { key: 'api',           label: 'API Tools',                icon: 'api' },
 ]
 
 export default function Settings() {
@@ -1562,9 +1628,9 @@ export default function Settings() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition rounded-t-lg ${
               tab === t.key
-                ? 'border-primary text-primary'
+                ? 'bg-primary text-white border-primary'
                 : 'border-transparent text-text-muted hover:text-on-surface'
             }`}
           >
@@ -1574,11 +1640,11 @@ export default function Settings() {
         ))}
       </div>
 
-      {tab === 'users'       && <Users />}
-      {tab === 'roles'       && <UserRolesTab />}
-      {tab === 'permissions' && <PermissionsTab />}
-      {tab === 'machines'    && <MachinesTab />}
-      {tab === 'api'         && <ApiTab />}
+      {tab === 'users'        && <Users />}
+      {tab === 'roles'        && <UserRolesTab />}
+      {tab === 'order-status' && <OrderStatusTab />}
+      {tab === 'machines'     && <MachinesTab />}
+      {tab === 'api'          && <ApiTab />}
     </div>
   )
 }

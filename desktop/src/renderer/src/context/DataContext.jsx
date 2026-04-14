@@ -16,6 +16,7 @@ export function DataProvider({ children }) {
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState({})
   const [statusPermissions, setStatusPermissions] = useState({})
+  const [userStatusPermissions, setUserStatusPermissions] = useState({})
   const [machines, setMachines] = useState([])
   const [ready, setReady] = useState(false)
   const [reportsReady, setReportsReady] = useState(false)
@@ -120,6 +121,14 @@ export function DataProvider({ children }) {
       .catch(() => {})
   }, [token])
   useEffect(() => { refreshStatusPermissions() }, [token])
+
+  const refreshUserStatusPermissions = useCallback(() => {
+    fetch(`${API_URL}/user-status-permissions`, { headers: authHeaders })
+      .then((r) => r.json())
+      .then((data) => setUserStatusPermissions(data || {}))
+      .catch(() => {})
+  }, [token])
+  useEffect(() => { refreshUserStatusPermissions() }, [token])
 
   const refreshMachines = useCallback(() => {
     fetch(`${API_URL}/machines`, { headers: authHeaders })
@@ -315,6 +324,15 @@ export function DataProvider({ children }) {
     setStatusPermissions((prev) => ({ ...prev, [role]: statuses }))
   }
 
+  // ── User Status Permissions ──
+  async function updateUserStatusPermissions(userId, statuses) {
+    const res = await fetch(`${API_URL}/user-status-permissions/${userId}`, {
+      method: 'PUT', headers, body: JSON.stringify({ statuses }),
+    })
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed')
+    setUserStatusPermissions((prev) => ({ ...prev, [userId]: statuses }))
+  }
+
   // ── Machines ──
   async function addMachine(form) {
     const res = await fetch(`${API_URL}/machines`, { method: 'POST', headers, body: JSON.stringify(form) })
@@ -454,6 +472,7 @@ export function DataProvider({ children }) {
       roles, addRole, renameRole, deleteRole,
       permissions, updateRolePermissions, refreshPermissions,
       statusPermissions, updateRoleStatusPermissions, refreshStatusPermissions,
+      userStatusPermissions, updateUserStatusPermissions, refreshUserStatusPermissions,
       machines, addMachine, updateMachine, deleteMachine,
       uploadMachineManual, downloadMachineManual, deleteMachineManual,
       addMaintenanceRecord, deleteMaintenanceRecord,

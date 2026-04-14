@@ -524,8 +524,10 @@ export default function Attendance() {
   const { employees } = useData()
   const [tab, setTab] = useState('attendance')
 
-  // Match logged-in user to an employee record by email
-  const myEmployee = employees.find((e) => e.email === user?.email)
+  // Match logged-in user to their linked employee record
+  const myEmployee = user?.employeeId
+    ? employees.find((e) => e.id === user.employeeId)
+    : employees.find((e) => e.email && user?.email && e.email.toLowerCase() === user.email.toLowerCase())
 
   // Show Team Requests tab if admin or if this employee has subordinates
   const hasSubordinates = myEmployee && employees.some((e) => e.supervisorId === myEmployee.id)

@@ -47,10 +47,10 @@ const PAYMENT_METHODS = [
   'PayPal / Online Payment',
 ]
 
-const emptyItem = { productName: '', quantity: 1, unitPrice: '', currency: 'USD' }
+const emptyItem = { productName: '', quantity: 1, unitPrice: '', currency: 'USD', vat: '0' }
 
 function emptyForm() {
-  return { customerId: '', salesRepId: '', status: 'Processing', vat: '0', notes: '', shipmentType: '', paymentMethod: '', items: [{ ...emptyItem }] }
+  return { customerId: '', salesRepId: '', status: 'Processing', notes: '', shipmentType: '', paymentMethod: '', items: [{ ...emptyItem }] }
 }
 
 // ─── Order Detail Modal ───────────────────────────────────────────────────────
@@ -66,18 +66,13 @@ const detailStatusStyle = {
 }
 
 function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
-  const { statusPermissions } = useData()
+  const { userStatusPermissions } = useData()
   const [localStatus, setLocalStatus] = useState(order.status)
   const [pendingStatus, setPendingStatus] = useState(null)
   const isAdmin = currentUser?.role === 'admin'
-  const isSalesManager = currentUser?.department === 'Sales Manager'
-  const canChangeTo = (status) => isAdmin || (statusPermissions[currentUser?.department] || []).includes(status)
-  const canChangeStatus = (isAdmin || isSalesManager) && (isAdmin || ORDER_STATUSES.some((s) => canChangeTo(s)))
+  const canChangeTo = (status) => isAdmin || (userStatusPermissions[currentUser?.id] || []).includes(status)
+  const canChangeStatus = isAdmin || ORDER_STATUSES.some((s) => canChangeTo(s))
 
-  const subtotal = (order.items || []).reduce(
-    (s, it) => s + (parseFloat(it.unitPrice) || 0) * (parseInt(it.quantity) || 0), 0
-  )
-  const vatAmount = subtotal * ((order.vat || 0) / 100)
   const currency = order.items?.[0]?.currency || 'USD'
 
   function confirmStatusChange() {
@@ -111,39 +106,38 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-container-high text-text-muted text-xs uppercase tracking-wider">
-                <th className="text-left px-4 py-2.5 font-semibold">Stock No</th>
                 <th className="text-left px-4 py-2.5 font-semibold">Product</th>
                 <th className="text-right px-4 py-2.5 font-semibold">Qty</th>
                 <th className="text-right px-4 py-2.5 font-semibold">Unit Price</th>
+                <th className="text-right px-4 py-2.5 font-semibold">VAT %</th>
                 <th className="text-right px-4 py-2.5 font-semibold">Line Total</th>
               </tr>
             </thead>
             <tbody>
-              {(order.items || []).map((it, i) => (
-                <tr key={i} className="border-t border-theme-border">
-                  <td className="px-4 py-3 font-mono text-xs text-text-muted">{it.product?.stockNo || '—'}</td>
-                  <td className="px-4 py-3 text-on-surface font-medium">{it.productName}</td>
-                  <td className="px-4 py-3 text-right text-text-muted">{it.quantity}</td>
-                  <td className="px-4 py-3 text-right text-on-surface">
-                    <span className="text-xs text-text-muted mr-1">{it.currency || 'USD'}</span>
-                    {parseFloat(it.unitPrice).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-on-surface">
-                    <span className="text-xs text-text-muted mr-1">{it.currency || 'USD'}</span>
-                    {(parseFloat(it.unitPrice) * parseInt(it.quantity)).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
+              {(order.items || []).map((it, i) => {
+                const lineTotal = (parseFloat(it.unitPrice) || 0) * (parseInt(it.quantity) || 0) * (1 + (it.vat || 0) / 100)
+                return (
+                  <tr key={i} className="border-t border-theme-border">
+                    <td className="px-4 py-3 text-on-surface font-medium">{it.productName}</td>
+                    <td className="px-4 py-3 text-right text-text-muted">{it.quantity}</td>
+                    <td className="px-4 py-3 text-right text-on-surface">
+                      <span className="text-xs text-text-muted mr-1">{it.currency || 'USD'}</span>
+                      {parseFloat(it.unitPrice).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-text-muted">{it.vat > 0 ? `${it.vat}%` : '—'}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-on-surface">
+                      <span className="text-xs text-text-muted mr-1">{it.currency || 'USD'}</span>
+                      {lineTotal.toFixed(2)}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
 
         {/* Totals */}
         <div className="flex flex-col items-end gap-1 text-sm mb-4">
-          <span className="text-text-muted">Subtotal: <span className="text-on-surface font-medium">{currency} {subtotal.toFixed(2)}</span></span>
-          {order.vat > 0 && (
-            <span className="text-text-muted">VAT ({order.vat}%): <span className="text-on-surface font-medium">+{currency} {vatAmount.toFixed(2)}</span></span>
-          )}
           <span className="font-bold text-on-surface text-base border-t border-theme-border pt-1 mt-0.5">
             Total: {currency} {parseFloat(order.totalAmount).toFixed(2)}
           </span>
@@ -266,12 +260,12 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
     }
   }
 
-  const subtotal = form.items.reduce(
-    (s, it) => s + (parseFloat(it.unitPrice) || 0) * (parseInt(it.quantity) || 0), 0
-  )
-  const vatRate = parseFloat(form.vat) || 0
-  const vatAmount = subtotal * (vatRate / 100)
-  const total = subtotal + vatAmount
+  const total = form.items.reduce((s, it) => {
+    const qty = parseInt(it.quantity) || 0
+    const price = parseFloat(it.unitPrice) || 0
+    const vatRate = parseFloat(it.vat) || 0
+    return s + qty * price * (1 + vatRate / 100)
+  }, 0)
   const displayCurrency = form.items.find((it) => it.currency)?.currency || 'USD'
 
   return (
@@ -326,14 +320,16 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             {errors.items && <p className="text-xs text-error mb-2">{errors.items}</p>}
             <div className="flex items-center gap-2 mb-1 px-0.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted flex-1">Product</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-16 text-center">Qty</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-14 text-center">Qty</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-28 text-center">Unit Price</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-16 text-center">VAT %</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-24 text-right">Total</span>
               <span className="w-5" />
             </div>
             <div className="space-y-2">
               {form.items.map((item, idx) => {
                 const itemErr = errors.items && item.productName && (!item.unitPrice || parseInt(item.quantity) < 1)
+                const itemTotal = (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 0) * (1 + (parseFloat(item.vat) || 0) / 100)
                 return (
                 <div key={idx} className="flex items-center gap-2">
                   <select
@@ -350,7 +346,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
                   </select>
                   <input
                     type="number" min="1"
-                    className={`w-16 border rounded px-2 py-1.5 text-xs bg-surface-container-lowest text-on-surface outline-none focus:border-primary text-center ${itemErr && parseInt(item.quantity) < 1 ? 'border-error' : 'border-theme-border'}`}
+                    className={`w-14 border rounded px-2 py-1.5 text-xs bg-surface-container-lowest text-on-surface outline-none focus:border-primary text-center ${itemErr && parseInt(item.quantity) < 1 ? 'border-error' : 'border-theme-border'}`}
                     placeholder="1"
                     value={item.quantity}
                     onChange={(e) => setItem(idx, 'quantity', e.target.value)}
@@ -365,8 +361,18 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
                       onChange={(e) => setItem(idx, 'unitPrice', e.target.value)}
                     />
                   </div>
+                  <div className="w-16 flex items-center border border-theme-border rounded overflow-hidden bg-surface-container-lowest">
+                    <input
+                      type="number" min="0" max="100" step="0.1"
+                      className="flex-1 px-2 py-1.5 text-xs text-on-surface outline-none bg-transparent text-center"
+                      placeholder="0"
+                      value={item.vat}
+                      onChange={(e) => setItem(idx, 'vat', e.target.value)}
+                    />
+                    <span className="px-1.5 text-[10px] text-text-muted border-l border-theme-border bg-surface-container-high">%</span>
+                  </div>
                   <span className="text-xs font-semibold text-on-surface w-24 text-right">
-                    {item.currency || 'USD'} {((parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 0)).toFixed(2)}
+                    {item.currency || 'USD'} {itemTotal.toFixed(2)}
                   </span>
                   {form.items.length > 1 && (
                     <button onClick={() => removeItem(idx)} className="text-text-muted hover:text-error">
@@ -376,19 +382,8 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
                 </div>
               )})}
             </div>
-            <div className="mt-3 flex flex-col items-end gap-1 text-sm">
-              <span className="text-text-muted">Subtotal: <span className="text-on-surface font-medium">{displayCurrency} {subtotal.toFixed(2)}</span></span>
-              <div className="flex items-center gap-2">
-                <label className="text-text-muted text-xs">VAT %</label>
-                <input
-                  type="number" min="0" max="100" step="0.1"
-                  className="w-20 border border-theme-border rounded px-2 py-1 text-xs bg-surface-container-lowest text-on-surface outline-none focus:border-primary text-right"
-                  value={form.vat}
-                  onChange={(e) => set('vat')(e)}
-                />
-                <span className="text-text-muted text-xs w-28 text-right">+{displayCurrency} {vatAmount.toFixed(2)}</span>
-              </div>
-              <span className="font-bold text-on-surface border-t border-theme-border pt-1 mt-0.5">
+            <div className="mt-3 flex justify-end">
+              <span className="font-bold text-on-surface border-t border-theme-border pt-1">
                 Total: {displayCurrency} {total.toFixed(2)}
               </span>
             </div>
@@ -479,11 +474,15 @@ function loadImageAsBase64(url) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Orders() {
-  const { orders, addOrder, updateOrder, deleteOrder, refreshOrders, customers, employees, products, isAdmin } = useData()
+  const { orders, addOrder, updateOrder, deleteOrder, refreshOrders, customers, employees, products, isAdmin, permissions } = useData()
   const { user: currentUser, token } = useAuth()
   const [salesTeam, setSalesTeam] = useState([])
   const canDelete = isAdmin || currentUser?.department === 'Sales Manager'
-  const canCreate = isAdmin || currentUser?.department === 'Sales Manager' || currentUser?.department === 'Sales Representative'
+  const canCreate = isAdmin
+    || currentUser?.department === 'Sales Manager'
+    || currentUser?.department === 'Sales Representative'
+    || (permissions[currentUser?.department] || []).includes('orders-create')
+  const canEditProcessing = isAdmin || canCreate
 
   useEffect(() => {
     if (!token) return
@@ -702,7 +701,6 @@ export default function Orders() {
       customerId: item.customerId || '',
       salesRepId: item.salesRepId || '',
       status: item.status || 'Draft',
-      vat: item.vat ?? '0',
       notes: item.notes || '',
       shipmentType: item.shipmentType || '',
       paymentMethod: item.paymentMethod || '',
@@ -712,6 +710,7 @@ export default function Orders() {
             quantity: it.quantity,
             unitPrice: it.unitPrice,
             currency: it.currency || 'USD',
+            vat: it.vat ?? '0',
             productId: it.productId || '',
           }))
         : [{ ...emptyItem }],
@@ -903,7 +902,7 @@ export default function Orders() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="px-4 py-4 w-10">
+              <th className="px-4 py-2 w-10">
                 <input
                   type="checkbox"
                   checked={allPageSelected}
@@ -912,28 +911,23 @@ export default function Orders() {
                   className="w-4 h-4 rounded accent-primary cursor-pointer"
                 />
               </th>
-              <th className="text-left px-4 py-4 font-semibold">Order</th>
-              <th className="text-left px-4 py-4 font-semibold">Customer</th>
-              <th className="text-left px-4 py-4 font-semibold">Sales Rep</th>
-              <th className="text-left px-4 py-4 font-semibold">Stock No</th>
-              <th className="text-left px-4 py-4 font-semibold">Product Name</th>
-              <th className="text-right px-4 py-4 font-semibold">VAT%</th>
-              <th className="text-right px-4 py-4 font-semibold">Total</th>
-              <th className="text-left px-4 py-4 font-semibold">Status</th>
-              <th className="text-left px-4 py-4 font-semibold">Date</th>
-              <th className="text-left px-4 py-4 font-semibold">Time</th>
-              {canDelete && <th className="text-right px-4 py-4 font-semibold">Actions</th>}
+              <th className="text-left px-4 py-2 font-semibold">Order</th>
+              <th className="text-left px-4 py-2 font-semibold">Customer</th>
+              <th className="text-left px-4 py-2 font-semibold">Sales Rep</th>
+              <th className="text-right px-4 py-2 font-semibold">Total</th>
+              <th className="text-left px-4 py-2 font-semibold">Status</th>
+              <th className="text-left px-4 py-2 font-semibold">Date</th>
+              <th className="text-left px-4 py-2 font-semibold">Time</th>
+              {(canDelete || canEditProcessing) && <th className="text-right px-4 py-2 font-semibold">Actions</th>}
             </tr>
           </thead>
           <tbody>
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={canDelete ? 12 : 11} className="text-center py-16 text-text-muted">No orders found</td>
+                <td colSpan={(canDelete || canEditProcessing) ? 9 : 8} className="text-center py-16 text-text-muted">No orders found</td>
               </tr>
             ) : (
               paginated.map((o) => {
-                const stockNos = (o.items || []).map((it) => it.product?.stockNo).filter(Boolean).join(', ')
-                const productNames = (o.items || []).map((it) => it.productName).filter(Boolean).join(', ')
                 const currency = o.items?.[0]?.currency || 'USD'
                 const createdAt = o.createdAt ? new Date(o.createdAt) : null
                 const dateStr = createdAt ? createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -944,7 +938,7 @@ export default function Orders() {
                     className={`border-b border-theme-border hover:bg-hover-bg transition-colors cursor-pointer ${selected.has(o.id) ? 'bg-primary/5' : ''}`}
                     onClick={() => setDetailOrder(o)}
                   >
-                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selected.has(o.id)}
@@ -952,32 +946,33 @@ export default function Orders() {
                         className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
                     </td>
-                    <td className="px-4 py-4 font-mono text-xs text-text-muted font-semibold">{o.code || '—'}</td>
-                    <td className="px-4 py-4 font-medium text-on-surface">{o.customer?.name || '—'}</td>
-                    <td className="px-4 py-4 text-text-muted">{o.salesRep?.name || o.employee?.name || '—'}</td>
-                    <td className="px-4 py-4 font-mono text-xs text-text-muted">{stockNos || '—'}</td>
-                    <td className="px-4 py-4 text-sm text-on-surface max-w-[160px] truncate" title={productNames}>{productNames || '—'}</td>
-                    <td className="px-4 py-4 text-right text-text-muted text-sm">{o.vat > 0 ? `${o.vat}%` : '—'}</td>
-                    <td className="px-4 py-4 text-right font-semibold text-on-surface">
+                    <td className="px-4 py-2 font-mono text-xs text-text-muted font-semibold">{o.code || '—'}</td>
+                    <td className="px-4 py-2 font-medium text-on-surface">{o.customer?.name || '—'}</td>
+                    <td className="px-4 py-2 text-text-muted">{o.salesRep?.name || o.employee?.name || '—'}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-on-surface">
                       <span className="text-xs text-text-muted mr-1">{currency}</span>
                       {(parseFloat(o.totalAmount) || 0).toFixed(2)}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-2">
                       <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyle[o.status] || statusStyle.Draft}`}>
                         {o.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-xs text-text-muted whitespace-nowrap">{dateStr}</td>
-                    <td className="px-4 py-4 text-xs text-text-muted whitespace-nowrap">{timeStr}</td>
-                    {canDelete && (
-                      <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-2 text-xs text-text-muted whitespace-nowrap">{dateStr}</td>
+                    <td className="px-4 py-2 text-xs text-text-muted whitespace-nowrap">{timeStr}</td>
+                    {(canDelete || (canEditProcessing && o.status === 'Processing')) && (
+                      <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => openEdit(o)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
-                            <span className="material-symbols-outlined text-base">edit</span>
-                          </button>
-                          <button onClick={() => setConfirmDeleteId(o.id)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
-                            <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
+                          {(canDelete || (canEditProcessing && o.status === 'Processing')) && (
+                            <button onClick={() => openEdit(o)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
+                              <span className="material-symbols-outlined text-base">edit</span>
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button onClick={() => setConfirmDeleteId(o.id)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
+                              <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -989,16 +984,14 @@ export default function Orders() {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
-          <span>{filtered.length} orders</span>
-          <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
-            <span className="px-3 py-1.5">{page} / {totalPages}</span>
-            <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
-          </div>
+      <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
+        <span>{filtered.length} orders</span>
+        <div className="flex gap-2">
+          <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
+          <span className="px-3 py-1.5">{page} / {totalPages}</span>
+          <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
         </div>
-      )}
+      </div>
 
       {detailOrder && <OrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} currentUser={currentUser} onStatusChange={handleStatusChange} />}
 
