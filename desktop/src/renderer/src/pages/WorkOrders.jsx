@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
 import * as XLSX from 'xlsx'
 
 const STATUSES = ['Scheduled', 'In Progress', 'Completed', 'Cancelled']
@@ -152,11 +153,32 @@ function DetailRow({ icon, label, value }) {
   )
 }
 
+const STATUS_CHANGE_STYLES = {
+  'Scheduled':   'border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100',
+  'In Progress': 'border-amber-400 text-amber-600 bg-amber-50 hover:bg-amber-100',
+  'Completed':   'border-emerald-400 text-emerald-600 bg-emerald-50 hover:bg-emerald-100',
+  'Cancelled':   'border-red-400 text-red-600 bg-red-50 hover:bg-red-100',
+}
+const STATUS_CHANGE_ACTIVE = {
+  'Scheduled':   'border-blue-500 bg-blue-500 text-white',
+  'In Progress': 'border-amber-500 bg-amber-500 text-white',
+  'Completed':   'border-emerald-500 bg-emerald-500 text-white',
+  'Cancelled':   'border-red-500 bg-red-500 text-white',
+}
+
 export function VisitDetailModal({ visit, customers, employees, onClose, onSave, onDelete }) {
   const { isAdmin } = useData()
+  const { user } = useAuth()
+  const canChangeStatus = isAdmin || user?.department === 'Sales'
+
   const [editing, setEditing]       = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [confirmComplete, setConfirmComplete] = useState(false)
+  const [showStatusPanel, setShowStatusPanel] = useState(false)
+  const [pendingStatus, setPendingStatus]     = useState(visit.status)
+  const [cancelNote, setCancelNote]           = useState('')
+  const [cancelNoteError, setCancelNoteError] = useState(false)
+
   const [form, setForm] = useState({
     title:      visit.title,
     customerId: visit.customerId || '',
@@ -197,6 +219,22 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
     setForm({ title: visit.title, customerId: visit.customerId || '', location: visit.location || '', employeeId: visit.employeeId || '', date: visit.date, time: visit.time, status: visit.status, notes: visit.notes || '' })
     setErrors({})
     setEditing(false)
+  }
+
+  function handleStatusChange() {
+    if (pendingStatus === 'Cancelled' && !cancelNote.trim()) {
+      setCancelNoteError(true)
+      return
+    }
+    const customerName = customers.find((c) => c.id === visit.customerId)?.name || visit.customerName || ''
+    const employeeName = employees.find((e) => e.id === visit.employeeId)?.name || visit.employeeName || ''
+    onSave(visit.id, {
+      title: visit.title, customerId: visit.customerId || '', location: visit.location || '',
+      employeeId: visit.employeeId || '', date: visit.date, time: visit.time, notes: visit.notes || '',
+      customerName, employeeName,
+      status: pendingStatus,
+      cancelledReason: pendingStatus === 'Cancelled' ? cancelNote.trim() : (visit.cancelledReason || ''),
+    })
   }
 
   const st = STATUS_STYLES[visit.status] ?? STATUS_STYLES['Scheduled']
@@ -251,6 +289,9 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
             <DetailRow icon="location_on"   label="Location"    value={visit.location} />
             <DetailRow icon="badge"         label="Employee"    value={visit.employeeName} />
             {visit.notes && <DetailRow icon="notes" label="Notes" value={visit.notes} />}
+            {visit.status === 'Cancelled' && visit.cancelledReason && (
+              <DetailRow icon="cancel" label="Cancellation Reason" value={visit.cancelledReason} />
+            )}
           </div>
         )}
 
@@ -292,6 +333,62 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
                 <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0 mt-0.5">notes</span>
                 <textarea rows={3} value={form.notes} onChange={set('notes')} className={`${inputCls} resize-none`} />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status change panel */}
+        {!editing && showStatusPanel && (
+          <div className="mx-8 mb-4 p-5 bg-surface-container-low rounded-2xl space-y-4 flex-shrink-0 border border-outline-variant/30">
+            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Change Status</p>
+            <div className="flex flex-wrap gap-2">
+              {STATUSES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setPendingStatus(s); setCancelNoteError(false) }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${
+                    pendingStatus === s ? STATUS_CHANGE_ACTIVE[s] : STATUS_CHANGE_STYLES[s]
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            {pendingStatus === 'Cancelled' && (
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">
+                  Cancellation Reason <span className="text-error">*</span>
+                </label>
+                <textarea
+                  autoFocus
+                  rows={3}
+                  value={cancelNote}
+                  onChange={(e) => { setCancelNote(e.target.value); setCancelNoteError(false) }}
+                  placeholder="Explain why this visit is being cancelled…"
+                  className={`w-full bg-surface-container-lowest border rounded-lg px-3 py-2 text-sm text-on-surface resize-none outline-none transition-all ${
+                    cancelNoteError ? 'border-error ring-2 ring-error/20' : 'border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20'
+                  }`}
+                />
+                {cancelNoteError && (
+                  <p className="text-[11px] text-error font-medium mt-1">Cancellation reason is required.</p>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => { setShowStatusPanel(false); setPendingStatus(visit.status); setCancelNote(''); setCancelNoteError(false) }}
+                className="px-4 py-2 rounded-lg text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStatusChange}
+                disabled={pendingStatus === visit.status}
+                className="px-4 py-2 rounded-lg primary-gradient text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm">check</span>
+                Apply
+              </button>
             </div>
           </div>
         )}
@@ -344,6 +441,14 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
                 <button onClick={() => setEditing(true)} className="px-5 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2">
                   <span className="material-symbols-outlined text-base">edit</span>Edit
                 </button>
+                {canChangeStatus && (
+                  <button
+                    onClick={() => { setShowStatusPanel((v) => !v); setPendingStatus(visit.status); setCancelNote(''); setCancelNoteError(false) }}
+                    className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all flex items-center gap-2 ${showStatusPanel ? 'border-secondary bg-secondary text-white' : 'border-secondary text-secondary hover:bg-secondary hover:text-white'}`}
+                  >
+                    <span className="material-symbols-outlined text-base">flag</span>Status
+                  </button>
+                )}
                 {isAdmin && (
                 <button
                   onClick={() => setConfirming((v) => !v)}

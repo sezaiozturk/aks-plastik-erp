@@ -356,7 +356,6 @@ export default function Users() {
                       className="w-full px-3.5 py-2.5 rounded-lg border border-input-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
                       <option value="user">User</option>
-                      <option value="manager">Department Manager</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>

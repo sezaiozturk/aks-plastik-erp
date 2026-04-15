@@ -99,6 +99,167 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
   )
 }
 
+function DeleteConfirmModal({ product, onClose, onConfirm }) {
+  const [typed, setTyped] = useState('')
+  const match = typed === product.name
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+        <div className="px-6 pt-6 pb-5 bg-error/10 border-b border-error/20">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 bg-error/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-error text-2xl">delete_forever</span>
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-on-surface">Delete Product</h2>
+              <p className="text-xs text-on-surface-variant mt-0.5">This action cannot be undone.</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-on-surface-variant">
+            Type <span className="font-bold text-on-surface">{product.name}</span> to confirm deletion.
+          </p>
+          <input
+            autoFocus
+            type="text"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder={product.name}
+            className="w-full px-3.5 py-2.5 rounded-lg border border-input-border bg-input-bg text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-error/20 focus:border-error"
+          />
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={!match}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-error text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
+  const stockBadge = (p) => {
+    if (p.stock === 0) return { label: 'Out of Stock', cls: 'bg-error/10 text-error' }
+    if (p.stock <= p.minStock) return { label: 'Low Stock', cls: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
+    return { label: 'In Stock', cls: 'bg-primary-fixed text-on-primary-fixed-variant' }
+  }
+  const badge = stockBadge(product)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="primary-gradient px-6 pt-6 pb-5">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-surface-container-lowest/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-white">inventory_2</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold text-white leading-tight">{product.name}</h2>
+                {product.stockNo && (
+                  <p className="text-blue-200 text-xs font-mono mt-0.5">{product.stockNo}</p>
+                )}
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-surface-container-lowest/10 transition-colors">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="p-6 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Category</p>
+              <p className="text-sm font-semibold text-on-surface">{product.category || '—'}</p>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Unit</p>
+              <p className="text-sm font-semibold text-on-surface">{product.unit || 'pcs'}</p>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Price</p>
+              <p className="text-sm font-semibold text-on-surface">
+                <span className="text-xs text-on-surface-variant mr-1">{product.currency || 'USD'}</span>
+                {parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Status</p>
+              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}>
+                {badge.label}
+              </span>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Stock</p>
+              <p className="text-sm font-semibold text-on-surface">
+                {product.stock} <span className="text-xs text-on-surface-variant">{product.unit || 'pcs'}</span>
+              </p>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Min Stock</p>
+              <p className="text-sm font-semibold text-on-surface">
+                {product.minStock} <span className="text-xs text-on-surface-variant">{product.unit || 'pcs'}</span>
+              </p>
+            </div>
+          </div>
+
+          {product.description && (
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Description</p>
+              <p className="text-sm text-on-surface">{product.description}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-6 flex gap-3">
+          {isAdmin && (
+            <>
+              <button
+                onClick={onDelete}
+                className="px-4 py-2.5 rounded-xl border-2 border-error/40 text-error text-sm font-bold hover:bg-error hover:text-white transition-all flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">delete</span>
+                Delete
+              </button>
+              <button
+                onClick={onEdit}
+                className="flex-1 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">edit</span>
+                Edit
+              </button>
+            </>
+          )}
+          <button
+            onClick={onClose}
+            className={`${isAdmin ? '' : 'flex-1'} py-2.5 px-5 rounded-xl primary-gradient text-white text-sm font-bold hover:opacity-90 transition-opacity`}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const PRODUCT_COLUMNS = ['Stock No', 'Name', 'Category', 'Unit', 'Currency', 'Price', 'Stock', 'Min Stock', 'Description']
 
 export default function Products() {
@@ -107,6 +268,8 @@ export default function Products() {
   const [page, setPage] = useState(1)
   const [showAdd, setShowAdd] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [viewProduct, setViewProduct] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
   const [importing, setImporting] = useState(false)
@@ -156,9 +319,9 @@ export default function Products() {
     setEditItem(null)
   }
 
-  async function handleDelete(id) {
-    if (!confirm('Delete this product?')) return
-    await deleteProduct(id)
+  async function handleDelete() {
+    await deleteProduct(deleteTarget.id)
+    setDeleteTarget(null)
   }
 
   function handleExport() {
@@ -284,13 +447,12 @@ export default function Products() {
               <th className="text-right px-6 py-4 font-semibold">Price</th>
               <th className="text-right px-6 py-4 font-semibold">Stock</th>
               <th className="text-left px-6 py-4 font-semibold">Status</th>
-              {isAdmin && <th className="text-right px-6 py-4 font-semibold">Actions</th>}
             </tr>
           </thead>
           <tbody>
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 7 : 6} className="text-center py-16 text-text-muted">
+                <td colSpan={6} className="text-center py-16 text-text-muted">
                   No products found
                 </td>
               </tr>
@@ -298,7 +460,7 @@ export default function Products() {
               paginated.map((p) => {
                 const badge = stockBadge(p)
                 return (
-                  <tr key={p.id} className="border-b border-theme-border hover:bg-hover-bg transition-colors">
+                  <tr key={p.id} onClick={() => setViewProduct(p)} className="border-b border-theme-border hover:bg-hover-bg transition-colors cursor-pointer">
                     <td className="px-6 py-4 font-mono text-xs font-semibold text-on-surface">{p.stockNo || '—'}</td>
                     <td className="px-6 py-4 font-semibold text-on-surface">{p.name}</td>
                     <td className="px-6 py-4 text-text-muted">{p.category || '—'}</td>
@@ -313,18 +475,6 @@ export default function Products() {
                         {badge.label}
                       </span>
                     </td>
-                    {isAdmin && (
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-primary transition">
-                            <span className="material-symbols-outlined text-base">edit</span>
-                          </button>
-                          <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
-                            <span className="material-symbols-outlined text-base">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    )}
                   </tr>
                 )
               })
@@ -349,6 +499,22 @@ export default function Products() {
       )}
       {editItem && (
         <Modal title="Edit Product" form={form} setForm={setForm} errors={errors} onClose={() => setEditItem(null)} onSave={handleEdit} />
+      )}
+      {viewProduct && (
+        <ProductDetailModal
+          product={viewProduct}
+          isAdmin={isAdmin}
+          onClose={() => setViewProduct(null)}
+          onEdit={() => { setViewProduct(null); openEdit(viewProduct) }}
+          onDelete={() => { setDeleteTarget(viewProduct); setViewProduct(null) }}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          product={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDelete}
+        />
       )}
     </div>
   )

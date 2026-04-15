@@ -1,19 +1,96 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 
-const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+function DonutChart({ income, expenses }) {
+  const total = income + expenses
+  const r = 70
+  const cx = 90
+  const cy = 90
+  const stroke = 22
+  const circumference = 2 * Math.PI * r
 
-function buildChartDays(reports, siteVisits) {
-  const days = []
-  const now = new Date()
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    const key = d.toISOString().split('T')[0]
-    const tasks = reports.filter((r) => r.createdAt?.startsWith(key)).length
-    const visits = siteVisits.filter((v) => v.date === key).length
-    days.push({ day: DAY_LABELS[d.getDay()], tasks, visits, total: tasks + visits })
-  }
-  return days
+  const incomeSlice = total > 0 ? (income / total) * circumference : 0
+  const expenseSlice = total > 0 ? (expenses / total) * circumference : 0
+  const incomeOffset = 0
+  const expenseOffset = -incomeSlice
+
+  return (
+    <svg viewBox="0 0 180 180" className="w-full h-full" style={{ maxWidth: 180, maxHeight: 180 }}>
+      {total === 0 ? (
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--color-surface-container-low)" strokeWidth={stroke} />
+      ) : (
+        <>
+          <circle
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke="#22c55e"
+            strokeWidth={stroke}
+            strokeDasharray={`${incomeSlice} ${circumference - incomeSlice}`}
+            strokeDashoffset={-incomeOffset}
+            strokeLinecap="butt"
+            transform={`rotate(-90 ${cx} ${cy})`}
+          />
+          <circle
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke="#ef4444"
+            strokeWidth={stroke}
+            strokeDasharray={`${expenseSlice} ${circumference - expenseSlice}`}
+            strokeDashoffset={expenseOffset}
+            strokeLinecap="butt"
+            transform={`rotate(-90 ${cx} ${cy})`}
+          />
+        </>
+      )}
+    </svg>
+  )
+}
+
+const ORDER_STATUS_COLORS = {
+  'Processing':           '#3b82f6',
+  'Confirmed':            '#6366f1',
+  'In-Production':        '#f59e0b',
+  'Production Completed': '#f97316',
+  'E-WayBill':            '#a855f7',
+  'In Delivery':          '#06b6d4',
+  'E-Invoice':            '#14b8a6',
+  'Delivered':            '#22c55e',
+}
+
+function OrdersDonutChart({ segments }) {
+  const r = 70
+  const cx = 90
+  const cy = 90
+  const stroke = 22
+  const circumference = 2 * Math.PI * r
+  const total = segments.reduce((s, seg) => s + seg.count, 0)
+
+  let cumulative = 0
+  return (
+    <svg viewBox="0 0 180 180" className="w-full h-full" style={{ maxWidth: 180, maxHeight: 180 }}>
+      {total === 0 ? (
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--color-surface-container-low)" strokeWidth={stroke} />
+      ) : (
+        segments.map((seg) => {
+          const dash = (seg.count / total) * circumference
+          const offset = -cumulative
+          cumulative += dash
+          return (
+            <circle
+              key={seg.status}
+              cx={cx} cy={cy} r={r}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={offset}
+              strokeLinecap="butt"
+              transform={`rotate(-90 ${cx} ${cy})`}
+            />
+          )
+        })
+      )}
+    </svg>
+  )
 }
 
 function timeAgo(dateStr) {
@@ -82,53 +159,23 @@ function buildActivity(customers, employees, reports, siteVisits) {
 }
 
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import L from 'leaflet'
 import { useData } from '../context/DataContext'
-
-function fmtDate(d) {
-  if (!d) return '—'
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-import { VisitDetailModal } from './WorkOrders'
-
-function FitBounds({ positions }) {
-  const map = useMap()
-  useEffect(() => {
-    if (positions.length === 0) return
-    if (positions.length === 1) {
-      map.setView(positions[0], 13)
-    } else {
-      map.fitBounds(positions, { padding: [30, 30] })
-    }
-  }, [map, positions])
-  return null
-}
-
-function InvalidateSize({ trigger }) {
-  const map = useMap()
-  useEffect(() => {
-    setTimeout(() => map.invalidateSize(), 200)
-  }, [trigger, map])
-  return null
-}
-
-// Fix default marker icon issue with bundlers
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
 
 
 export default function Dashboard() {
-  const { reports, employees, customers, siteVisits, updateSiteVisit, deleteSiteVisit } = useData()
-  const [selectedVisit, setSelectedVisit] = useState(null)
-  const [mapFullscreen, setMapFullscreen] = useState(false)
+  const { reports, employees, customers, siteVisits, financeRecords, orders } = useData()
 
-  const chartDays = useMemo(() => buildChartDays(reports, siteVisits), [reports, siteVisits])
-  const chartMax = Math.max(...chartDays.map((d) => d.total), 1)
+  const totalIncome   = useMemo(() => financeRecords.filter((r) => r.type === 'income').reduce((s, r) => s + Number(r.amount || 0), 0), [financeRecords])
+  const totalExpenses = useMemo(() => financeRecords.filter((r) => r.type === 'expense').reduce((s, r) => s + Number(r.amount || 0), 0), [financeRecords])
+  const netBalance    = totalIncome - totalExpenses
+
+  const orderSegments = useMemo(() => {
+    const statuses = ['Processing', 'Confirmed', 'In-Production', 'Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
+    return statuses
+      .map((status) => ({ status, color: ORDER_STATUS_COLORS[status], count: orders.filter((o) => o.status === status).length }))
+      .filter((s) => s.count > 0)
+  }, [orders])
+
   const recentActivity = useMemo(() => buildActivity(customers, employees, reports, siteVisits), [customers, employees, reports, siteVisits])
   const activeEmps = employees.filter((e) => e.status === 'Active').length
   const totalEmps  = employees.length
@@ -230,209 +277,130 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Asymmetric Main View */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left: Chart + Activity (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Chart */}
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Finance Overview Pie Chart */}
           <div className="bg-surface-container-lowest p-8 rounded-xl">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h3 className="text-lg font-extrabold text-on-surface">Weekly Activity</h3>
-                <p className="text-sm text-on-surface-variant">Tasks and site visits over the last 7 days</p>
-              </div>
-              <div className="flex gap-4">
-                <span className="flex items-center gap-1.5 text-xs font-bold" style={{ color: 'var(--color-chart-task)' }}>
-                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: 'var(--color-chart-task)' }} /> Tasks
-                </span>
-                <span className="flex items-center gap-1.5 text-xs font-bold text-tertiary">
-                  <span className="w-2 h-2 rounded-full bg-tertiary inline-block" /> Site Visits
-                </span>
-              </div>
-            </div>
-            <div className="h-[240px] w-full flex items-end justify-between gap-4">
-              {chartDays.map(({ day, tasks, visits }) => (
-                <div key={day} className="flex-1 flex flex-col items-center gap-2 group h-full relative">
-                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                    <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'var(--color-chart-task)' }} />{tasks} Tasks</div>
-                    <div className="flex items-center gap-1.5 mt-0.5"><span className="w-1.5 h-1.5 rounded-full bg-tertiary inline-block" />{visits} Visits</div>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-inverse-surface" />
-                  </div>
-                  <div className="w-full flex flex-col justify-end gap-0.5 h-full">
-                    <div
-                      className="w-full rounded-t group-hover:opacity-80 transition-colors"
-                      style={{ background: 'var(--color-chart-task)', height: `${(tasks / chartMax) * 100}%`, minHeight: tasks ? '4px' : 0 }}
-                    />
-                    <div
-                      className="bg-tertiary w-full rounded-b group-hover:opacity-80 transition-colors"
-                      style={{ height: `${(visits / chartMax) * 100}%`, minHeight: visits ? '4px' : 0 }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-bold text-on-surface-variant">{day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-surface-container-lowest rounded-xl p-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-extrabold text-on-surface">Recent Activity</h3>
-              <button className="text-primary text-xs font-bold uppercase tracking-widest hover:underline">
-                View All
-              </button>
-            </div>
-            <div className="space-y-2 max-h-[320px] overflow-y-auto">
-              {recentActivity.map((item, i) => (
-                <div
-                  key={`${item.title}-${i}`}
-                  className="flex items-start gap-4 p-4 hover:bg-surface-container-low rounded-xl transition-colors"
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full ${item.iconBg} flex items-center justify-center ${item.iconColor} flex-shrink-0`}
-                  >
-                    <span className="material-symbols-outlined text-lg">{item.icon}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start gap-2">
-                      <h4 className="text-sm font-bold text-on-surface">{item.title}</h4>
-                      <span className="text-[10px] font-medium text-on-surface-variant whitespace-nowrap">
-                        {timeAgo(item.date)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-on-surface-variant mt-1">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Appointments + Map (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Upcoming Site Visits */}
-          <div className="bg-surface-container-lowest rounded-xl p-6">
             <div className="mb-6">
-              <h3 className="text-base font-extrabold text-on-surface">Upcoming Site Visits</h3>
+              <h3 className="text-lg font-extrabold text-on-surface">Finance Overview</h3>
+              <p className="text-sm text-on-surface-variant">Income, expenses and net balance</p>
             </div>
-            <div className="space-y-3 max-h-[360px] overflow-y-auto">
-              {[...siteVisits].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).map((visit) => (
-                <div
-                  key={visit.title}
-                  className={`relative pl-4 py-3 rounded-lg border-l-4 ${
-                    visit.active
-                      ? 'bg-surface-container-low border-primary'
-                      : 'bg-surface-container-lowest border-outline-variant'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase text-on-surface-variant">
-                        {visit.time}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        visit.date === new Date().toISOString().split('T')[0]
-                          ? 'bg-tertiary-fixed text-tertiary'
-                          : 'bg-surface-container-high text-text-muted'
-                      }`}>
-                        {visit.date === new Date().toISOString().split('T')[0] ? 'Today' : fmtDate(visit.date)}
-                      </span>
+            <div className="flex items-center gap-8">
+              {/* Donut Chart */}
+              <div className="relative flex-shrink-0 w-[180px] h-[180px]">
+                <DonutChart income={totalIncome} expenses={totalExpenses} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Net</span>
+                  <span className={`text-lg font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {netBalance >= 0 ? '+' : ''}
+                    {netBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+              </div>
+              {/* Legend + Values */}
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Income</div>
+                    <div className="text-xl font-black text-green-500 tabular-nums">
+                      {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
-                    <button onClick={() => setSelectedVisit(visit)} className="material-symbols-outlined text-sm text-on-surface-variant hover:text-primary transition-colors">
-                      more_vert
-                    </button>
-                  </div>
-                  <h4 className="text-sm font-bold text-on-surface mt-1">{visit.title}</h4>
-                  <p className="text-xs text-on-surface-variant mt-0.5">{visit.location}</p>
-                  <div className="flex items-center gap-2 mt-3">
-                    <div className="w-6 h-6 rounded-full primary-gradient flex items-center justify-center text-white text-[9px] font-bold">
-                      {(visit.technicianName || '?').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
-                    </div>
-                    <span className="text-[10px] font-medium text-on-surface">Lead: {visit.technicianName || 'Unassigned'}</span>
                   </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Expenses</div>
+                    <div className="text-xl font-black text-red-500 tabular-nums">
+                      {totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t border-outline-variant/30 pt-4 flex items-center gap-3">
+                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${netBalance >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div className="flex-1">
+                    <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Net Balance</div>
+                    <div className={`text-xl font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {netBalance >= 0 ? '+' : ''}
+                      {netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Customer Locations */}
-          <div className={`bg-surface-container-lowest rounded-xl overflow-hidden ${mapFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''}`}>
-            <div className="p-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-extrabold text-on-surface mb-1">Customer Locations</h3>
-                <p className="text-xs text-on-surface-variant">Active customer regions on the map</p>
-              </div>
-              <button
-                onClick={() => setMapFullscreen((v) => !v)}
-                className="p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors"
-                title={mapFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-              >
-                <span className="material-symbols-outlined">{mapFullscreen ? 'fullscreen_exit' : 'fullscreen'}</span>
-              </button>
+          {/* Orders Status Pie Chart */}
+          <div className="bg-surface-container-lowest p-8 rounded-xl">
+            <div className="mb-6">
+              <h3 className="text-lg font-extrabold text-on-surface">Orders by Status</h3>
+              <p className="text-sm text-on-surface-variant">Distribution across all order stages</p>
             </div>
-            <div className={mapFullscreen ? 'h-[calc(100%-120px)] w-full' : 'h-64 w-full'}>
-              {(() => {
-                const positions = customers
-                  .filter((c) => c.latitude != null && c.longitude != null)
-                  .map((c) => [c.latitude, c.longitude])
-                return (
-                  <MapContainer
-                    center={positions.length === 1 ? positions[0] : [39.8283, -98.5795]}
-                    zoom={positions.length === 1 ? 13 : 4}
-                    scrollWheelZoom={true}
-                    style={{ height: '100%', width: '100%' }}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <FitBounds positions={positions} />
-                    <InvalidateSize trigger={mapFullscreen} />
-                    {customers
-                      .filter((c) => c.latitude != null && c.longitude != null)
-                      .map((c) => (
-                        <Marker key={c.id} position={[c.latitude, c.longitude]}>
-                          <Popup>
-                            <strong>{c.name}</strong>
-                            <br />
-                            {c.region}
-                            <br />
-                            <span style={{ fontSize: 11 }}>
-                              {c.activeOrders} active / {c.totalOrders} total orders
-                            </span>
-                          </Popup>
-                        </Marker>
-                      ))}
-                  </MapContainer>
-                )
-              })()}
-            </div>
-            <div className="p-4 grid grid-cols-2 gap-2">
-              <div className="text-center p-2 bg-surface-container-low rounded-lg">
-                <div className="text-xs font-bold text-on-surface">{customers.length}</div>
-                <div className="text-[9px] text-on-surface-variant uppercase">Total Customers</div>
-              </div>
-              <div className="text-center p-2 bg-surface-container-low rounded-lg">
-                <div className="text-xs font-bold text-on-surface">
-                  {new Set(customers.map((c) => c.region).filter(Boolean)).size}
+            <div className="flex items-center gap-8">
+              {/* Donut */}
+              <div className="relative flex-shrink-0 w-[180px] h-[180px]">
+                <OrdersDonutChart segments={orderSegments} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Total</span>
+                  <span className="text-2xl font-black text-on-surface">{orders.length}</span>
                 </div>
-                <div className="text-[9px] text-on-surface-variant uppercase">Regions</div>
+              </div>
+              {/* Legend */}
+              <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
+                {orderSegments.length === 0 ? (
+                  <p className="col-span-2 text-sm text-on-surface-variant">No orders yet.</p>
+                ) : (
+                  orderSegments.map((seg) => (
+                    <div key={seg.status} className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-bold text-on-surface truncate">{seg.status}</div>
+                        <div className="text-[10px] text-on-surface-variant">
+                          {seg.count} · {orders.length ? Math.round((seg.count / orders.length) * 100) : 0}%
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
-        </div>
+
       </div>
 
-      {selectedVisit && (
-        <VisitDetailModal
-          visit={selectedVisit}
-          customers={customers}
-          employees={employees}
-          onClose={() => setSelectedVisit(null)}
-          onSave={(id, form) => { updateSiteVisit(id, form); setSelectedVisit(null) }}
-          onDelete={(id) => { deleteSiteVisit(id); setSelectedVisit(null) }}
-        />
-      )}
+      {/* Recent Activity */}
+      <div className="bg-surface-container-lowest rounded-xl p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-extrabold text-on-surface">Recent Activity</h3>
+          <button className="text-primary text-xs font-bold uppercase tracking-widest hover:underline">
+            View All
+          </button>
+        </div>
+        <div className="space-y-2 max-h-[320px] overflow-y-auto">
+          {recentActivity.map((item, i) => (
+            <div
+              key={`${item.title}-${i}`}
+              className="flex items-start gap-4 p-4 hover:bg-surface-container-low rounded-xl transition-colors"
+            >
+              <div
+                className={`w-10 h-10 rounded-full ${item.iconBg} flex items-center justify-center ${item.iconColor} flex-shrink-0`}
+              >
+                <span className="material-symbols-outlined text-lg">{item.icon}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <h4 className="text-sm font-bold text-on-surface">{item.title}</h4>
+                  <span className="text-[10px] font-medium text-on-surface-variant whitespace-nowrap">
+                    {timeAgo(item.date)}
+                  </span>
+                </div>
+                <p className="text-xs text-on-surface-variant mt-1">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
