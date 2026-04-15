@@ -1,7 +1,7 @@
 {
-  "name": "field-app-backend",
+  "name": "aks-erp-app-backend",
   "version": "1.0.0",
-  "description": "Plan-S Field Hub Backend API",
+  "description": "AKS ERP Backend API",
   "main": "src/index.js",
   "scripts": {
     "dev": "node --watch src/index.js",
