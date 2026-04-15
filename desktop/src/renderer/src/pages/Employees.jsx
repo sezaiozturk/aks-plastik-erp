@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../config'
@@ -116,16 +116,39 @@ function DocCheckbox({ label, checked, onChange }) {
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveError, employee, allEmployees }) {
+function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveError, employee, allEmployees, onPhotoFileSelected }) {
   const [tab, setTab] = useState('identity')
-  const { roles, permissions, updateRolePermissions } = useData()
+  const { roles, permissions, updateRolePermissions, uploadEmployeePhoto } = useData()
   const { token } = useAuth()
   const [isManagerLocal, setIsManagerLocal] = useState(!!employee?.isManager)
   const [managerSaving, setManagerSaving] = useState(false)
   const [confirmManager, setConfirmManager] = useState(null) // { next: bool, existingManager: obj|null }
   const [permSaving, setPermSaving] = useState({})
+  const [photoPreview, setPhotoPreview] = useState(employee?.photo ? `${API_URL.replace('/api', '')}${employee.photo}` : null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoError, setPhotoError] = useState('')
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
   const setVal = (field) => (val) => setForm(f => ({ ...f, [field]: val }))
+
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoPreview(URL.createObjectURL(file))
+    if (!employee?.id) {
+      // New employee — pass file to parent to upload after creation
+      onPhotoFileSelected?.(file)
+      return
+    }
+    setPhotoUploading(true)
+    setPhotoError('')
+    try {
+      await uploadEmployeePhoto(employee.id, file)
+    } catch (err) {
+      setPhotoError(err.message)
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
 
   const dept = form.department
 
@@ -163,10 +186,18 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
     }
   }
 
+  const PAGE_SUB_KEYS = { orders: ['orders-create'], purchasing: ['purchasing:create'] }
+
   async function togglePermission(pageKey) {
     if (!dept) return
     const current = permissions[dept] || []
-    const next = current.includes(pageKey) ? current.filter(p => p !== pageKey) : [...current, pageKey]
+    let next
+    if (current.includes(pageKey)) {
+      const subs = PAGE_SUB_KEYS[pageKey] || []
+      next = current.filter(p => p !== pageKey && !subs.includes(p))
+    } else {
+      next = [...current, pageKey]
+    }
     setPermSaving(s => ({ ...s, [pageKey]: true }))
     try { await updateRolePermissions(dept, next) }
     finally { setPermSaving(s => ({ ...s, [pageKey]: false })) }
@@ -210,6 +241,35 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
           {/* ── Identity ── */}
           {tab === 'identity' && (
             <div className="grid grid-cols-2 gap-4">
+              {/* Photo upload — spans full width */}
+              <div className="col-span-2 flex items-center gap-5 pb-2">
+                <div className="relative shrink-0">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Employee photo" className="w-20 h-20 rounded-full object-cover border-2 border-primary" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-surface-container-high border-2 border-dashed border-theme-border flex items-center justify-center">
+                      <span className="material-symbols-outlined text-3xl text-text-muted">person</span>
+                    </div>
+                  )}
+                  {photoUploading && (
+                    <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white text-xl animate-spin">progress_activity</span>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-theme-border bg-surface-container text-sm text-on-surface hover:bg-hover-bg transition">
+                    <span className="material-symbols-outlined text-base">upload</span>
+                    {photoPreview ? 'Change photo' : 'Upload photo'}
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                  </label>
+                  <p className="text-[11px] text-text-muted mt-1">JPG, PNG, WEBP · max 5 MB</p>
+                  {!employee?.id && photoPreview && (
+                    <p className="text-[11px] text-amber-500 mt-1">Photo will be uploaded after saving the employee.</p>
+                  )}
+                  {photoError && <p className="text-xs text-error mt-1">{photoError}</p>}
+                </div>
+              </div>
               <Field label="First Name *" error={errors.firstName}>
                 <input className={inp(errors, 'firstName')} value={form.firstName} onChange={set('firstName')} placeholder="First name" />
               </Field>
@@ -531,8 +591,10 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
                         {PAGES.map((page) => {
                           const enabled = (permissions[dept] || []).includes(page.key)
                           const saving = !!permSaving[page.key]
-                          const subEnabled = page.key === 'orders' && enabled && (permissions[dept] || []).includes('orders-create')
-                          const subSaving = !!permSaving['orders-create']
+                          const ordersSubEnabled = page.key === 'orders' && enabled && (permissions[dept] || []).includes('orders-create')
+                          const ordersSubSaving = !!permSaving['orders-create']
+                          const purchasingSubEnabled = page.key === 'purchasing' && enabled && (permissions[dept] || []).includes('purchasing:create')
+                          const purchasingSubSaving = !!permSaving['purchasing:create']
                           return (
                             <div key={page.key}>
                               <button
@@ -554,18 +616,36 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
                               {page.key === 'orders' && enabled && (
                                 <button
                                   onClick={() => togglePermission('orders-create')}
-                                  disabled={subSaving}
+                                  disabled={ordersSubSaving}
                                   className={`w-full flex items-center gap-3 pl-8 pr-3 py-2 rounded-xl border transition text-sm mt-1 ${
-                                    subEnabled
+                                    ordersSubEnabled
                                       ? 'bg-primary/10 border-primary text-primary'
                                       : 'bg-surface-container border-theme-border text-text-muted hover:bg-hover-bg'
                                   }`}
                                 >
                                   <span className="material-symbols-outlined text-base">add_circle</span>
                                   <span className="flex-1 text-left font-medium">Can create &amp; edit orders</span>
-                                  {subSaving
+                                  {ordersSubSaving
                                     ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                    : <span className="material-symbols-outlined text-sm">{subEnabled ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                    : <span className="material-symbols-outlined text-sm">{ordersSubEnabled ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                  }
+                                </button>
+                              )}
+                              {page.key === 'purchasing' && enabled && (
+                                <button
+                                  onClick={() => togglePermission('purchasing:create')}
+                                  disabled={purchasingSubSaving}
+                                  className={`w-full flex items-center gap-3 pl-8 pr-3 py-2 rounded-xl border transition text-sm mt-1 ${
+                                    purchasingSubEnabled
+                                      ? 'bg-primary/10 border-primary text-primary'
+                                      : 'bg-surface-container border-theme-border text-text-muted hover:bg-hover-bg'
+                                  }`}
+                                >
+                                  <span className="material-symbols-outlined text-base">add_circle</span>
+                                  <span className="flex-1 text-left font-medium">Can create &amp; edit purchase</span>
+                                  {purchasingSubSaving
+                                    ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                    : <span className="material-symbols-outlined text-sm">{purchasingSubEnabled ? 'check_circle' : 'radio_button_unchecked'}</span>
                                   }
                                 </button>
                               )}
@@ -646,7 +726,8 @@ function formFromEmployee(emp) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Employees() {
-  const { employees, addEmployee, updateEmployee, deleteEmployee, isAdmin } = useData()
+  const { employees, addEmployee, updateEmployee, deleteEmployee, isAdmin, uploadEmployeePhoto } = useData()
+  const pendingPhotoFileRef = useRef(null)
   const [search, setSearch]   = useState('')
   const [page, setPage]       = useState(1)
   const [showAdd, setShowAdd] = useState(false)
@@ -681,7 +762,11 @@ export default function Employees() {
     if (Object.keys(e).length) { setErrors(e); return }
     try {
       setSaveError('')
-      await addEmployee(withName(form))
+      const newEmployee = await addEmployee(withName(form))
+      if (pendingPhotoFileRef.current && newEmployee?.id) {
+        await uploadEmployeePhoto(newEmployee.id, pendingPhotoFileRef.current).catch(() => {})
+        pendingPhotoFileRef.current = null
+      }
       setShowAdd(false)
     } catch (err) {
       setSaveError(err.message)
@@ -876,7 +961,12 @@ export default function Employees() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-white text-xl font-black shrink-0">{e.initials}</div>
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-white/20 flex items-center justify-center">
+                    {e.photo
+                      ? <img src={`${API_URL.replace('/api', '')}${e.photo}`} alt={e.name} className="w-full h-full object-cover" />
+                      : <span className="text-white text-xl font-black">{e.initials}</span>
+                    }
+                  </div>
                   <div>
                     <h2 className="text-xl font-extrabold text-white leading-tight">{e.name}</h2>
                     <p className="text-white/70 text-sm mt-0.5">{e.position || '—'}{e.title ? ` · ${e.title}` : ''}</p>
@@ -974,7 +1064,9 @@ export default function Employees() {
 
       {showAdd && (
         <EmployeeModal title="Add Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
-          onClose={() => setShowAdd(false)} onSave={handleAdd} employee={null} allEmployees={employees} />
+          onClose={() => { setShowAdd(false); pendingPhotoFileRef.current = null }} onSave={handleAdd}
+          employee={null} allEmployees={employees}
+          onPhotoFileSelected={(file) => { pendingPhotoFileRef.current = file }} />
       )}
       {editItem && (
         <EmployeeModal title="Edit Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}

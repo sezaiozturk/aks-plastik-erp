@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
         customer: { select: { id: true, name: true } },
         employee: { select: { id: true, name: true } },
         salesRep: { select: { id: true, name: true } },
-        items: { include: { product: { select: { stockNo: true, currency: true } } } },
+        items: { include: { product: { select: { stockNo: true, currency: true, unit: true } } } },
       },
     })
     // Patch in raw fields the stale client doesn't select automatically
@@ -81,7 +81,7 @@ router.post('/', async (req, res) => {
         customer: { select: { id: true, name: true } },
         employee: { select: { id: true, name: true } },
         salesRep: { select: { id: true, name: true } },
-        items: { include: { product: { select: { stockNo: true, currency: true } } } },
+        items: { include: { product: { select: { stockNo: true, currency: true, unit: true } } } },
       },
     })
     // Set new fields via raw SQL until Prisma client is regenerated
@@ -144,7 +144,7 @@ router.put('/:id', async (req, res) => {
         customer: { select: { id: true, name: true } },
         employee: { select: { id: true, name: true } },
         salesRep: { select: { id: true, name: true } },
-        items: { include: { product: { select: { stockNo: true, currency: true } } } },
+        items: { include: { product: { select: { stockNo: true, currency: true, unit: true } } } },
       },
     })
     // Set new fields via raw SQL until Prisma client is regenerated

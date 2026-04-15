@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
 
 function ChangePasswordModal({ token, onClose }) {
@@ -153,6 +154,7 @@ function ChangePasswordModal({ token, onClose }) {
 
 export default function Account() {
   const { user, token, logout } = useAuth()
+  const { employees } = useData()
   const navigate = useNavigate()
   const [showModal, setShowModal] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
@@ -166,6 +168,14 @@ export default function Account() {
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
     : '??'
 
+  const matchedEmployee = user?.employeeId
+    ? (employees || []).find((e) => e.id === user.employeeId)
+    : user?.email
+    ? (employees || []).find((e) => e.email && e.email.toLowerCase() === user.email.toLowerCase())
+    : null
+
+  const photoUrl = matchedEmployee?.photo ? `${API_URL.replace('/api', '')}${matchedEmployee.photo}` : null
+
   return (
     <div className="p-6 max-w-lg">
       {showModal && <ChangePasswordModal token={token} onClose={() => setShowModal(false)} />}
@@ -177,8 +187,11 @@ export default function Account() {
       {/* Profile info */}
       <div className="bg-surface-container-lowest rounded-xl border border-theme-border p-6">
         <div className="flex items-center gap-4 mb-5">
-          <div className="w-16 h-16 rounded-full primary-gradient flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-            {initials}
+          <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+            {photoUrl
+              ? <img src={photoUrl} alt={user?.name} className="w-full h-full object-cover" />
+              : <div className="w-full h-full primary-gradient flex items-center justify-center text-white text-xl font-bold">{initials}</div>
+            }
           </div>
           <div>
             <p className="text-lg font-bold text-on-surface leading-tight">{user?.name || '—'}</p>

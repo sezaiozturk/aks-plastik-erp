@@ -177,7 +177,7 @@ router.patch('/change-password', authenticate, async (req, res) => {
 router.get('/salesteam', authenticate, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      where: { department: { in: ['Sales Manager', 'Sales Representative'] } },
+      where: { department: { contains: 'sales', mode: 'insensitive' } },
       select: { id: true, name: true, department: true },
       orderBy: { name: 'asc' },
     })

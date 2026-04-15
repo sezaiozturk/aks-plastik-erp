@@ -1,8 +1,31 @@
 const { Router } = require('express')
 const { PrismaClient } = require('@prisma/client')
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 
 const prisma = new PrismaClient()
 const router = Router()
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', '..', 'uploads', 'employees')
+    fs.mkdirSync(dir, { recursive: true })
+    cb(null, dir)
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase()
+    cb(null, `${req.params.id}${ext}`)
+  },
+})
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true)
+    else cb(new Error('Only image files are allowed'))
+  },
+})
 
 router.get('/', async (req, res) => {
   try {
@@ -10,6 +33,10 @@ router.get('/', async (req, res) => {
       orderBy: { createdAt: 'desc' },
       include: { supervisor: { select: { id: true, name: true } } },
     })
+    const photos = await prisma.$queryRaw`SELECT id, photo FROM "Employee"`
+    const photoMap = {}
+    photos.forEach(r => { photoMap[r.id] = r.photo || null })
+    employees.forEach(e => { e.photo = photoMap[e.id] || null })
     res.json(employees)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -95,6 +122,23 @@ router.put('/:id', async (req, res) => {
       },
       include: { supervisor: { select: { id: true, name: true } } },
     })
+    res.json(employee)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.post('/:id/photo', upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+    const photoUrl = `/uploads/employees/${req.file.filename}`
+    await prisma.$executeRawUnsafe(`UPDATE "Employee" SET photo = $1 WHERE id = $2`, photoUrl, req.params.id)
+    const employee = await prisma.employee.findUnique({
+      where: { id: req.params.id },
+      include: { supervisor: { select: { id: true, name: true } } },
+    })
+    const raw = await prisma.$queryRaw`SELECT photo FROM "Employee" WHERE id = ${req.params.id}`
+    if (employee && raw[0]) employee.photo = raw[0].photo
     res.json(employee)
   } catch (err) {
     res.status(500).json({ error: err.message })

@@ -508,18 +508,18 @@ function EmployeeAssignModal({ employee, allEmployees, onClose, onSave }) {
   )
 }
 
-// ─── User Roles Tab ───────────────────────────────────────────────────────────
+// ─── Departments Tab ──────────────────────────────────────────────────────────
 function UserRolesTab() {
   const { token } = useAuth()
   const { roles, addRole, renameRole, deleteRole } = useData()
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
-  const [editModal, setEditModal] = useState(null)
   const [newDept, setNewDept] = useState('')
   const [addError, setAddError] = useState('')
-  const [deletingRole, setDeletingRole] = useState(null) // { id, name }
+  const [viewDept, setViewDept] = useState(null)           // dept name string
+  const [deletingRole, setDeletingRole] = useState(null)   // { id, name }
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
-  const [renamingRole, setRenamingRole] = useState(null) // { id, name }
+  const [renamingRole, setRenamingRole] = useState(null)   // { id, name }
   const [renameText, setRenameText] = useState('')
   const [renameError, setRenameError] = useState('')
 
@@ -534,16 +534,6 @@ function UserRolesTab() {
   }, [token])
 
   useEffect(() => { load() }, [load])
-
-  async function saveEmployee(id, updates) {
-    await fetch(`${API_URL}/employees/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(updates),
-    })
-    setEditModal(null)
-    load()
-  }
 
   async function handleAddDept() {
     const name = newDept.trim()
@@ -578,14 +568,9 @@ function UserRolesTab() {
     }
   }
 
-  // Merge: role names from permissions + employee departments
   const roleDeptNames = roles.map((r) => r.name)
   const empDeptNames = employees.map((e) => e.department || 'Unassigned')
   const departments = [...new Set([...roleDeptNames, ...empDeptNames])].sort()
-
-  function isManager(emp) {
-    return !!emp.isManager
-  }
 
   if (loading) return (
     <div className="flex items-center gap-2 text-text-muted text-sm py-8">
@@ -593,10 +578,12 @@ function UserRolesTab() {
     </div>
   )
 
+  const viewEmps = viewDept ? employees.filter((e) => (e.department || 'Unassigned') === viewDept) : []
+  const viewManagers = viewEmps.filter((e) => e.isManager)
+  const viewMembers = viewEmps.filter((e) => !e.isManager)
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-text-muted">Department hierarchy — managers and their team members. Edit an employee to configure their access and manager role.</p>
-
       {/* Add Department */}
       <div className="flex gap-2">
         <input
@@ -611,7 +598,7 @@ function UserRolesTab() {
           className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition"
         >
           <span className="material-symbols-outlined text-base">add</span>
-          Add Department
+          Add
         </button>
       </div>
       {addError && <p className="text-xs text-error -mt-2">{addError}</p>}
@@ -620,102 +607,92 @@ function UserRolesTab() {
         <p className="text-sm text-text-muted py-4">No departments yet. Add one above.</p>
       )}
 
-      {departments.map((dept) => {
-        const deptEmps = employees.filter((e) => (e.department || 'Unassigned') === dept)
-        const managers = deptEmps.filter((e) => isManager(e))
-        const managerIds = new Set(managers.map((m) => m.id))
-        const unassigned = deptEmps.filter((e) => !managerIds.has(e.id))
-
-        return (
-          <div key={dept} className="bg-surface-container-lowest border border-primary/30 rounded-2xl overflow-hidden">
-            {/* Department header */}
-            <div className="flex items-center gap-3 px-5 py-3 bg-primary border-b border-primary/30">
-              <span className="material-symbols-outlined text-base text-white">corporate_fare</span>
-              <span className="font-bold text-white">{dept}</span>
-              <span className="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full ml-1">{deptEmps.length} {deptEmps.length === 1 ? 'person' : 'people'}</span>
-              <div className="ml-auto flex items-center gap-2">
-                {(() => {
-                  const role = roles.find((r) => r.name === dept)
-                  if (!role) return null
-                  return (
-                    <>
-                      <button onClick={() => { setRenamingRole({ id: role.id, name: role.name }); setRenameText(role.name); setRenameError('') }} className="text-white/70 hover:text-white transition p-1 rounded hover:bg-white/20">
-                        <span className="material-symbols-outlined text-sm">edit</span>
-                      </button>
-                      <button onClick={() => { setDeletingRole({ id: role.id, name: role.name }); setDeleteConfirmText('') }} className="text-white/70 hover:text-white transition p-1 rounded hover:bg-white/20">
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                      </button>
-                    </>
-                  )
-                })()}
+      {/* Compact department grid */}
+      <div className="grid grid-cols-3 gap-3">
+        {departments.map((dept) => {
+          const count = employees.filter((e) => (e.department || 'Unassigned') === dept).length
+          const role = roles.find((r) => r.name === dept)
+          return (
+            <div
+              key={dept}
+              onClick={() => setViewDept(dept)}
+              className="group flex items-center gap-3 bg-surface-container-lowest border border-theme-border rounded-xl px-4 py-3 cursor-pointer hover:border-primary/40 hover:bg-hover-bg transition"
+            >
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-base text-primary">corporate_fare</span>
               </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-on-surface truncate">{dept}</p>
+                <p className="text-xs text-text-muted">{count} {count === 1 ? 'person' : 'people'}</p>
+              </div>
+              {role && (
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => { setRenamingRole({ id: role.id, name: role.name }); setRenameText(role.name); setRenameError('') }}
+                    className="p-1 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition"
+                    title="Rename"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                  </button>
+                  <button
+                    onClick={() => { setDeletingRole({ id: role.id, name: role.name }); setDeleteConfirmText('') }}
+                    className="p-1 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition"
+                    title="Delete"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
+              )}
             </div>
+          )
+        })}
+      </div>
 
-            {/* Managers + their subordinates */}
-            {managers.map((mgr) => (
-              <div key={mgr.id}>
-                {/* Manager row */}
-                <div className="flex items-center px-5 py-3 border-b border-theme-border/60 bg-amber-500/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-sm text-amber-600">manage_accounts</span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-on-surface">{mgr.name}</span>
-                        <span className="text-[10px] font-bold bg-amber-500/15 text-amber-600 px-1.5 py-0.5 rounded-full">MANAGER</span>
-                      </div>
-                      <p className="text-xs text-text-muted">{mgr.position || '—'}</p>
-                    </div>
+      {/* Department detail popup */}
+      {viewDept && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 bg-primary">
+              <span className="material-symbols-outlined text-white text-base">corporate_fare</span>
+              <h3 className="text-base font-bold text-white flex-1">{viewDept}</h3>
+              <span className="text-xs text-white/70 bg-white/20 px-2 py-0.5 rounded-full">{viewEmps.length} {viewEmps.length === 1 ? 'person' : 'people'}</span>
+              <button onClick={() => setViewDept(null)} className="ml-2 text-white/70 hover:text-white transition">
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto space-y-1">
+              {viewEmps.length === 0 && (
+                <p className="text-sm text-text-muted text-center py-6">No employees in this department.</p>
+              )}
+              {viewManagers.map((emp) => (
+                <div key={emp.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-amber-500/5 border border-amber-500/15">
+                  <div className="w-7 h-7 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-sm text-amber-600">manage_accounts</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-on-surface truncate">{emp.name}</p>
+                    <p className="text-xs text-text-muted">{emp.position || '—'}</p>
+                  </div>
+                  <span className="text-[10px] font-bold bg-amber-500/15 text-amber-600 px-1.5 py-0.5 rounded-full whitespace-nowrap">MANAGER</span>
+                </div>
+              ))}
+              {viewMembers.map((emp) => (
+                <div key={emp.id} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-hover-bg transition">
+                  <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-sm text-text-muted">person</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-on-surface truncate">{emp.name}</p>
+                    <p className="text-xs text-text-muted">{emp.position || '—'}</p>
                   </div>
                 </div>
-
-              </div>
-            ))}
-
-            {/* Unassigned employees (no manager relationship) */}
-            {unassigned.length > 0 && (
-              <div>
-                {managers.length > 0 && (
-                  <div className="px-5 py-1.5 bg-surface-container/50 border-b border-theme-border/40">
-                    <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">No manager assigned</span>
-                  </div>
-                )}
-                {unassigned.map((emp, i) => (
-                  <div
-                    key={emp.id}
-                    className={`flex items-center px-5 py-2.5 ${i < unassigned.length - 1 ? 'border-b border-theme-border/40' : ''}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-sm text-text-muted">person</span>
-                      </div>
-                      <div>
-                        <span className="text-sm text-on-surface">{emp.name}</span>
-                        <p className="text-xs text-text-muted">{emp.position || '—'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {deptEmps.length === 0 && (
-              <p className="text-sm text-text-muted text-center py-4">No employees</p>
-            )}
+              ))}
+            </div>
           </div>
-        )
-      })}
-
-      {editModal && (
-        <EmployeeAssignModal
-          employee={editModal}
-          allEmployees={employees}
-          onClose={() => setEditModal(null)}
-          onSave={saveEmployee}
-        />
+        </div>
       )}
 
+      {/* Rename modal */}
       {renamingRole && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm p-6">
@@ -725,10 +702,9 @@ function UserRolesTab() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-on-surface">Rename Department</h3>
-                <p className="text-xs text-text-muted">Current name: <span className="font-semibold text-on-surface">{renamingRole.name}</span></p>
+                <p className="text-xs text-text-muted">Current: <span className="font-semibold text-on-surface">{renamingRole.name}</span></p>
               </div>
             </div>
-            <p className="text-sm text-text-muted mb-3">Type the new department name to confirm rename.</p>
             <input
               className="w-full bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-primary mb-1"
               placeholder="New department name…"
@@ -737,7 +713,7 @@ function UserRolesTab() {
               onKeyDown={(e) => e.key === 'Enter' && handleRenameDept()}
               autoFocus
             />
-            {renameError && <p className="text-xs text-error mb-3">{renameError}</p>}
+            {renameError && <p className="text-xs text-error mb-2">{renameError}</p>}
             <div className="flex gap-3 mt-4">
               <button onClick={() => { setRenamingRole(null); setRenameText(''); setRenameError('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
               <button
@@ -752,6 +728,7 @@ function UserRolesTab() {
         </div>
       )}
 
+      {/* Delete modal */}
       {deletingRole && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm p-6">
@@ -765,7 +742,7 @@ function UserRolesTab() {
               </div>
             </div>
             <p className="text-sm text-text-muted mb-3">
-              Type <span className="font-semibold text-on-surface">{deletingRole.name}</span> to confirm deletion.
+              Type <span className="font-semibold text-on-surface">{deletingRole.name}</span> to confirm.
             </p>
             <input
               className="w-full bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:border-error mb-4"
@@ -1804,7 +1781,7 @@ function PurchasingStatusTab() {
 
 const TABS = [
   { key: 'users',               label: 'Users',                    icon: 'manage_accounts' },
-  { key: 'roles',               label: 'User Roles & Permissions', icon: 'badge' },
+  { key: 'roles',               label: 'Departments',              icon: 'corporate_fare' },
   { key: 'order-status',        label: 'Order Status',             icon: 'swap_horiz' },
   { key: 'purchasing-status',   label: 'Purchasing Status',        icon: 'shopping_cart' },
   { key: 'machines',            label: 'Machines',                 icon: 'precision_manufacturing' },

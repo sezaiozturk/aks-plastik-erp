@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
+import { API_URL } from '../config'
 
 export default function TopBar() {
   const { user } = useAuth()
@@ -141,8 +142,11 @@ export default function TopBar() {
                 </p>
               )}
             </div>
-            <div className="w-9 h-9 rounded-full primary-gradient flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-              {initials}
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
+              {matchedEmployee?.photo
+                ? <img src={`${API_URL.replace('/api', '')}${matchedEmployee.photo}`} alt={user?.name} className="w-full h-full object-cover" />
+                : <div className="w-full h-full primary-gradient flex items-center justify-center text-white text-sm font-bold">{initials}</div>
+              }
             </div>
           </button>
           {showUserMenu && (

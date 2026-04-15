@@ -10,7 +10,7 @@ import { API_URL } from '../config'
 
 const ITEMS_PER_PAGE = 10
 const ORDER_STATUSES = ['Processing', 'Confirmed', 'In-Production', 'Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
-const ORDER_COLUMNS = ['Order Code', 'Customer', 'Sales Rep', 'Status', 'Notes', 'Product Name', 'Quantity', 'Unit Price', 'Currency']
+const ORDER_COLUMNS = ['Order Code', 'Customer', 'Sales Rep', 'Status', 'Notes', 'Product Name', 'Quantity', 'Unit', 'Unit Price', 'VAT %', 'Currency']
 
 const SHIPMENT_TYPES = [
   '',
@@ -47,7 +47,7 @@ const PAYMENT_METHODS = [
   'PayPal / Online Payment',
 ]
 
-const emptyItem = { productName: '', quantity: 1, unitPrice: '', currency: 'USD', vat: '0' }
+const emptyItem = { productName: '', quantity: 1, unitPrice: '', currency: 'USD', vat: '0', unit: '' }
 
 function emptyForm() {
   return { customerId: '', salesRepId: '', status: 'Processing', notes: '', shipmentType: '', paymentMethod: '', items: [{ ...emptyItem }] }
@@ -109,6 +109,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
               <tr className="bg-surface-container-high text-text-muted text-xs uppercase tracking-wider">
                 <th className="text-left px-4 py-2.5 font-semibold">Product</th>
                 <th className="text-right px-4 py-2.5 font-semibold">Qty</th>
+                <th className="text-center px-4 py-2.5 font-semibold">Unit</th>
                 <th className="text-right px-4 py-2.5 font-semibold">Unit Price</th>
                 <th className="text-right px-4 py-2.5 font-semibold">VAT %</th>
                 <th className="text-right px-4 py-2.5 font-semibold">Line Total</th>
@@ -121,6 +122,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
                   <tr key={i} className="border-t border-theme-border">
                     <td className="px-4 py-3 text-on-surface font-medium">{it.productName}</td>
                     <td className="px-4 py-3 text-right text-text-muted">{it.quantity}</td>
+                    <td className="px-4 py-3 text-center text-text-muted">{it.product?.unit || '—'}</td>
                     <td className="px-4 py-3 text-right text-on-surface">
                       <span className="text-xs text-text-muted mr-1">{it.currency || 'USD'}</span>
                       {parseFloat(it.unitPrice).toFixed(2)}
@@ -228,7 +230,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
 // ─── Add / Edit Modal ─────────────────────────────────────────────────────────
 const SALES_DEPTS = ['Sales Manager', 'Sales Representative']
 
-function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, customers, employees, products, currentUser, salesTeam }) {
+function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, customers, employees, products, currentUser, salesTeam, isAdmin }) {
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
   const inputCls = (err) =>
@@ -254,7 +256,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
     if (prod) {
       setForm((f) => {
         const items = f.items.map((it, i) =>
-          i === idx ? { ...it, productName: prod.name, unitPrice: prod.price, productId: prod.id, currency: prod.currency || 'USD' } : it
+          i === idx ? { ...it, productName: prod.name, unitPrice: prod.price, productId: prod.id, currency: prod.currency || 'USD', unit: prod.unit || '' } : it
         )
         return { ...f, items }
       })
@@ -291,23 +293,32 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             </div>
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">Sales Rep *</label>
-              {currentUser?.department === 'Sales Representative' ? (
-                <input
-                  readOnly
-                  className={`${inputCls()} bg-surface-container-high cursor-not-allowed`}
-                  value={currentUser.name}
-                />
-              ) : (
-                <>
-                  <select className={inputCls(errors.salesRepId)} value={form.salesRepId || ''} onChange={(e) => setForm((f) => ({ ...f, salesRepId: e.target.value }))}>
-                    <option value="">— Select sales rep —</option>
-                    {salesTeam.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name} — {u.department}</option>
-                    ))}
-                  </select>
-                  {errors.salesRepId && <p className="text-xs text-error mt-1">{errors.salesRepId}</p>}
-                </>
-              )}
+              {(() => {
+                const isAdminOrManager = isAdmin || currentUser?.department === 'Sales Manager'
+                if (!isAdminOrManager) {
+                  return (
+                    <input
+                      readOnly
+                      className={`${inputCls()} bg-surface-container-high cursor-not-allowed`}
+                      value={currentUser?.name || ''}
+                    />
+                  )
+                }
+                // Admin / Manager: salesTeam (Sales dept only) + themselves if not already included
+                const inList = salesTeam.some((u) => u.id === currentUser?.id)
+                const options = inList ? salesTeam : [...salesTeam, { id: currentUser?.id, name: currentUser?.name, department: currentUser?.department }]
+                return (
+                  <>
+                    <select className={inputCls(errors.salesRepId)} value={form.salesRepId || ''} onChange={(e) => setForm((f) => ({ ...f, salesRepId: e.target.value }))}>
+                      <option value="">— Select sales rep —</option>
+                      {options.map((u) => (
+                        <option key={u.id} value={u.id}>{u.name} — {u.department}</option>
+                      ))}
+                    </select>
+                    {errors.salesRepId && <p className="text-xs text-error mt-1">{errors.salesRepId}</p>}
+                  </>
+                )
+              })()}
             </div>
           </div>
           {/* Line items */}
@@ -322,6 +333,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             <div className="flex items-center gap-2 mb-1 px-0.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted flex-1">Product</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-14 text-center">Qty</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-12 text-center">Unit</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-28 text-center">Unit Price</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-16 text-center">VAT %</span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-24 text-right">Total</span>
@@ -352,6 +364,13 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
                     value={item.quantity}
                     onChange={(e) => setItem(idx, 'quantity', e.target.value)}
                   />
+                  <div className="w-12 flex items-center justify-center">
+                    {item.unit ? (
+                      <span className="text-[11px] font-semibold text-text-muted bg-surface-container-high border border-theme-border rounded px-1.5 py-1 leading-none">{item.unit}</span>
+                    ) : (
+                      <span className="text-[11px] text-text-muted/40">—</span>
+                    )}
+                  </div>
                   <div className={`w-28 flex items-center border rounded overflow-hidden bg-surface-container-lowest ${itemErr && !item.unitPrice ? 'border-error' : 'border-theme-border'}`}>
                     <span className="px-1.5 text-[10px] text-text-muted border-r border-theme-border bg-surface-container-high">{item.currency || 'USD'}</span>
                     <input
@@ -533,7 +552,9 @@ export default function Orders() {
           'Notes': idx === 0 ? (o.notes || '') : '',
           'Product Name': it.productName || '',
           'Quantity': it.quantity ?? '',
+          'Unit': it.product?.unit || '',
           'Unit Price': it.unitPrice ?? '',
+          'VAT %': it.vat ?? '',
           'Currency': it.currency || 'USD',
         })
       })
@@ -633,12 +654,14 @@ export default function Orders() {
       autoTable(doc, {
         startY: y + 3,
         margin: { left: margin + 4, right: margin },
-        head: [['Stock No', 'Product', 'Qty', 'Unit Price', 'Line Total']],
+        head: [['Stock No', 'Product', 'Qty', 'Unit', 'Unit Price', 'VAT %', 'Line Total']],
         body: o.items.map((it) => [
           it.product?.stockNo || '—',
           it.productName,
           it.quantity,
+          it.product?.unit || '—',
           `${it.currency || cur} ${parseFloat(it.unitPrice).toFixed(2)}`,
+          it.vat > 0 ? `${it.vat}%` : '—',
           `${it.currency || cur} ${(parseFloat(it.unitPrice) * parseInt(it.quantity)).toFixed(2)}`,
         ]),
         headStyles: { fillColor: [100, 116, 139], textColor: 255, fontSize: 8, fontStyle: 'bold', font: tf },
@@ -647,8 +670,10 @@ export default function Orders() {
         columnStyles: {
           0: { cellWidth: 22 },
           2: { halign: 'right', cellWidth: 12 },
-          3: { halign: 'right', cellWidth: 26 },
+          3: { halign: 'center', cellWidth: 14 },
           4: { halign: 'right', cellWidth: 26 },
+          5: { halign: 'right', cellWidth: 14 },
+          6: { halign: 'right', cellWidth: 26 },
         },
         foot: [
           ...(o.vat > 0 ? [[
@@ -672,7 +697,8 @@ export default function Orders() {
   function validate(f) {
     const e = {}
     if (!f.customerId) e.customerId = 'Customer is required'
-    if (!f.salesRepId && currentUser?.department !== 'Sales Representative') e.salesRepId = 'Sales rep is required'
+    const isAdminOrManager = isAdmin || currentUser?.department === 'Sales Manager'
+    if (!f.salesRepId && isAdminOrManager) e.salesRepId = 'Sales rep is required'
     if (!f.shipmentType) e.shipmentType = 'Shipment type is required'
     if (!f.paymentMethod) e.paymentMethod = 'Payment method is required'
     const validItems = f.items.filter((it) => it.productName.trim())
@@ -689,8 +715,9 @@ export default function Orders() {
 
   function openAdd() {
     const base = emptyForm()
-    if (currentUser?.department === 'Sales Representative') {
-      base.salesRepId = currentUser.id
+    const isAdminOrManager = isAdmin || currentUser?.department === 'Sales Manager'
+    if (!isAdminOrManager) {
+      base.salesRepId = currentUser?.id
     }
     setForm(base)
     setErrors({})
@@ -1019,12 +1046,12 @@ export default function Orders() {
       {showAdd && (
         <OrderModal title="New Order" form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => { setShowAdd(false); setSaveError('') }} onSave={handleAdd}
-          customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} />
+          customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} isAdmin={isAdmin} />
       )}
       {editItem && (
         <OrderModal title="Edit Order" form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => { setEditItem(null); setSaveError('') }} onSave={handleEdit}
-          customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} />
+          customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} isAdmin={isAdmin} />
       )}
     </div>
   )

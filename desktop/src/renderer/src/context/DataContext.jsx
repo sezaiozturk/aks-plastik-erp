@@ -255,6 +255,7 @@ export function DataProvider({ children }) {
     }
     const employee = await res.json()
     setEmployees((prev) => [employee, ...prev])
+    return employee
   }
 
   async function updateEmployee(id, form) {
@@ -270,6 +271,23 @@ export function DataProvider({ children }) {
   async function deleteEmployee(id) {
     await fetch(`${API_URL}/employees/${id}`, { method: 'DELETE', headers: authHeaders })
     setEmployees((prev) => prev.filter((e) => e.id !== id))
+  }
+
+  async function uploadEmployeePhoto(id, file) {
+    const formData = new FormData()
+    formData.append('photo', file)
+    const res = await fetch(`${API_URL}/employees/${id}/photo`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Failed to upload photo')
+    }
+    const updated = await res.json()
+    setEmployees((prev) => prev.map((e) => (e.id === id ? updated : e)))
+    return updated
   }
 
   // ── Orders ──
@@ -484,7 +502,7 @@ export function DataProvider({ children }) {
       reports, addReport, updateReport, deleteReport, moveReport,
       siteVisits, addSiteVisit, updateSiteVisit, deleteSiteVisit,
       products, addProduct, updateProduct, deleteProduct,
-      employees, addEmployee, updateEmployee, deleteEmployee,
+      employees, addEmployee, updateEmployee, deleteEmployee, uploadEmployeePhoto,
       orders, addOrder, updateOrder, deleteOrder, refreshOrders,
       financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, refreshFinanceRecords,
       roles, addRole, renameRole, deleteRole,

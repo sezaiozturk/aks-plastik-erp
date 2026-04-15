@@ -1,7 +1,13 @@
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
+const path = require('path')
+const fs = require('fs')
 const { authenticate } = require('./middleware/auth')
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '..', 'uploads')
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
 const authRoutes = require('./routes/auth')
 const customerRoutes = require('./routes/customers')
@@ -29,6 +35,7 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json())
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
 // Public routes
 app.use('/api/auth', authRoutes)
