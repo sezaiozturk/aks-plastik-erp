@@ -418,6 +418,14 @@ model PurchaseOrderItem {
   productId       String?
 }
 
+model UserStatusPermission {
+  id     Int    @id @default(autoincrement())
+  userId String
+  status String
+
+  @@unique([userId, status])
+}
+
 model UserPurchasingStatusPermission {
   id     Int    @id @default(autoincrement())
   userId String

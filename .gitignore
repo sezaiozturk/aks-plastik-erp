@@ -1,10 +1,13 @@
 # Bağımlılıklar
 node_modules/
 desktop/node_modules/
+desktop/backend/node_modules/
 
-# Çıktılar ve Dev Dosyalar (Hata veren yer burası)
+# Çıktılar ve build
 dist/
 desktop/dist/
+desktop/out/
+desktop/backend/dist/
 build/
 *.exe
 *.zip
@@ -14,5 +17,17 @@ build/
 .env
 .env.*
 
-# Git Hafızası
+# Prisma
+desktop/backend/prisma/migrations/
+
+# Uploads (employee photos etc.)
+desktop/backend/uploads/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Git
 .git/
