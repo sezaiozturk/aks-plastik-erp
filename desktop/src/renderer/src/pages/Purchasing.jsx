@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -339,12 +340,16 @@ function SupplierModal({ initial, onClose, onSave }) {
 }
 
 // ── Detail Drawer ────────────────────────────────────────────────────────────
-function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate, onAddQuotation, onSelectQuotation, onDeleteQuotation }) {
+function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate, onAddQuotation, onSelectQuotation, onDeleteQuotation, canCreateEdit }) {
   const r = request
+  const { user } = useAuth()
+  const { userPurchasingStatusPermissions } = useData()
   const stageIdx = WORKFLOW_STAGES.findIndex((s) => s.key === r.status)
   const quotations = r.quotations || []
   const selectedQuote = quotations.find((q) => q.selected)
   const isTerminal = TERMINAL.includes(r.status)
+  const isAdmin = user?.role === 'admin'
+  const canAdvanceFromCurrent = isAdmin || (userPurchasingStatusPermissions[user?.id] || []).includes(r.status)
 
   function nextStatus() {
     const map = {
@@ -364,6 +369,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
 
   function canAdvance() {
     if (isTerminal) return false
+    if (!canAdvanceFromCurrent) return false
     if (r.status === 'Collecting Quotes' && quotations.length < 3) return false
     if (r.status === 'Comparison' && !selectedQuote) return false
     return true
@@ -401,7 +407,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={onEdit} className="text-text-muted hover:text-primary transition p-1 rounded-lg hover:bg-hover-bg" title="Edit"><span className="material-symbols-outlined text-sm">edit</span></button>
+              {canCreateEdit && <button onClick={onEdit} className="text-text-muted hover:text-primary transition p-1 rounded-lg hover:bg-hover-bg" title="Edit"><span className="material-symbols-outlined text-sm">edit</span></button>}
               <button onClick={onDelete} className="text-text-muted hover:text-error transition p-1 rounded-lg hover:bg-hover-bg" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>
               <button onClick={onClose} className="text-text-muted hover:text-error p-1 rounded-lg hover:bg-hover-bg"><span className="material-symbols-outlined">close</span></button>
             </div>
@@ -714,6 +720,9 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Purchasing() {
   const { token, user } = useAuth()
+  const { permissions } = useData()
+  const isAdmin = user?.role === 'admin'
+  const canCreateEdit = isAdmin || (permissions[user?.department] || []).includes('purchasing:create')
   const BASE = `${API_URL}/purchasing`
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   const authH = { Authorization: `Bearer ${token}` }
@@ -843,13 +852,15 @@ export default function Purchasing() {
           <h1 className="text-2xl font-bold text-on-surface">Purchasing & Supply</h1>
           <p className="text-sm text-text-muted mt-0.5">Manage purchasing processes end to end</p>
         </div>
-        <button
-          onClick={() => tab === 'suppliers' ? setSupplierModal('new') : setRequestModal({ _isNew: true, requestedBy: user?.name || '' })}
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition"
-        >
-          <span className="material-symbols-outlined text-sm">add</span>
-          {tab === 'suppliers' ? 'New Supplier' : 'New Request'}
-        </button>
+        {(tab === 'suppliers' ? isAdmin : canCreateEdit) && (
+          <button
+            onClick={() => tab === 'suppliers' ? setSupplierModal('new') : setRequestModal({ _isNew: true, requestedBy: user?.name || '' })}
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            {tab === 'suppliers' ? 'New Supplier' : 'New Request'}
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -916,6 +927,7 @@ export default function Purchasing() {
         <DetailDrawer
           request={detailDrawer}
           suppliers={suppliers}
+          canCreateEdit={canCreateEdit}
           onClose={() => setDetailDrawer(null)}
           onEdit={() => { setRequestModal(detailDrawer); setDetailDrawer(null) }}
           onDelete={() => setDeleteConfirm({ type: 'requests', id: detailDrawer.id })}

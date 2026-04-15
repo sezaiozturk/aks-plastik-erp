@@ -70,8 +70,9 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
   const [localStatus, setLocalStatus] = useState(order.status)
   const [pendingStatus, setPendingStatus] = useState(null)
   const isAdmin = currentUser?.role === 'admin'
-  const canChangeTo = (status) => isAdmin || (userStatusPermissions[currentUser?.id] || []).includes(status)
-  const canChangeStatus = isAdmin || ORDER_STATUSES.some((s) => canChangeTo(s))
+  const nextStatus = ORDER_STATUSES[ORDER_STATUSES.indexOf(localStatus) + 1]
+  const canAdvanceFromCurrent = isAdmin || (userStatusPermissions[currentUser?.id] || []).includes(localStatus)
+  const canChangeStatus = isAdmin || canAdvanceFromCurrent
 
   const currency = order.items?.[0]?.currency || 'USD'
 
@@ -190,18 +191,18 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
                 </select>
               </div>
             ) : (
-              !pendingStatus && ORDER_STATUSES.filter((s) => s !== localStatus && canChangeTo(s)).map((s) => (
-                <div key={s} className="flex items-center justify-between">
+              !pendingStatus && canAdvanceFromCurrent && nextStatus && (
+                <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Current: {localStatus}</span>
                   <button
-                    onClick={() => setPendingStatus(s)}
+                    onClick={() => setPendingStatus(nextStatus)}
                     className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition"
                   >
                     <span className="material-symbols-outlined text-base">arrow_forward</span>
-                    Mark as {s}
+                    Mark as {nextStatus}
                   </button>
                 </div>
-              ))
+              )
             )}
             {pendingStatus && (
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">

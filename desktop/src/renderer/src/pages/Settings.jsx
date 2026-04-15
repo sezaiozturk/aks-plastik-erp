@@ -803,7 +803,7 @@ const ORDER_STATUSES = [
   { key: 'Delivered',            label: 'Delivered',            icon: 'inventory' },
 ]
 
-function PermissionGrid({ columns, getValue, onToggle, saving, emptyMessage }) {
+function PermissionGrid({ columns, getValue, onToggle, saving, emptyMessage, subPermissions = {} }) {
   const { roles } = useData()
   if (roles.length === 0) return <p className="text-sm text-text-muted">{emptyMessage}</p>
   return (
@@ -831,16 +831,33 @@ function PermissionGrid({ columns, getValue, onToggle, saving, emptyMessage }) {
                   {r.name}
                 </div>
               </td>
-              {columns.map((c) => (
-                <td key={c.key} className="px-3 py-3 text-center">
-                  <input
-                    type="checkbox"
-                    checked={getValue(r.name, c.key)}
-                    onChange={() => onToggle(r.name, c.key)}
-                    className="w-4 h-4 accent-primary cursor-pointer"
-                  />
-                </td>
-              ))}
+              {columns.map((c) => {
+                const subs = subPermissions[c.key] || []
+                const pageEnabled = getValue(r.name, c.key)
+                return (
+                  <td key={c.key} className="px-3 py-3 text-center">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={pageEnabled}
+                        onChange={() => onToggle(r.name, c.key)}
+                        className="w-4 h-4 accent-primary cursor-pointer"
+                      />
+                      {pageEnabled && subs.map((sub) => (
+                        <label key={sub.key} className="flex items-center gap-1 text-[11px] text-text-muted whitespace-nowrap cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={getValue(r.name, sub.key)}
+                            onChange={() => onToggle(r.name, sub.key)}
+                            className="w-3 h-3 accent-primary cursor-pointer"
+                          />
+                          {sub.label}
+                        </label>
+                      ))}
+                    </div>
+                  </td>
+                )
+              })}
             </tr>
           ))}
           </tbody>
@@ -849,13 +866,24 @@ function PermissionGrid({ columns, getValue, onToggle, saving, emptyMessage }) {
   )
 }
 
+const PAGE_SUB_PERMISSIONS = {
+  purchasing: [{ key: 'purchasing:create', label: 'Can Create & edit' }],
+}
+
 function PageAccessTab() {
   const { permissions, updateRolePermissions } = useData()
   const [saving, setSaving] = useState({})
 
   async function toggle(roleName, pageKey) {
     const current = permissions[roleName] || []
-    const next = current.includes(pageKey) ? current.filter((p) => p !== pageKey) : [...current, pageKey]
+    let next
+    if (current.includes(pageKey)) {
+      // Unchecking a page — also strip any of its sub-permissions
+      const subs = (PAGE_SUB_PERMISSIONS[pageKey] || []).map((s) => s.key)
+      next = current.filter((p) => p !== pageKey && !subs.includes(p))
+    } else {
+      next = [...current, pageKey]
+    }
     setSaving((s) => ({ ...s, [roleName]: true }))
     try { await updateRolePermissions(roleName, next) }
     finally { setSaving((s) => ({ ...s, [roleName]: false })) }
@@ -870,6 +898,7 @@ function PageAccessTab() {
         onToggle={toggle}
         saving={saving}
         emptyMessage="Add roles first before configuring page permissions."
+        subPermissions={PAGE_SUB_PERMISSIONS}
       />
     </div>
   )
@@ -1515,9 +1544,9 @@ function ApiTab() {
   )
 }
 
-const ORDER_STATUSES = ['Processing', 'Confirmed', 'In-Production', 'Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
+const STATUS_KEYS = ['Processing', 'Confirmed', 'In-Production', 'Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
 
-const statusColor = {
+const orderStatusColor = {
   Processing:             'bg-amber-100 text-amber-700',
   Confirmed:              'bg-primary-fixed text-on-primary-fixed-variant',
   'In-Production':        'bg-tertiary-fixed text-on-tertiary-fixed-variant',
@@ -1533,6 +1562,7 @@ function OrderStatusTab() {
   const { userStatusPermissions, updateUserStatusPermissions } = useData()
   const [users, setUsers] = useState([])
   const [saving, setSaving] = useState({})
+  const [pending, setPending] = useState(null) // { status, newUserId }
 
   useEffect(() => {
     fetch(`${API_URL}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
@@ -1541,75 +1571,244 @@ function OrderStatusTab() {
       .catch(() => {})
   }, [token])
 
-  async function toggle(userId, status) {
-    const current = userStatusPermissions[userId] || []
-    const next = current.includes(status) ? current.filter((s) => s !== status) : [...current, status]
-    const key = `${userId}-${status}`
-    setSaving((s) => ({ ...s, [key]: true }))
-    try { await updateUserStatusPermissions(userId, next) }
-    finally { setSaving((s) => ({ ...s, [key]: false })) }
+  function getAssignedUserId(status) {
+    for (const [userId, statuses] of Object.entries(userStatusPermissions)) {
+      if (statuses.includes(status)) return userId
+    }
+    return ''
   }
+
+  async function confirmAssign() {
+    const { status, newUserId } = pending
+    setPending(null)
+    setSaving((s) => ({ ...s, [status]: true }))
+    try {
+      const prevUserId = getAssignedUserId(status)
+      if (prevUserId && prevUserId !== newUserId) {
+        const prevStatuses = (userStatusPermissions[prevUserId] || []).filter((s) => s !== status)
+        await updateUserStatusPermissions(prevUserId, prevStatuses)
+      }
+      if (newUserId) {
+        const nextStatuses = [...new Set([...(userStatusPermissions[newUserId] || []), status])]
+        await updateUserStatusPermissions(newUserId, nextStatuses)
+      }
+    } finally {
+      setSaving((s) => ({ ...s, [status]: false }))
+    }
+  }
+
+  const pendingUser = pending ? users.find((u) => u.id === pending.newUserId) : null
 
   return (
     <div>
       <p className="text-sm text-text-muted mb-6">
-        Configure which users can transition orders to each status.
+        Configure which user can advance orders from each status to the next.
       </p>
       <div className="grid grid-cols-2 gap-4">
-        {ORDER_STATUSES.map((status) => (
-          <div key={status} className="bg-surface-container-lowest rounded-xl border border-theme-border overflow-hidden">
-            {/* Status header */}
-            <div className="px-4 py-3 border-b border-theme-border flex items-center gap-2">
-              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColor[status] || 'bg-surface-container-high text-text-muted'}`}>
-                {status}
-              </span>
+        {STATUS_KEYS.map((status) => {
+          const assignedUserId = getAssignedUserId(status)
+          return (
+            <div key={status} className="bg-surface-container-lowest rounded-xl border border-theme-border overflow-hidden">
+              <div className="px-4 py-3 border-b border-theme-border flex items-center gap-2">
+                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${orderStatusColor[status] || 'bg-surface-container-high text-text-muted'}`}>
+                  {status}
+                </span>
+              </div>
+              <div className="px-4 py-3 flex items-center gap-2">
+                <select
+                  value={assignedUserId}
+                  onChange={(e) => setPending({ status, newUserId: e.target.value })}
+                  disabled={!!saving[status]}
+                  className="flex-1 text-sm bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">— Unassigned —</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}{user.role === 'admin' ? ' (Admin)' : user.department ? ` (${user.department})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {saving[status] && (
+                  <span className="material-symbols-outlined text-sm text-text-muted animate-spin">progress_activity</span>
+                )}
+              </div>
             </div>
-            {/* User list */}
-            <div className="divide-y divide-theme-border-light">
-              {users.length === 0 && (
-                <p className="px-4 py-3 text-xs text-text-muted">No users found</p>
-              )}
-              {users.map((user) => {
-                const enabled = (userStatusPermissions[user.id] || []).includes(status)
-                const key = `${user.id}-${status}`
-                return (
-                  <label
-                    key={user.id}
-                    className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-hover-bg transition"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={enabled}
-                      onChange={() => toggle(user.id, status)}
-                      disabled={!!saving[key]}
-                      className="w-4 h-4 accent-primary cursor-pointer"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-on-surface truncate">{user.name}</p>
-                      <p className="text-xs text-text-muted">
-                        {user.role === 'admin' ? 'Admin' : user.department || 'User'}
-                      </p>
-                    </div>
-                    {saving[key] && (
-                      <span className="material-symbols-outlined text-sm text-text-muted animate-spin">progress_activity</span>
-                    )}
-                  </label>
-                )
-              })}
+          )
+        })}
+      </div>
+
+      {/* Confirmation modal */}
+      {pending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-container-low rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <h3 className="text-base font-semibold text-on-surface mb-2">Confirm Assignment</h3>
+            <p className="text-sm text-text-muted mb-1">
+              Assign <span className="font-semibold text-on-surface">{pendingUser ? pendingUser.name : 'Unassigned'}</span> to the{' '}
+              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${orderStatusColor[pending.status] || 'bg-surface-container-high text-text-muted'}`}>
+                {pending.status}
+              </span>{' '}
+              status?
+            </p>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setPending(null)}
+                className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAssign}
+                className="flex-1 bg-primary text-on-primary rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition"
+              >
+                Confirm
+              </button>
             </div>
           </div>
-        ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const PURCHASING_STATUS_KEYS = [
+  'Request', 'Budget Review', 'Collecting Quotes', 'Comparison',
+  'Pending Approval', 'PO Created', 'In Logistics', 'Quality Check',
+  'Invoice Matching', 'Payment',
+]
+
+const purchasingStatusColor = {
+  'Request':           'bg-blue-500/10 text-blue-600',
+  'Budget Review':     'bg-amber-500/10 text-amber-600',
+  'Collecting Quotes': 'bg-purple-500/10 text-purple-600',
+  'Comparison':        'bg-indigo-500/10 text-indigo-600',
+  'Pending Approval':  'bg-orange-500/10 text-orange-600',
+  'PO Created':        'bg-cyan-600/10 text-cyan-700',
+  'In Logistics':      'bg-teal-500/10 text-teal-600',
+  'Quality Check':     'bg-lime-600/10 text-lime-700',
+  'Invoice Matching':  'bg-pink-500/10 text-pink-600',
+  'Payment':           'bg-emerald-500/10 text-emerald-600',
+}
+
+function PurchasingStatusTab() {
+  const { token } = useAuth()
+  const { userPurchasingStatusPermissions, updateUserPurchasingStatusPermissions } = useData()
+  const [users, setUsers] = useState([])
+  const [saving, setSaving] = useState({})
+  const [pending, setPending] = useState(null) // { status, newUserId }
+
+  useEffect(() => {
+    fetch(`${API_URL}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => setUsers(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [token])
+
+  function getAssignedUserId(status) {
+    for (const [userId, statuses] of Object.entries(userPurchasingStatusPermissions)) {
+      if (statuses.includes(status)) return userId
+    }
+    return ''
+  }
+
+  async function confirmAssign() {
+    const { status, newUserId } = pending
+    setPending(null)
+    setSaving((s) => ({ ...s, [status]: true }))
+    try {
+      const prevUserId = getAssignedUserId(status)
+      if (prevUserId && prevUserId !== newUserId) {
+        const prevStatuses = (userPurchasingStatusPermissions[prevUserId] || []).filter((s) => s !== status)
+        await updateUserPurchasingStatusPermissions(prevUserId, prevStatuses)
+      }
+      if (newUserId) {
+        const nextStatuses = [...new Set([...(userPurchasingStatusPermissions[newUserId] || []), status])]
+        await updateUserPurchasingStatusPermissions(newUserId, nextStatuses)
+      }
+    } finally {
+      setSaving((s) => ({ ...s, [status]: false }))
+    }
+  }
+
+  const pendingUser = pending ? users.find((u) => u.id === pending.newUserId) : null
+
+  return (
+    <div>
+      <p className="text-sm text-text-muted mb-6">
+        Configure which user can advance purchasing requests from each stage to the next.
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        {PURCHASING_STATUS_KEYS.map((status) => {
+          const assignedUserId = getAssignedUserId(status)
+          return (
+            <div key={status} className="bg-surface-container-lowest rounded-xl border border-theme-border overflow-hidden">
+              <div className="px-4 py-3 border-b border-theme-border flex items-center gap-2">
+                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${purchasingStatusColor[status] || 'bg-surface-container-high text-text-muted'}`}>
+                  {status}
+                </span>
+              </div>
+              <div className="px-4 py-3 flex items-center gap-2">
+                <select
+                  value={assignedUserId}
+                  onChange={(e) => setPending({ status, newUserId: e.target.value })}
+                  disabled={!!saving[status]}
+                  className="flex-1 text-sm bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">— Unassigned —</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}{user.role === 'admin' ? ' (Admin)' : user.department ? ` (${user.department})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {saving[status] && (
+                  <span className="material-symbols-outlined text-sm text-text-muted animate-spin">progress_activity</span>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
+
+      {/* Confirmation modal */}
+      {pending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-container-low rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <h3 className="text-base font-semibold text-on-surface mb-2">Confirm Assignment</h3>
+            <p className="text-sm text-text-muted mb-1">
+              Assign <span className="font-semibold text-on-surface">{pendingUser ? pendingUser.name : 'Unassigned'}</span> to the{' '}
+              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${purchasingStatusColor[pending.status] || 'bg-surface-container-high text-text-muted'}`}>
+                {pending.status}
+              </span>{' '}
+              stage?
+            </p>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setPending(null)}
+                className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAssign}
+                className="flex-1 bg-primary text-on-primary rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 const TABS = [
-  { key: 'users',         label: 'Users',                    icon: 'manage_accounts' },
-  { key: 'roles',         label: 'User Roles & Permissions', icon: 'badge' },
-  { key: 'order-status',  label: 'Order Status',             icon: 'swap_horiz' },
-  { key: 'machines',      label: 'Machines',                 icon: 'precision_manufacturing' },
-  { key: 'api',           label: 'API Tools',                icon: 'api' },
+  { key: 'users',               label: 'Users',                    icon: 'manage_accounts' },
+  { key: 'roles',               label: 'User Roles & Permissions', icon: 'badge' },
+  { key: 'order-status',        label: 'Order Status',             icon: 'swap_horiz' },
+  { key: 'purchasing-status',   label: 'Purchasing Status',        icon: 'shopping_cart' },
+  { key: 'machines',            label: 'Machines',                 icon: 'precision_manufacturing' },
+  { key: 'api',                 label: 'API Tools',                icon: 'api' },
 ]
 
 export default function Settings() {
@@ -1640,11 +1839,12 @@ export default function Settings() {
         ))}
       </div>
 
-      {tab === 'users'        && <Users />}
-      {tab === 'roles'        && <UserRolesTab />}
-      {tab === 'order-status' && <OrderStatusTab />}
-      {tab === 'machines'     && <MachinesTab />}
-      {tab === 'api'          && <ApiTab />}
+      {tab === 'users'             && <Users />}
+      {tab === 'roles'             && <UserRolesTab />}
+      {tab === 'order-status'      && <OrderStatusTab />}
+      {tab === 'purchasing-status' && <PurchasingStatusTab />}
+      {tab === 'machines'          && <MachinesTab />}
+      {tab === 'api'               && <ApiTab />}
     </div>
   )
 }

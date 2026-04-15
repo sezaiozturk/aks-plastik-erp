@@ -17,6 +17,7 @@ export function DataProvider({ children }) {
   const [permissions, setPermissions] = useState({})
   const [statusPermissions, setStatusPermissions] = useState({})
   const [userStatusPermissions, setUserStatusPermissions] = useState({})
+  const [userPurchasingStatusPermissions, setUserPurchasingStatusPermissions] = useState({})
   const [machines, setMachines] = useState([])
   const [ready, setReady] = useState(false)
   const [reportsReady, setReportsReady] = useState(false)
@@ -129,6 +130,14 @@ export function DataProvider({ children }) {
       .catch(() => {})
   }, [token])
   useEffect(() => { refreshUserStatusPermissions() }, [token])
+
+  const refreshUserPurchasingStatusPermissions = useCallback(() => {
+    fetch(`${API_URL}/user-purchasing-status-permissions`, { headers: authHeaders })
+      .then((r) => r.json())
+      .then((data) => setUserPurchasingStatusPermissions(data || {}))
+      .catch(() => {})
+  }, [token])
+  useEffect(() => { refreshUserPurchasingStatusPermissions() }, [token])
 
   const refreshMachines = useCallback(() => {
     fetch(`${API_URL}/machines`, { headers: authHeaders })
@@ -333,6 +342,15 @@ export function DataProvider({ children }) {
     setUserStatusPermissions((prev) => ({ ...prev, [userId]: statuses }))
   }
 
+  // ── User Purchasing Status Permissions ──
+  async function updateUserPurchasingStatusPermissions(userId, statuses) {
+    const res = await fetch(`${API_URL}/user-purchasing-status-permissions/${userId}`, {
+      method: 'PUT', headers, body: JSON.stringify({ statuses }),
+    })
+    if (!res.ok) throw new Error((await res.json()).error || 'Failed')
+    setUserPurchasingStatusPermissions((prev) => ({ ...prev, [userId]: statuses }))
+  }
+
   // ── Machines ──
   async function addMachine(form) {
     const res = await fetch(`${API_URL}/machines`, { method: 'POST', headers, body: JSON.stringify(form) })
@@ -473,6 +491,7 @@ export function DataProvider({ children }) {
       permissions, updateRolePermissions, refreshPermissions,
       statusPermissions, updateRoleStatusPermissions, refreshStatusPermissions,
       userStatusPermissions, updateUserStatusPermissions, refreshUserStatusPermissions,
+      userPurchasingStatusPermissions, updateUserPurchasingStatusPermissions, refreshUserPurchasingStatusPermissions,
       machines, addMachine, updateMachine, deleteMachine,
       uploadMachineManual, downloadMachineManual, deleteMachineManual,
       addMaintenanceRecord, deleteMaintenanceRecord,
