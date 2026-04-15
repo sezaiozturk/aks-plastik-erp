@@ -63,5 +63,5 @@ app.use('/api/user-status-permissions', authenticate, userStatusPermissionRoutes
 app.use('/api/user-purchasing-status-permissions', authenticate, userPurchasingStatusPermissionRoutes)
 
 app.listen(PORT, () => {
-  console.log(`Field Hub API running on http://localhost:${PORT}`)
+  console.log(`AKS ERP API running on http://localhost:${PORT}`)
 })
