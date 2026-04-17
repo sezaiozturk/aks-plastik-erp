@@ -37,55 +37,6 @@ function fmt(n) {
 
 
 
-// ─── Currency Ticker ─────────────────────────────────────────────────────────
-const TICKER_CURRENCIES = ['EUR', 'GBP', 'TRY', 'AED', 'SAR', 'JPY', 'CNY', 'CAD', 'AUD', 'INR']
-
-function CurrencyTicker() {
-  const { rates, base, loading, error, lastUpdated, fetchRates } = useCurrencyRates()
-
-  if (error) return (
-    <div className="flex items-center gap-2 text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2 mb-4">
-      <span className="material-symbols-outlined text-sm">error</span>
-      Exchange rates unavailable: {error}
-      <button onClick={fetchRates} className="ml-auto underline hover:no-underline">Retry</button>
-    </div>
-  )
-
-  if (loading || !rates) return (
-    <div className="flex items-center gap-2 text-xs text-text-muted mb-4 px-1">
-      <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-      Loading exchange rates…
-    </div>
-  )
-
-  return (
-    <div className="flex items-center gap-1 mb-4 bg-surface-container-lowest border border-theme-border rounded-xl px-4 py-2 overflow-x-auto">
-      <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider shrink-0 mr-2">
-        Live Rates · {base}
-      </span>
-      {TICKER_CURRENCIES.map(cur => {
-        const rate = rates[cur]
-        if (!rate) return null
-        return (
-          <div key={cur} className="flex items-center gap-1.5 shrink-0 px-3 py-0.5 rounded-lg bg-surface-container-high">
-            <span className="text-xs font-bold text-on-surface">{cur}</span>
-            <span className="text-xs text-text-muted tabular-nums">{rate.toFixed(4)}</span>
-          </div>
-        )
-      })}
-      <div className="ml-auto shrink-0 flex items-center gap-2 pl-3 border-l border-theme-border">
-        {lastUpdated && (
-          <span className="text-[10px] text-text-muted whitespace-nowrap">
-            {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )}
-        <button onClick={fetchRates} title="Refresh rates" className="text-text-muted hover:text-primary transition">
-          <span className="material-symbols-outlined text-sm">refresh</span>
-        </button>
-      </div>
-    </div>
-  )
-}
 
 // ─── Modal ───────────────────────────────────────────────────────────────────
 function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, ratesBase }) {
@@ -460,6 +411,7 @@ export default function Finance() {
   const [errors, setErrors] = useState({})
   const [deletingId, setDeletingId] = useState(null)
   const [detailRecord, setDetailRecord] = useState(null)
+  const [showExportMenu, setShowExportMenu] = useState(false)
 
   const now = new Date()
   const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -677,34 +629,46 @@ export default function Finance() {
             <span className="material-symbols-outlined text-sm">refresh</span>
             Refresh
           </button>
-          <button onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
-            <span className="material-symbols-outlined text-sm">table_view</span>
-            CSV
-          </button>
-          <button onClick={exportExcel}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
-            <span className="material-symbols-outlined text-sm">grid_on</span>
-            Excel
-          </button>
-          <button onClick={exportPDF}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
-            <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
-            PDF
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition"
+            >
+              <span className="material-symbols-outlined text-sm">download</span>
+              Export
+              <span className="material-symbols-outlined text-sm">expand_more</span>
+            </button>
+            {showExportMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
+                <div className="absolute right-0 mt-1 z-20 bg-surface-container-lowest border border-theme-border rounded-xl shadow-lg py-1 min-w-[140px]">
+                  <button onClick={() => { exportCSV(); setShowExportMenu(false) }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-on-surface hover:bg-hover-bg transition">
+                    <span className="material-symbols-outlined text-sm text-text-muted">table_view</span>
+                    CSV
+                  </button>
+                  <button onClick={() => { exportExcel(); setShowExportMenu(false) }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-on-surface hover:bg-hover-bg transition">
+                    <span className="material-symbols-outlined text-sm text-text-muted">grid_on</span>
+                    Excel
+                  </button>
+                  <button onClick={() => { exportPDF(); setShowExportMenu(false) }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-on-surface hover:bg-hover-bg transition">
+                    <span className="material-symbols-outlined text-sm text-text-muted">picture_as_pdf</span>
+                    PDF
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           {isAdmin && (
             <button onClick={openAdd}
-              className="flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-90 transition">
+              className="flex items-center gap-1.5 primary-gradient text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
               <span className="material-symbols-outlined text-sm">add</span>
               Add Record
             </button>
           )}
         </div>
-      </div>
-
-      {/* Live rates ticker */}
-      <div className="shrink-0 mb-3">
-        <CurrencyTicker />
       </div>
 
       {/* KPI Cards */}

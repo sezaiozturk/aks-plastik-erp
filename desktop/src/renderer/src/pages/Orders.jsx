@@ -62,7 +62,7 @@ const detailStatusStyle = {
   'E-WayBill':   'bg-orange-100 text-orange-700',
   'In Delivery': 'bg-blue-100 text-blue-700',
   'E-Invoice':   'bg-teal-100 text-teal-700',
-  Delivered:     'bg-green-200 text-green-900',
+  Delivered:     'bg-green-400 text-green-900',
 }
 
 function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
@@ -451,14 +451,14 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
 }
 
 const statusStyle = {
-  Processing:      'bg-amber-100 text-amber-700',
+  Processing:      'bg-amber-200 text-amber-700',
   Confirmed:       'bg-primary-fixed text-on-primary-fixed-variant',
   'In-Production': 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
   'Production Completed': 'bg-green-100 text-green-700',
   'E-WayBill':     'bg-orange-100 text-orange-700',
   'In Delivery':   'bg-blue-100 text-blue-700',
   'E-Invoice':     'bg-teal-100 text-teal-700',
-  Delivered:       'bg-green-200 text-green-900',
+  Delivered:       'bg-green-400 text-green-900',
 }
 
 // Load bundled Roboto font as base64 for jsPDF (cached after first load)
@@ -871,7 +871,7 @@ export default function Orders() {
             )}
           </div>
           {canCreate && (
-            <button onClick={openAdd} className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
+            <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
               <span className="material-symbols-outlined text-base">add</span>
               New Order
             </button>

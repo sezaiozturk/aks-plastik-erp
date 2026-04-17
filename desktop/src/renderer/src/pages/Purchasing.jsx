@@ -855,7 +855,7 @@ export default function Purchasing() {
         {(tab === 'suppliers' ? isAdmin : canCreateEdit) && (
           <button
             onClick={() => tab === 'suppliers' ? setSupplierModal('new') : setRequestModal({ _isNew: true, requestedBy: user?.name || '' })}
-            className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition"
+            className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
           >
             <span className="material-symbols-outlined text-sm">add</span>
             {tab === 'suppliers' ? 'New Supplier' : 'New Request'}

@@ -418,7 +418,7 @@ export default function Products() {
             <span className="material-symbols-outlined text-base">table_view</span>
             Export
           </button>
-          <button onClick={openAdd} className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition">
+          <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
             <span className="material-symbols-outlined text-base">add</span>
             Add Product
           </button>

@@ -9,7 +9,7 @@ const statusStyle = {
   'E-WayBill':   'bg-orange-100 text-orange-700',
   'In Delivery': 'bg-blue-100 text-blue-700',
   'E-Invoice':   'bg-teal-100 text-teal-700',
-  Delivered:     'bg-green-200 text-green-900',
+  Delivered:     'bg-green-400 text-green-900',
 }
 
 const statusNext = {
@@ -32,7 +32,7 @@ const statusColor = {
   'E-WayBill':   'text-orange-500',
   'In Delivery': 'text-blue-500',
   'E-Invoice':   'text-teal-600',
-  Delivered:     'text-green-700',
+  Delivered:     'text-green-600',
 }
 
 // ─── Order Detail Modal ───────────────────────────────────────────────────────
