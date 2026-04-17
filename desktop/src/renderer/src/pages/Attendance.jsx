@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
@@ -221,7 +222,7 @@ function MyAttendanceTab({ employeeId, token }) {
 }
 
 // ── My Leave Requests Tab ────────────────────────────────────────────────────
-function MyLeaveTab({ employeeId, token, isManager }) {
+function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
   const [requests, setRequests] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState(null)
@@ -239,6 +240,7 @@ function MyLeaveTab({ employeeId, token, isManager }) {
   }, [employeeId, token])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { if (autoOpen) openAdd() }, [autoOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function validate(f) {
     const e = {}
@@ -592,7 +594,8 @@ const TABS = [
 export default function Attendance() {
   const { user, token, isAdmin } = useAuth()
   const { employees } = useData()
-  const [tab, setTab] = useState('attendance')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => searchParams.get('newRequest') === 'true' ? 'leaves' : 'attendance')
 
   // Match logged-in user to their linked employee record
   const myEmployee = user?.employeeId
@@ -645,7 +648,7 @@ export default function Attendance() {
       </div>
 
       {tab === 'attendance' && <MyAttendanceTab employeeId={myEmployee?.id} token={token} />}
-      {tab === 'leaves' && <MyLeaveTab employeeId={myEmployee?.id} token={token} isManager={myEmployee?.isManager ?? false} />}
+      {tab === 'leaves' && <MyLeaveTab employeeId={myEmployee?.id} token={token} isManager={myEmployee?.isManager ?? false} autoOpen={searchParams.get('newRequest') === 'true'} />}
       {tab === 'team' && showTeam && <TeamRequestsTab employeeId={myEmployee?.id} token={token} isAdmin={isAdmin} />}
     </div>
   )

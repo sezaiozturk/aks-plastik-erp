@@ -16,7 +16,6 @@ const ALL_NAV_ITEMS = [
   { key: 'maintenance', to: '/maintenance', icon: 'build',                  label: 'Maintenance & Repair' },
   { key: 'logistics',   to: '/logistics',   icon: 'local_shipping',         label: 'Logistics' },
   { key: 'purchasing',  to: '/purchasing',  icon: 'shopping_bag',           label: 'Purchasing' },
-  { key: 'attendance',  to: '/attendance',  icon: 'schedule',               label: 'Attendance' },
 ]
 
 const adminNavItems = [
