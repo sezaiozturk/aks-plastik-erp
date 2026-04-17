@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useData } from '../context/DataContext'
 import { useCurrencyRates } from '../hooks/useCurrencyRates'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
+import { addLogoToPDF } from '../utils/pdfLogo'
 
 const ITEMS_PER_PAGE = 15
 
@@ -519,10 +523,10 @@ export default function Finance() {
   }
 
   function exportCSV() {
-    const header = ['Code', 'Type', 'Category', 'Date', 'Reference', 'Amount', 'Description', 'Linked Order']
-    const rows = financeRecords.map(r => [
+    const header = ['Code', 'Type', 'Category', 'Date', 'Reference', 'Amount', 'Currency', 'Description', 'Linked Order']
+    const rows = filtered.map(r => [
       r.code, r.type, r.category, r.date,
-      r.reference || '', r.amount.toFixed(2),
+      r.reference || '', r.amount.toFixed(2), r.currency || 'USD',
       r.description || '', r.order?.code || '',
     ])
     const csv = [header, ...rows]
@@ -535,6 +539,95 @@ export default function Finance() {
     a.download = `finance_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  async function exportPDF() {
+    const doc = new jsPDF({ orientation: 'landscape' })
+    await addLogoToPDF(doc)
+
+    const dateStr = new Date().toLocaleString()
+    const incomeTotal  = filtered.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0)
+    const expenseTotal = filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0)
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Finance Records', 14, 16)
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100)
+    doc.text(`Generated: ${dateStr}`, 14, 23)
+    doc.text(
+      `Income: ${fmt(incomeTotal)}  |  Expense: ${fmt(expenseTotal)}  |  Net: ${fmt(incomeTotal - expenseTotal)}`,
+      14, 29
+    )
+    doc.setTextColor(0)
+
+    autoTable(doc, {
+      startY: 34,
+      head: [['Code', 'Type', 'Category', 'Date', 'Reference', 'Amount', 'Curr.', 'Description', 'Order']],
+      body: filtered.map(r => [
+        r.code,
+        r.type === 'income' ? 'Income' : 'Expense',
+        r.category,
+        r.date,
+        r.reference || '',
+        (r.type === 'income' ? '+' : '-') + fmt(r.amount),
+        r.currency || 'USD',
+        r.description || '',
+        r.order?.code || '',
+      ]),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 20 },
+        5: { halign: 'right', cellWidth: 26 },
+        6: { cellWidth: 14 },
+        8: { cellWidth: 24 },
+      },
+    })
+
+    doc.save(`finance_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
+  function exportExcel() {
+    const incomeTotal  = filtered.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0)
+    const expenseTotal = filtered.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0)
+
+    const summaryRows = [
+      ['Finance Records Export'],
+      [`Generated: ${new Date().toLocaleString()}`],
+      [],
+      ['Income', incomeTotal, 'Expense', expenseTotal, 'Net', incomeTotal - expenseTotal],
+      [],
+    ]
+
+    const header = ['Code', 'Type', 'Category', 'Date', 'Reference', 'Amount', 'Currency', 'Description', 'Linked Order']
+    const dataRows = filtered.map(r => [
+      r.code,
+      r.type === 'income' ? 'Income' : 'Expense',
+      r.category,
+      r.date,
+      r.reference || '',
+      r.amount,
+      r.currency || 'USD',
+      r.description || '',
+      r.order?.code || '',
+    ])
+
+    const ws = XLSX.utils.aoa_to_sheet([...summaryRows, header, ...dataRows])
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 16 }, { wch: 10 }, { wch: 20 }, { wch: 12 },
+      { wch: 16 }, { wch: 14 }, { wch: 8  }, { wch: 30 }, { wch: 14 },
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Finance Records')
+    XLSX.writeFile(wb, `finance_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
   const allCategories = useMemo(() =>
@@ -586,8 +679,18 @@ export default function Finance() {
           </button>
           <button onClick={exportCSV}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
-            <span className="material-symbols-outlined text-sm">download</span>
-            Export CSV
+            <span className="material-symbols-outlined text-sm">table_view</span>
+            CSV
+          </button>
+          <button onClick={exportExcel}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
+            <span className="material-symbols-outlined text-sm">grid_on</span>
+            Excel
+          </button>
+          <button onClick={exportPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
+            <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+            PDF
           </button>
           {isAdmin && (
             <button onClick={openAdd}

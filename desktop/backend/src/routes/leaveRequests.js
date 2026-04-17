@@ -5,7 +5,8 @@ const prisma = new PrismaClient()
 const router = Router()
 
 // GET leave requests — if employeeId query param given, filter by it
-// If supervisorId query param given, return requests of subordinates
+// If supervisorId query param given, return requests of NON-MANAGER subordinates
+// (manager requests are admin-only and excluded from supervisor view)
 router.get('/', async (req, res) => {
   try {
     const { employeeId, supervisorId } = req.query
@@ -14,9 +15,10 @@ router.get('/', async (req, res) => {
     if (employeeId) {
       where.employeeId = employeeId
     } else if (supervisorId) {
-      // Find all employees supervised by this person
+      // Find non-manager employees supervised by this person
+      // Managers' requests go to admin only, not to their supervisor
       const subordinates = await prisma.employee.findMany({
-        where: { supervisorId },
+        where: { supervisorId, isManager: false },
         select: { id: true },
       })
       where.employeeId = { in: subordinates.map((s) => s.id) }
@@ -24,7 +26,7 @@ router.get('/', async (req, res) => {
 
     const requests = await prisma.leaveRequest.findMany({
       where,
-      include: { employee: { select: { id: true, name: true, initials: true, department: true } } },
+      include: { employee: { select: { id: true, name: true, initials: true, department: true, isManager: true } } },
       orderBy: { createdAt: 'desc' },
     })
     res.json(requests)
@@ -51,7 +53,7 @@ router.post('/', async (req, res) => {
         reason: reason || '',
         status: 'Pending',
       },
-      include: { employee: { select: { id: true, name: true, initials: true, department: true } } },
+      include: { employee: { select: { id: true, name: true, initials: true, department: true, isManager: true } } },
     })
     res.status(201).json(request)
   } catch (err) {
@@ -78,7 +80,7 @@ router.put('/:id', async (req, res) => {
         days: days ?? existing.days,
         reason: reason ?? existing.reason,
       },
-      include: { employee: { select: { id: true, name: true, initials: true, department: true } } },
+      include: { employee: { select: { id: true, name: true, initials: true, department: true, isManager: true } } },
     })
     res.json(updated)
   } catch (err) {
@@ -87,6 +89,7 @@ router.put('/:id', async (req, res) => {
 })
 
 // PATCH — approve or reject (supervisor / admin)
+// Rule: if the employee who made the request is a manager, only admin can review
 router.patch('/:id/review', async (req, res) => {
   try {
     const { status } = req.body
@@ -94,10 +97,26 @@ router.patch('/:id/review', async (req, res) => {
       return res.status(400).json({ error: 'Status must be Approved or Rejected' })
     }
 
+    // Fetch the request along with the employee's manager flag
+    const existing = await prisma.leaveRequest.findUnique({
+      where: { id: req.params.id },
+      include: { employee: { select: { isManager: true } } },
+    })
+    if (!existing) return res.status(404).json({ error: 'Not found' })
+
+    // Manager's requests can only be approved/rejected by admin
+    if (existing.employee.isManager && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admin can review leave requests submitted by managers' })
+    }
+
     const updated = await prisma.leaveRequest.update({
       where: { id: req.params.id },
-      data: { status, reviewedAt: new Date() },
-      include: { employee: { select: { id: true, name: true, initials: true, department: true } } },
+      data: {
+        status,
+        reviewedAt: new Date(),
+        reviewedBy: req.user.name,
+      },
+      include: { employee: { select: { id: true, name: true, initials: true, department: true, isManager: true } } },
     })
     res.json(updated)
   } catch (err) {

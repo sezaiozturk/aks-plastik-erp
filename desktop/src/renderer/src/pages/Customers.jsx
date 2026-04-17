@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { useData } from '../context/DataContext'
 import InitialsAvatar from '../components/InitialsAvatar'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
+import { addLogoToPDF } from '../utils/pdfLogo'
 
 const badgeStyles = {
   active: 'bg-primary-fixed text-on-primary-fixed-variant',
@@ -442,12 +446,154 @@ function SectionHeader({ icon, label }) {
   )
 }
 
+function fmtNum(n) {
+  return (n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function OrdersTab({ customerOrders }) {
+  const [expandedId, setExpandedId] = useState(null)
+
+  if (customerOrders.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant flex-1">
+        <span className="material-symbols-outlined text-5xl mb-3 opacity-30">shopping_bag</span>
+        <p className="text-sm font-semibold">No orders yet</p>
+        <p className="text-xs mt-1 opacity-70">Orders for this customer will appear here</p>
+      </div>
+    )
+  }
+
+  const total = customerOrders.reduce((s, o) => s + (o.totalAmount || 0), 0)
+  const open  = customerOrders.filter((o) => o.status !== 'Delivered').length
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden">
+      {/* Summary bar */}
+      <div className="flex items-center gap-4 px-6 py-3 bg-surface-container-low border-b border-surface-container text-xs flex-shrink-0">
+        <div className="text-on-surface-variant">Total orders: <span className="font-bold text-on-surface">{customerOrders.length}</span></div>
+        <div className="text-on-surface-variant">Open: <span className="font-bold text-on-surface">{open}</span></div>
+        <div className="text-on-surface-variant ml-auto">Total value: <span className="font-bold text-on-surface">{fmtNum(total)}</span></div>
+      </div>
+
+      <div className="overflow-y-auto flex-1">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-surface-container-lowest border-b border-surface-container-low z-10">
+            <tr className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              <th className="w-8" />
+              <th className="text-left px-4 py-3">Order</th>
+              <th className="text-left px-4 py-3">Status</th>
+              <th className="text-left px-4 py-3">Payment</th>
+              <th className="text-right px-4 py-3">Items</th>
+              <th className="text-left px-4 py-3">Currency</th>
+              <th className="text-right px-6 py-3">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customerOrders.map((o) => {
+              const isExpanded = expandedId === o.id
+              const hasItems = (o.items || []).length > 0
+              return (
+                <>
+                  <tr
+                    key={o.id}
+                    onClick={() => hasItems && setExpandedId(isExpanded ? null : o.id)}
+                    className={`border-b border-surface-container-low transition-colors ${hasItems ? 'cursor-pointer hover:bg-surface-container-low' : ''} ${isExpanded ? 'bg-surface-container-low' : ''}`}
+                  >
+                    <td className="pl-4 py-3 text-center">
+                      {hasItems && (
+                        <span className="material-symbols-outlined text-sm text-on-surface-variant">
+                          {isExpanded ? 'expand_less' : 'expand_more'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-on-surface text-xs">{o.code}</p>
+                      <p className="text-[10px] text-on-surface-variant mt-0.5">{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${ORDER_STATUS_CLS[o.status] || 'bg-surface-container text-on-surface-variant'}`}>
+                        {o.status || 'Draft'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">{o.paymentMethod || '—'}</td>
+                    <td className="px-4 py-3 text-right text-xs font-semibold text-on-surface">{(o.items || []).length}</td>
+                    <td className="px-4 py-3 text-xs font-semibold text-on-surface">
+                      {o.items?.[0]?.product?.currency || '—'}
+                    </td>
+                    <td className="px-6 py-3 text-right font-bold text-sm text-on-surface">{fmtNum(o.totalAmount)}</td>
+                  </tr>
+
+                  {/* Expanded items */}
+                  {isExpanded && (
+                    <tr key={`${o.id}-items`} className="border-b border-surface-container-low bg-surface-container-low/50">
+                      <td colSpan={7} className="px-6 pb-4 pt-1">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-surface-container">
+                              <th className="text-left py-1.5 pr-4">Product</th>
+                              <th className="text-right py-1.5 pr-4">Qty</th>
+                              <th className="text-left py-1.5 pr-4">Unit</th>
+                              <th className="text-right py-1.5 pr-4">Unit Price</th>
+                              <th className="text-right py-1.5 pr-4">VAT %</th>
+                              <th className="text-right py-1.5">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {o.items.map((item) => (
+                              <tr key={item.id} className="border-b border-surface-container last:border-0 text-xs">
+                                <td className="py-1.5 pr-4 font-medium text-on-surface">{item.product?.name || '—'}</td>
+                                <td className="py-1.5 pr-4 text-right text-on-surface tabular-nums">{item.qty}</td>
+                                <td className="py-1.5 pr-4 text-on-surface-variant">{item.product?.unit || '—'}</td>
+                                <td className="py-1.5 pr-4 text-right tabular-nums text-on-surface">
+                                  {fmtNum(item.price)}
+                                  {item.product?.currency && (
+                                    <span className="text-on-surface-variant ml-1">{item.product.currency}</span>
+                                  )}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right text-on-surface-variant">{item.vat ? `${item.vat}%` : '—'}</td>
+                                <td className="py-1.5 text-right font-semibold tabular-nums text-on-surface">
+                                  {fmtNum(item.qty * item.price)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+const ORDER_STATUS_CLS = {
+  'Draft':                'bg-surface-container text-on-surface-variant',
+  'Processing':           'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+  'Confirmed':            'bg-primary-fixed text-on-primary-fixed-variant',
+  'In-Production':        'bg-secondary-container text-on-secondary-container',
+  'Production Completed': 'bg-secondary-container text-on-secondary-container',
+  'E-WayBill':            'bg-tertiary-fixed text-on-tertiary-fixed-variant',
+  'In Delivery':          'bg-primary/10 text-primary',
+  'E-Invoice':            'bg-primary/10 text-primary',
+  'Delivered':            'bg-primary-fixed text-on-primary-fixed-variant',
+}
+
 function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
-  const { isAdmin } = useData()
+  const { isAdmin, orders, financeRecords } = useData()
+  const [viewTab, setViewTab] = useState('info')
   const [editing, setEditing] = useState(false)
   const [editTab, setEditTab] = useState(0)
   const [confirming, setConfirming] = useState(false)
   const [errors, setErrors] = useState({})
+
+  const customerOrders = orders.filter((o) => o.customerId === customer.id)
+  const customerOrderIds = new Set(customerOrders.map((o) => o.id))
+  const customerFinance = financeRecords.filter((f) => f.orderId && customerOrderIds.has(f.orderId))
 
   const [form, setForm] = useState({
     customerType:    customer.customerType    || 'Company',
@@ -510,6 +656,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
   }
 
   function handleCancel() {
+    setViewTab('info')
     setForm({
       customerType:    customer.customerType    || 'Company',
       fullName:        customer.fullName        || '',
@@ -589,7 +736,15 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 <p className="text-white font-black text-lg leading-none">
                   {(reports || []).filter((r) => r.customerId === customer.id).length}
                 </p>
-                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Total Tasks</p>
+                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Tasks</p>
+              </div>
+              <div className="bg-surface-container-lowest/10 rounded-lg px-3 py-1.5 text-center">
+                <p className="text-white font-black text-lg leading-none">{customerOrders.length}</p>
+                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Orders</p>
+              </div>
+              <div className="bg-surface-container-lowest/10 rounded-lg px-3 py-1.5 text-center">
+                <p className="text-white font-black text-lg leading-none">{customerFinance.length}</p>
+                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Finance</p>
               </div>
               {customer.customerType && (
                 <span className="bg-surface-container-lowest/10 text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg">
@@ -611,88 +766,282 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
           )}
         </div>
 
-        {/* View mode */}
+        {/* View mode — tabbed */}
         {!editing && (
-          <div className="px-8 py-4 overflow-y-auto flex-1 space-y-0">
-            <DetailRow icon="category"    label="Customer Type"     value={customer.customerType} />
-            {customer.customerType === 'Individual' && (
-              <DetailRow icon="person"    label="Full Name"         value={customer.fullName} />
+          <>
+            {/* Sub-tab bar */}
+            <div className="flex items-center gap-1 px-6 pt-3 pb-0 border-b border-surface-container-low flex-shrink-0">
+              {[
+                { key: 'info',    label: 'Info',    icon: 'person' },
+                { key: 'orders',  label: 'Orders',  icon: 'shopping_bag',           count: customerOrders.length },
+                { key: 'finance', label: 'Finance', icon: 'account_balance_wallet', count: customerFinance.length },
+              ].map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setViewTab(t.key)}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-bold border-b-2 -mb-px transition-all ${
+                    viewTab === t.key
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
+                  {t.label}
+                  {t.count !== undefined && (
+                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${viewTab === t.key ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Info tab */}
+            {viewTab === 'info' && (
+              <div className="px-8 py-4 overflow-y-auto flex-1 space-y-0">
+                <DetailRow icon="category"    label="Customer Type"     value={customer.customerType} />
+                {customer.customerType === 'Individual' && (
+                  <DetailRow icon="person"    label="Full Name"         value={customer.fullName} />
+                )}
+                <DetailRow icon="fingerprint" label="Tax ID (TIN/TCKN)" value={customer.taxId} />
+                <DetailRow icon="account_balance" label="Tax Office"    value={customer.taxOffice} />
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">location_on</span>
+                    Address & Contact
+                  </span>
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                </div>
+                <DetailRow icon="home"               label="Address"      value={customer.address} />
+                <DetailRow icon="apartment"          label="City"         value={customer.city} />
+                <DetailRow icon="map"                label="District"     value={customer.district} />
+                <DetailRow icon="markunread_mailbox" label="Postal Code"  value={customer.postalCode} />
+                <DetailRow icon="public"             label="Country"      value={customer.country} />
+                <DetailRow icon="phone"              label="Phone"        value={customer.phone} />
+                <DetailRow icon="mail"               label="Email"        value={customer.email} />
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">receipt_long</span>
+                    Tax & e-Document
+                  </span>
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                </div>
+                <DetailRow icon="receipt"      label="e-Invoice"         value={customer.eInvoiceStatus ? 'Active' : 'Inactive'} />
+                <DetailRow icon="archive"      label="e-Archive Invoice" value={customer.eArchiveStatus ? 'Active' : 'Inactive'} />
+                <DetailRow icon="local_shipping" label="e-Dispatch"      value={customer.eDispatchStatus ? 'Active' : 'Inactive'} />
+                <DetailRow icon="description"  label="Invoice Scenario"  value={customer.invoiceScenario} />
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">account_balance_wallet</span>
+                    Financial & Bank
+                  </span>
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                </div>
+                <DetailRow icon="tag"              label="Account Code"    value={customer.accountCode} />
+                <DetailRow icon="manage_accounts"  label="Account Type"    value={customer.accountType} />
+                <DetailRow icon="currency_exchange" label="Currency"       value={customer.currency} />
+                <DetailRow icon="schedule"         label="Payment Term"    value={customer.paymentTerm} />
+                <DetailRow icon="credit_score"     label="Credit Limit"    value={customer.creditLimit != null ? customer.creditLimit.toLocaleString() : null} />
+                <DetailRow icon="account_balance"  label="Bank Name"       value={customer.bankName} />
+                <DetailRow icon="credit_card"      label="IBAN"            value={customer.iban} />
+                <DetailRow icon="store"            label="Branch Code"     value={customer.branchCode} />
+                <DetailRow icon="person"           label="Account Holder"  value={customer.accountHolder} />
+                <DetailRow icon="description"      label="Invoice Type"    value={customer.invoiceType} />
+                <DetailRow icon="payments"         label="Payment Method"  value={customer.paymentMethod} />
+                <DetailRow icon="schedule_send"    label="Payment Terms"   value={customer.paymentTerms} />
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">contact_phone</span>
+                    Contact Person
+                  </span>
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                </div>
+                <DetailRow icon="person"           label="Contact Name"     value={customer.contactName} />
+                <DetailRow icon="phone_in_talk"    label="Contact Phone"    value={customer.contactPhone} />
+                <DetailRow icon="forward_to_inbox" label="Contact Email"    value={customer.contactEmail} />
+                <DetailRow icon="work"             label="Position / Dept." value={customer.contactPosition} />
+                <div className="flex items-center gap-3 py-2">
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">tune</span>
+                    Other
+                  </span>
+                  <div className="flex-1 h-px bg-surface-container-high" />
+                </div>
+                <DetailRow icon="factory"      label="Industry / Sector"    value={customer.industry} />
+                <DetailRow icon="grade"        label="Customer Category"    value={customer.customerCategory} />
+                <DetailRow icon="badge"        label="Sales Representative" value={customer.salesRepName} />
+                <DetailRow icon="edit_note"    label="Notes"                value={customer.notes} />
+                <DetailRow icon="verified_user" label="GDPR / KVKK Consent" value={customer.gdprConsent ? 'Consented' : 'Not Consented'} />
+              </div>
             )}
-            <DetailRow icon="fingerprint" label="Tax ID (TIN/TCKN)" value={customer.taxId} />
-            <DetailRow icon="account_balance" label="Tax Office"    value={customer.taxOffice} />
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px bg-surface-container-high" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[14px]">location_on</span>
-                Address & Contact
-              </span>
-              <div className="flex-1 h-px bg-surface-container-high" />
-            </div>
-            <DetailRow icon="home"               label="Address"      value={customer.address} />
-            <DetailRow icon="apartment"          label="City"         value={customer.city} />
-            <DetailRow icon="map"                label="District"     value={customer.district} />
-            <DetailRow icon="markunread_mailbox" label="Postal Code"  value={customer.postalCode} />
-            <DetailRow icon="public"             label="Country"      value={customer.country} />
-            <DetailRow icon="phone"              label="Phone"        value={customer.phone} />
-            <DetailRow icon="mail"               label="Email"        value={customer.email} />
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px bg-surface-container-high" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[14px]">receipt_long</span>
-                Tax & e-Document
-              </span>
-              <div className="flex-1 h-px bg-surface-container-high" />
-            </div>
-            <DetailRow icon="receipt"      label="e-Invoice"         value={customer.eInvoiceStatus ? 'Active' : 'Inactive'} />
-            <DetailRow icon="archive"      label="e-Archive Invoice" value={customer.eArchiveStatus ? 'Active' : 'Inactive'} />
-            <DetailRow icon="local_shipping" label="e-Dispatch"      value={customer.eDispatchStatus ? 'Active' : 'Inactive'} />
-            <DetailRow icon="description"  label="Invoice Scenario"  value={customer.invoiceScenario} />
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px bg-surface-container-high" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[14px]">account_balance_wallet</span>
-                Financial & Bank
-              </span>
-              <div className="flex-1 h-px bg-surface-container-high" />
-            </div>
-            <DetailRow icon="tag"              label="Account Code"    value={customer.accountCode} />
-            <DetailRow icon="manage_accounts"  label="Account Type"    value={customer.accountType} />
-            <DetailRow icon="currency_exchange" label="Currency"       value={customer.currency} />
-            <DetailRow icon="schedule"         label="Payment Term"    value={customer.paymentTerm} />
-            <DetailRow icon="credit_score"     label="Credit Limit"    value={customer.creditLimit != null ? customer.creditLimit.toLocaleString() : null} />
-            <DetailRow icon="account_balance"  label="Bank Name"       value={customer.bankName} />
-            <DetailRow icon="credit_card"      label="IBAN"            value={customer.iban} />
-            <DetailRow icon="store"            label="Branch Code"     value={customer.branchCode} />
-            <DetailRow icon="person"           label="Account Holder"  value={customer.accountHolder} />
-            <DetailRow icon="description"      label="Invoice Type"    value={customer.invoiceType} />
-            <DetailRow icon="payments"         label="Payment Method"  value={customer.paymentMethod} />
-            <DetailRow icon="schedule_send"    label="Payment Terms"   value={customer.paymentTerms} />
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px bg-surface-container-high" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[14px]">contact_phone</span>
-                Contact Person
-              </span>
-              <div className="flex-1 h-px bg-surface-container-high" />
-            </div>
-            <DetailRow icon="person"           label="Contact Name"     value={customer.contactName} />
-            <DetailRow icon="phone_in_talk"    label="Contact Phone"    value={customer.contactPhone} />
-            <DetailRow icon="forward_to_inbox" label="Contact Email"    value={customer.contactEmail} />
-            <DetailRow icon="work"             label="Position / Dept." value={customer.contactPosition} />
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px bg-surface-container-high" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[14px]">tune</span>
-                Other
-              </span>
-              <div className="flex-1 h-px bg-surface-container-high" />
-            </div>
-            <DetailRow icon="factory"      label="Industry / Sector"    value={customer.industry} />
-            <DetailRow icon="grade"        label="Customer Category"    value={customer.customerCategory} />
-            <DetailRow icon="badge"        label="Sales Representative" value={customer.salesRepName} />
-            <DetailRow icon="edit_note"    label="Notes"                value={customer.notes} />
-            <DetailRow icon="verified_user" label="GDPR / KVKK Consent" value={customer.gdprConsent ? 'Consented' : 'Not Consented'} />
-          </div>
+
+            {/* Orders tab */}
+            {viewTab === 'orders' && (
+              <OrdersTab customerOrders={customerOrders} />
+            )}
+
+            {/* Finance tab */}
+            {viewTab === 'finance' && (
+              <div className="flex flex-col flex-1 overflow-hidden">
+                {/* Summary bar + export buttons */}
+                {(() => {
+                  const income  = customerFinance.filter((f) => f.type === 'income').reduce((s, f) => s + (f.amount || 0), 0)
+                  const expense = customerFinance.filter((f) => f.type === 'expense').reduce((s, f) => s + (f.amount || 0), 0)
+                  const net = income - expense
+                  const fmt2 = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+                  async function exportFinancePDF() {
+                    const doc = new jsPDF({ orientation: 'landscape' })
+                    await addLogoToPDF(doc)
+                    doc.setFontSize(14)
+                    doc.setFont('helvetica', 'bold')
+                    doc.text(`Finance — ${customer.name}`, 14, 15)
+                    doc.setFontSize(9)
+                    doc.setFont('helvetica', 'normal')
+                    doc.setTextColor(100)
+                    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22)
+                    doc.text(`Income: ${fmt2(income)}  |  Expense: ${fmt2(expense)}  |  Net: ${fmt2(net)}`, 14, 28)
+                    doc.setTextColor(0)
+                    autoTable(doc, {
+                      startY: 33,
+                      head: [['Code', 'Type', 'Category', 'Order', 'Date', 'Amount', 'Curr.', 'Reference']],
+                      body: customerFinance.map((f) => [
+                        f.code,
+                        f.type === 'income' ? 'Income' : 'Expense',
+                        f.category || '',
+                        f.order?.code || '',
+                        f.date || '',
+                        (f.type === 'income' ? '+' : '-') + fmt2(f.amount || 0),
+                        f.currency || '',
+                        f.reference || '',
+                      ]),
+                      styles: { fontSize: 8, cellPadding: 2 },
+                      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+                      alternateRowStyles: { fillColor: [245, 247, 250] },
+                      columnStyles: { 5: { halign: 'right' } },
+                    })
+                    doc.save(`finance_${customer.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`)
+                  }
+
+                  function exportFinanceExcel() {
+                    const fmt2 = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    const summaryRows = [
+                      [`Finance Records — ${customer.name}`],
+                      [`Generated: ${new Date().toLocaleString()}`],
+                      [],
+                      ['Income', income, 'Expense', expense, 'Net', net],
+                      [],
+                    ]
+                    const header = ['Code', 'Type', 'Category', 'Order', 'Date', 'Amount', 'Currency', 'Reference', 'Description']
+                    const dataRows = customerFinance.map((f) => [
+                      f.code,
+                      f.type === 'income' ? 'Income' : 'Expense',
+                      f.category || '',
+                      f.order?.code || '',
+                      f.date || '',
+                      f.amount || 0,
+                      f.currency || '',
+                      f.reference || '',
+                      f.description || '',
+                    ])
+                    const ws = XLSX.utils.aoa_to_sheet([...summaryRows, header, ...dataRows])
+                    ws['!cols'] = [
+                      { wch: 16 }, { wch: 10 }, { wch: 20 }, { wch: 14 },
+                      { wch: 12 }, { wch: 14 }, { wch: 8 }, { wch: 16 }, { wch: 28 },
+                    ]
+                    const wb = XLSX.utils.book_new()
+                    XLSX.utils.book_append_sheet(wb, ws, 'Finance')
+                    XLSX.writeFile(wb, `finance_${customer.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`)
+                  }
+
+                  return (
+                    <div className="flex items-center gap-4 px-6 py-3 bg-surface-container-low border-b border-surface-container text-xs flex-shrink-0">
+                      <div className="text-on-surface-variant">Records: <span className="font-bold text-on-surface">{customerFinance.length}</span></div>
+                      <div className="text-on-surface-variant">Income: <span className="font-bold text-primary">{fmt2(income)}</span></div>
+                      <div className="text-on-surface-variant">Expense: <span className="font-bold text-error">{fmt2(expense)}</span></div>
+                      <div className="text-on-surface-variant">Net: <span className={`font-bold ${net >= 0 ? 'text-primary' : 'text-error'}`}>{fmt2(net)}</span></div>
+                      <div className="ml-auto flex items-center gap-1.5">
+                        <button
+                          onClick={exportFinanceExcel}
+                          disabled={customerFinance.length === 0}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-surface-container text-[10px] font-semibold text-on-surface-variant hover:bg-surface-container transition disabled:opacity-40"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">grid_on</span>
+                          Excel
+                        </button>
+                        <button
+                          onClick={exportFinancePDF}
+                          disabled={customerFinance.length === 0}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-surface-container text-[10px] font-semibold text-on-surface-variant hover:bg-surface-container transition disabled:opacity-40"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span>
+                          PDF
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
+                <div className="overflow-y-auto flex-1">
+                  {customerFinance.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
+                      <span className="material-symbols-outlined text-5xl mb-3 opacity-30">account_balance_wallet</span>
+                      <p className="text-sm font-semibold">No finance records</p>
+                      <p className="text-xs mt-1 opacity-70">Finance records linked to this customer's orders appear here</p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-surface-container-lowest border-b border-surface-container-low z-10">
+                        <tr className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                          <th className="text-left px-6 py-3">Code</th>
+                          <th className="text-left px-4 py-3">Type</th>
+                          <th className="text-left px-4 py-3">Category</th>
+                          <th className="text-left px-4 py-3">Order</th>
+                          <th className="text-left px-4 py-3">Date</th>
+                          <th className="text-right px-6 py-3">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customerFinance.map((f) => (
+                          <tr key={f.id} className="border-b border-surface-container-low hover:bg-surface-container-low transition-colors">
+                            <td className="px-6 py-3">
+                              <p className="font-bold text-on-surface text-xs">{f.code}</p>
+                              {f.reference && <p className="text-[10px] text-on-surface-variant mt-0.5">{f.reference}</p>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                                f.type === 'income'
+                                  ? 'bg-primary-fixed text-on-primary-fixed-variant'
+                                  : 'bg-error/10 text-error'
+                              }`}>
+                                <span className="material-symbols-outlined text-[12px]">
+                                  {f.type === 'income' ? 'arrow_downward' : 'arrow_upward'}
+                                </span>
+                                {f.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-xs text-on-surface-variant">{f.category || '—'}</td>
+                            <td className="px-4 py-3 text-xs font-mono text-on-surface-variant">{f.order?.code || '—'}</td>
+                            <td className="px-4 py-3 text-xs text-on-surface-variant">{f.date || '—'}</td>
+                            <td className="px-6 py-3 text-right">
+                              <span className={`font-bold text-sm ${f.type === 'income' ? 'text-primary' : 'text-error'}`}>
+                                {f.type === 'expense' ? '−' : '+'}{(f.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                              <span className="text-[10px] text-on-surface-variant ml-1">{f.currency}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Edit mode – tabbed */}
@@ -767,7 +1116,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
             <>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setEditing(true)}
+                  onClick={() => { setEditing(true); setViewTab('info') }}
                   className="px-5 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-base">edit</span>

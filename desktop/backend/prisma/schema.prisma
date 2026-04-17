@@ -295,6 +295,7 @@ model LeaveRequest {
   reason     String   @default("")
   status     String   @default("Pending")
   reviewedAt DateTime?
+  reviewedBy String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

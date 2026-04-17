@@ -54,12 +54,20 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /employees/setmanager — set one employee as dept manager, clear others
+// Also sets supervisorId for all other dept employees so they appear as subordinates
 router.post('/setmanager', async (req, res) => {
   try {
     const { employeeId, department } = req.body
     if (!employeeId || !department) return res.status(400).json({ error: 'employeeId and department are required' })
+    // Clear isManager flag for the whole department
     await prisma.employee.updateMany({ where: { department }, data: { isManager: false } })
+    // Mark the new manager
     await prisma.employee.update({ where: { id: employeeId }, data: { isManager: true } })
+    // Set supervisorId for all other dept employees so the manager can see their requests
+    await prisma.employee.updateMany({
+      where: { department, id: { not: employeeId } },
+      data: { supervisorId: employeeId },
+    })
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

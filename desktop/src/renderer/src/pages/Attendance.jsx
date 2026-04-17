@@ -221,7 +221,7 @@ function MyAttendanceTab({ employeeId, token }) {
 }
 
 // ── My Leave Requests Tab ────────────────────────────────────────────────────
-function MyLeaveTab({ employeeId, token }) {
+function MyLeaveTab({ employeeId, token, isManager }) {
   const [requests, setRequests] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState(null)
@@ -293,6 +293,14 @@ function MyLeaveTab({ employeeId, token }) {
 
   return (
     <div>
+      {/* Approval routing info banner */}
+      {isManager && (
+        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 rounded-xl px-4 py-3 mb-5 text-sm">
+          <span className="material-symbols-outlined text-base shrink-0">admin_panel_settings</span>
+          <span>As a manager, your leave requests require <strong>admin approval</strong>.</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-6 text-sm">
           <div className="text-text-muted">
@@ -318,24 +326,33 @@ function MyLeaveTab({ employeeId, token }) {
               <th className="text-center px-5 py-3 font-semibold">Days</th>
               <th className="text-left px-5 py-3 font-semibold">Reason</th>
               <th className="text-left px-5 py-3 font-semibold">Status</th>
+              <th className="text-left px-5 py-3 font-semibold">Reviewed By</th>
               <th className="text-right px-5 py-3 font-semibold w-20"></th>
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-text-muted">No leave requests yet</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-text-muted">No leave requests yet</td></tr>
             ) : requests.map((r) => (
               <tr key={r.id} className="border-b border-theme-border hover:bg-hover-bg transition-colors">
                 <td className="px-5 py-3 font-medium text-on-surface">{r.type}</td>
                 <td className="px-5 py-3 font-mono text-xs text-on-surface">{r.startDate}</td>
                 <td className="px-5 py-3 font-mono text-xs text-on-surface">{r.endDate}</td>
                 <td className="px-5 py-3 text-center font-semibold text-on-surface">{r.days}</td>
-                <td className="px-5 py-3 text-text-muted text-xs max-w-[200px] truncate">{r.reason || '—'}</td>
+                <td className="px-5 py-3 text-text-muted text-xs max-w-[160px] truncate">{r.reason || '—'}</td>
                 <td className="px-5 py-3">
-                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusBadge[r.status] || ''}`}>
-                    {r.status}
-                  </span>
+                  {r.status === 'Pending' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-tertiary-fixed text-on-tertiary-fixed-variant">
+                      <span className="material-symbols-outlined text-xs">schedule</span>
+                      {isManager ? 'Awaiting Admin' : 'Awaiting Manager'}
+                    </span>
+                  ) : (
+                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusBadge[r.status] || ''}`}>
+                      {r.status}
+                    </span>
+                  )}
                 </td>
+                <td className="px-5 py-3 text-text-muted text-xs">{r.reviewedBy || '—'}</td>
                 <td className="px-5 py-3 text-right">
                   {r.status === 'Pending' && (
                     <div className="flex items-center justify-end gap-1">
@@ -411,7 +428,7 @@ function TeamRequestsTab({ employeeId, token, isAdmin }) {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   const load = useCallback(() => {
-    // Admin sees all; supervisor sees subordinates
+    // Admin sees all; supervisor sees non-manager subordinates only
     const query = isAdmin ? '' : `?supervisorId=${employeeId}`
     fetch(`${API_URL}/leave-requests${query}`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
@@ -422,60 +439,104 @@ function TeamRequestsTab({ employeeId, token, isAdmin }) {
   useEffect(() => { load() }, [load])
 
   async function handleReview(id, status) {
-    await fetch(`${API_URL}/leave-requests/${id}/review`, {
+    const res = await fetch(`${API_URL}/leave-requests/${id}/review`, {
       method: 'PATCH', headers, body: JSON.stringify({ status }),
     })
+    if (!res.ok) {
+      const d = await res.json()
+      alert(d.error)
+      return
+    }
     load()
   }
 
   const pending = requests.filter((r) => r.status === 'Pending')
   const reviewed = requests.filter((r) => r.status !== 'Pending')
 
+  // For admin view, split pending into manager requests vs employee requests
+  const pendingManagerRequests = isAdmin ? pending.filter((r) => r.employee?.isManager) : []
+  const pendingEmployeeRequests = isAdmin ? pending.filter((r) => !r.employee?.isManager) : pending
+
+  function PendingCard({ r }) {
+    return (
+      <div className="bg-surface-container-lowest rounded-xl border border-theme-border p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* Initials avatar */}
+          <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+            {r.employee?.initials || r.employee?.name?.slice(0, 2).toUpperCase() || '?'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="font-semibold text-on-surface text-sm">{r.employee?.name}</span>
+              <span className="text-xs text-text-muted bg-surface-container px-1.5 py-0.5 rounded">{r.employee?.department}</span>
+              {r.employee?.isManager && (
+                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">Manager</span>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-text-muted flex-wrap">
+              <span className="font-medium text-on-surface">{r.type}</span>
+              <span className="font-mono">{r.startDate} — {r.endDate}</span>
+              <span className="font-semibold text-on-surface">{r.days} day{r.days !== 1 ? 's' : ''}</span>
+              {r.reason && <span className="truncate max-w-[200px] italic">{r.reason}</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 ml-4 shrink-0">
+          <button
+            onClick={() => handleReview(r.id, 'Approved')}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition"
+          >
+            <span className="material-symbols-outlined text-sm">check</span>
+            Approve
+          </button>
+          <button
+            onClick={() => handleReview(r.id, 'Rejected')}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-error text-error text-xs font-semibold hover:bg-error/10 transition"
+          >
+            <span className="material-symbols-outlined text-sm">close</span>
+            Reject
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      {pending.length > 0 && (
+      {/* Manager requests section — admin only */}
+      {isAdmin && pendingManagerRequests.length > 0 && (
         <div className="mb-6">
           <h3 className="text-sm font-bold text-on-surface mb-3 flex items-center gap-2">
-            <span className="material-symbols-outlined text-base text-tertiary">pending_actions</span>
-            Pending Approval ({pending.length})
+            <span className="material-symbols-outlined text-base text-amber-500">admin_panel_settings</span>
+            Manager Requests — Admin Approval Required ({pendingManagerRequests.length})
           </h3>
           <div className="space-y-3">
-            {pending.map((r) => (
-              <div key={r.id} className="bg-surface-container-lowest rounded-xl border border-theme-border p-4 flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-on-surface text-sm">{r.employee?.name}</span>
-                    <span className="text-xs text-text-muted">{r.employee?.department}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-text-muted">
-                    <span className="font-medium text-on-surface">{r.type}</span>
-                    <span>{r.startDate} — {r.endDate}</span>
-                    <span className="font-semibold">{r.days} days</span>
-                    {r.reason && <span className="truncate max-w-[200px]">{r.reason}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <button
-                    onClick={() => handleReview(r.id, 'Approved')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition"
-                  >
-                    <span className="material-symbols-outlined text-sm">check</span>
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleReview(r.id, 'Rejected')}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-error text-error text-xs font-semibold hover:bg-error/10 transition"
-                  >
-                    <span className="material-symbols-outlined text-sm">close</span>
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
+            {pendingManagerRequests.map((r) => <PendingCard key={r.id} r={r} />)}
           </div>
         </div>
       )}
 
+      {/* Employee pending requests */}
+      {pendingEmployeeRequests.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-bold text-on-surface mb-3 flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-tertiary">pending_actions</span>
+            {isAdmin ? 'Employee Requests — Pending Approval' : 'Pending Approval'} ({pendingEmployeeRequests.length})
+          </h3>
+          <div className="space-y-3">
+            {pendingEmployeeRequests.map((r) => <PendingCard key={r.id} r={r} />)}
+          </div>
+        </div>
+      )}
+
+      {pending.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-text-muted mb-6">
+          <span className="material-symbols-outlined text-4xl mb-2 opacity-40">task_alt</span>
+          <p className="text-sm">No pending requests</p>
+        </div>
+      )}
+
+      {/* All requests history table */}
       <h3 className="text-sm font-bold text-on-surface mb-3">All Requests</h3>
       <div className="bg-surface-container-lowest rounded-2xl border border-theme-border overflow-hidden">
         <table className="w-full text-sm">
@@ -487,23 +548,32 @@ function TeamRequestsTab({ employeeId, token, isAdmin }) {
               <th className="text-center px-5 py-3 font-semibold">Days</th>
               <th className="text-left px-5 py-3 font-semibold">Reason</th>
               <th className="text-left px-5 py-3 font-semibold">Status</th>
+              <th className="text-left px-5 py-3 font-semibold">Reviewed By</th>
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-text-muted">No requests found</td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-text-muted">No requests found</td></tr>
             ) : requests.map((r) => (
               <tr key={r.id} className="border-b border-theme-border hover:bg-hover-bg transition-colors">
-                <td className="px-5 py-3 font-medium text-on-surface">{r.employee?.name}</td>
+                <td className="px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-on-surface">{r.employee?.name}</span>
+                    {r.employee?.isManager && (
+                      <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">Mgr</span>
+                    )}
+                  </div>
+                </td>
                 <td className="px-5 py-3 text-text-muted">{r.type}</td>
                 <td className="px-5 py-3 font-mono text-xs text-on-surface">{r.startDate} — {r.endDate}</td>
                 <td className="px-5 py-3 text-center font-semibold text-on-surface">{r.days}</td>
-                <td className="px-5 py-3 text-text-muted text-xs max-w-[180px] truncate">{r.reason || '—'}</td>
+                <td className="px-5 py-3 text-text-muted text-xs max-w-[160px] truncate">{r.reason || '—'}</td>
                 <td className="px-5 py-3">
                   <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusBadge[r.status] || ''}`}>
                     {r.status}
                   </span>
                 </td>
+                <td className="px-5 py-3 text-text-muted text-xs">{r.reviewedBy || '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -529,8 +599,11 @@ export default function Attendance() {
     ? employees.find((e) => e.id === user.employeeId)
     : employees.find((e) => e.email && user?.email && e.email.toLowerCase() === user.email.toLowerCase())
 
-  // Show Team Requests tab if admin or if this employee has subordinates
-  const hasSubordinates = myEmployee && employees.some((e) => e.supervisorId === myEmployee.id)
+  // Show Team Requests tab if admin, if employee is marked as manager, or if they have subordinates
+  const hasSubordinates = myEmployee && (
+    myEmployee.isManager ||
+    employees.some((e) => e.supervisorId === myEmployee.id)
+  )
   const showTeam = isAdmin || hasSubordinates
 
   const allTabs = showTeam
@@ -572,7 +645,7 @@ export default function Attendance() {
       </div>
 
       {tab === 'attendance' && <MyAttendanceTab employeeId={myEmployee?.id} token={token} />}
-      {tab === 'leaves' && <MyLeaveTab employeeId={myEmployee?.id} token={token} />}
+      {tab === 'leaves' && <MyLeaveTab employeeId={myEmployee?.id} token={token} isManager={myEmployee?.isManager ?? false} />}
       {tab === 'team' && showTeam && <TeamRequestsTab employeeId={myEmployee?.id} token={token} isAdmin={isAdmin} />}
     </div>
   )
