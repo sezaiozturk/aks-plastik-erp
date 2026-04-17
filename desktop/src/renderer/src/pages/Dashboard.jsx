@@ -45,6 +45,15 @@ function DonutChart({ income, expenses }) {
   )
 }
 
+const LOGISTIC_STATUSES = ['Production Completed', 'E-WayBill', 'In Delivery', 'E-Invoice', 'Delivered']
+const LOGISTIC_CONFIG = {
+  'Production Completed': { icon: 'done_all',       color: 'text-green-600',  bg: 'bg-green-100'  },
+  'E-WayBill':           { icon: 'receipt_long',    color: 'text-orange-500', bg: 'bg-orange-100' },
+  'In Delivery':         { icon: 'local_shipping',  color: 'text-blue-500',   bg: 'bg-blue-100'   },
+  'E-Invoice':           { icon: 'request_quote',   color: 'text-teal-600',   bg: 'bg-teal-100'   },
+  'Delivered':           { icon: 'inventory',       color: 'text-green-700',  bg: 'bg-green-200'  },
+}
+
 const ORDER_STATUS_COLORS = {
   'Processing':           '#3b82f6',
   'Confirmed':            '#6366f1',
@@ -159,11 +168,18 @@ function buildActivity(customers, employees, reports, siteVisits) {
 }
 
 
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 
 
 export default function Dashboard() {
-  const { reports, employees, customers, siteVisits, financeRecords, orders } = useData()
+  const { isAdmin, user } = useAuth()
+  const { reports, employees, customers, siteVisits, financeRecords, orders, permissions } = useData()
+  const navigate = useNavigate()
+
+  const dept = user?.department
+  const canSee = (page) => isAdmin || (permissions[dept] || []).includes(page)
 
   const totalIncome   = useMemo(() => financeRecords.filter((r) => r.type === 'income').reduce((s, r) => s + Number(r.amount || 0), 0), [financeRecords])
   const totalExpenses = useMemo(() => financeRecords.filter((r) => r.type === 'expense').reduce((s, r) => s + Number(r.amount || 0), 0), [financeRecords])
@@ -176,13 +192,21 @@ export default function Dashboard() {
       .filter((s) => s.count > 0)
   }, [orders])
 
-  const recentActivity = useMemo(() => buildActivity(customers, employees, reports, siteVisits), [customers, employees, reports, siteVisits])
   const activeEmps = employees.filter((e) => e.status === 'Active').length
   const totalEmps  = employees.length
 
+  const recentActivity = useMemo(() => {
+    const filteredCustomers  = canSee('customers')   ? customers  : []
+    const filteredEmployees  = isAdmin               ? employees  : []
+    const filteredReports    = canSee('reports')     ? reports    : []
+    const filteredSiteVisits = canSee('work-orders') ? siteVisits : []
+    return buildActivity(filteredCustomers, filteredEmployees, filteredReports, filteredSiteVisits)
+  }, [customers, employees, reports, siteVisits, permissions, isAdmin])
 
-  const metrics = [
+  const allMetrics = [
     {
+      page: 'reports',
+      href: '/reports',
       label: 'Total Tasks',
       value: String(reports.length),
       icon: 'add_task',
@@ -191,9 +215,10 @@ export default function Dashboard() {
       trend: `${reports.filter((r) => r.column === 'in-progress').length} in progress`,
       trendIcon: 'pending',
       trendColor: 'text-secondary',
-      bar: false,
     },
     {
+      page: '__admin__',
+      href: '/employees',
       label: 'Total Employees',
       value: String(totalEmps),
       icon: 'badge',
@@ -202,9 +227,10 @@ export default function Dashboard() {
       trend: `${activeEmps} active`,
       trendIcon: 'check_circle',
       trendColor: 'text-secondary',
-      bar: false,
     },
     {
+      page: 'customers',
+      href: '/customers',
       label: 'Customers Served',
       value: customers.length.toLocaleString(),
       icon: 'groups',
@@ -213,9 +239,10 @@ export default function Dashboard() {
       trend: `${customers.length} registered`,
       trendIcon: 'check_circle',
       trendColor: 'text-tertiary',
-      bar: false,
     },
     {
+      page: 'work-orders',
+      href: '/work-orders',
       label: 'Site Visits',
       value: String(siteVisits.length),
       icon: 'location_on',
@@ -224,9 +251,20 @@ export default function Dashboard() {
       trend: `${siteVisits.filter((v) => v.status === 'In Progress').length} in progress`,
       trendIcon: 'pending',
       trendColor: 'text-tertiary',
-      bar: false,
     },
   ]
+
+  const metrics = allMetrics.filter((m) => m.page === '__admin__' ? isAdmin : canSee(m.page))
+
+  const logisticCounts = useMemo(() => {
+    const logOrders = orders.filter((o) => LOGISTIC_STATUSES.includes(o.status))
+    return LOGISTIC_STATUSES.map((s) => ({ status: s, count: logOrders.filter((o) => o.status === s).length, ...LOGISTIC_CONFIG[s] }))
+  }, [orders])
+  const totalLogistics = logisticCounts.reduce((s, l) => s + l.count, 0)
+
+  const showFinance   = isAdmin
+  const showOrders    = canSee('orders')
+  const showLogistics = canSee('logistics')
 
   return (
     <div className="p-8 space-y-8 bg-page-bg">
@@ -241,166 +279,197 @@ export default function Dashboard() {
       </div>
 
       {/* Metrics Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((m) => (
-          <div
-            key={m.label}
-            className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between min-h-[140px] relative overflow-hidden border border-outline-variant/30"
-          >
-            {m.accent && <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />}
-            <div className="flex justify-between items-start">
-              <span className="text-on-surface-variant font-bold text-xs uppercase tracking-wider">
-                {m.label}
-              </span>
-              <span className={`material-symbols-outlined fill-icon ${m.iconColor}`}>{m.icon}</span>
-            </div>
-            <div>
-              <div className="text-3xl font-black text-on-surface">
-                {m.value}
-                {m.valueSuffix && (
-                  <span className="text-sm font-medium text-on-surface-variant ml-1">{m.valueSuffix}</span>
-                )}
-              </div>
-              {m.bar && (
-                <div className="w-full bg-surface-container-low h-1.5 rounded-full mt-3 overflow-hidden">
-                  <div className="bg-primary h-full rounded-full" style={{ width: `${m.barPct}%` }} />
-                </div>
-              )}
-              {m.trend && (
-                <div className={`flex items-center gap-1 text-[11px] font-bold mt-1 ${m.trendColor}`}>
-                  <span className="material-symbols-outlined text-[14px]">{m.trendIcon}</span>
-                  {m.trend}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Finance Overview Pie Chart */}
-          <div className="bg-surface-container-lowest p-8 rounded-xl">
-            <div className="mb-6">
-              <h3 className="text-lg font-extrabold text-on-surface">Finance Overview</h3>
-              <p className="text-sm text-on-surface-variant">Income, expenses and net balance</p>
-            </div>
-            <div className="flex items-center gap-8">
-              {/* Donut Chart */}
-              <div className="relative flex-shrink-0 w-[180px] h-[180px]">
-                <DonutChart income={totalIncome} expenses={totalExpenses} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Net</span>
-                  <span className={`text-lg font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {netBalance >= 0 ? '+' : ''}
-                    {netBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </span>
-                </div>
-              </div>
-              {/* Legend + Values */}
-              <div className="flex-1 space-y-4">
-                <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Income</div>
-                    <div className="text-xl font-black text-green-500 tabular-nums">
-                      {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Expenses</div>
-                    <div className="text-xl font-black text-red-500 tabular-nums">
-                      {totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t border-outline-variant/30 pt-4 flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded-full flex-shrink-0 ${netBalance >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <div className="flex-1">
-                    <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Net Balance</div>
-                    <div className={`text-xl font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {netBalance >= 0 ? '+' : ''}
-                      {netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Orders Status Pie Chart */}
-          <div className="bg-surface-container-lowest p-8 rounded-xl">
-            <div className="mb-6">
-              <h3 className="text-lg font-extrabold text-on-surface">Orders by Status</h3>
-              <p className="text-sm text-on-surface-variant">Distribution across all order stages</p>
-            </div>
-            <div className="flex items-center gap-8">
-              {/* Donut */}
-              <div className="relative flex-shrink-0 w-[180px] h-[180px]">
-                <OrdersDonutChart segments={orderSegments} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Total</span>
-                  <span className="text-2xl font-black text-on-surface">{orders.length}</span>
-                </div>
-              </div>
-              {/* Legend */}
-              <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
-                {orderSegments.length === 0 ? (
-                  <p className="col-span-2 text-sm text-on-surface-variant">No orders yet.</p>
-                ) : (
-                  orderSegments.map((seg) => (
-                    <div key={seg.status} className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-bold text-on-surface truncate">{seg.status}</div>
-                        <div className="text-[10px] text-on-surface-variant">
-                          {seg.count} · {orders.length ? Math.round((seg.count / orders.length) * 100) : 0}%
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-      </div>
-
-      {/* Recent Activity */}
-      <div className="bg-surface-container-lowest rounded-xl p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-extrabold text-on-surface">Recent Activity</h3>
-          <button className="text-primary text-xs font-bold uppercase tracking-widest hover:underline">
-            View All
-          </button>
-        </div>
-        <div className="space-y-2 max-h-[320px] overflow-y-auto">
-          {recentActivity.map((item, i) => (
+      {metrics.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {metrics.map((m) => (
             <div
-              key={`${item.title}-${i}`}
-              className="flex items-start gap-4 p-4 hover:bg-surface-container-low rounded-xl transition-colors"
+              key={m.label}
+              onClick={() => navigate(m.href)}
+              className="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-between min-h-[140px] relative overflow-hidden border border-outline-variant/30 cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all"
             >
-              <div
-                className={`w-10 h-10 rounded-full ${item.iconBg} flex items-center justify-center ${item.iconColor} flex-shrink-0`}
-              >
-                <span className="material-symbols-outlined text-lg">{item.icon}</span>
+              {m.accent && <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />}
+              <div className="flex justify-between items-start">
+                <span className="text-on-surface-variant font-bold text-xs uppercase tracking-wider">{m.label}</span>
+                <span className={`material-symbols-outlined fill-icon ${m.iconColor}`}>{m.icon}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start gap-2">
-                  <h4 className="text-sm font-bold text-on-surface">{item.title}</h4>
-                  <span className="text-[10px] font-medium text-on-surface-variant whitespace-nowrap">
-                    {timeAgo(item.date)}
-                  </span>
-                </div>
-                <p className="text-xs text-on-surface-variant mt-1">{item.desc}</p>
+              <div>
+                <div className="text-3xl font-black text-on-surface">{m.value}</div>
+                {m.trend && (
+                  <div className={`flex items-center gap-1 text-[11px] font-bold mt-1 ${m.trendColor}`}>
+                    <span className="material-symbols-outlined text-[14px]">{m.trendIcon}</span>
+                    {m.trend}
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      )}
+
+      {/* Charts Row */}
+      {(showFinance || showOrders) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Finance Overview */}
+          {showFinance && (
+            <div
+              onClick={() => navigate('/finance')}
+              className="bg-surface-container-lowest p-8 rounded-xl cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all border border-transparent"
+            >
+              <div className="mb-6 flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-extrabold text-on-surface">Finance Overview</h3>
+                  <p className="text-sm text-on-surface-variant">Income, expenses and net balance</p>
+                </div>
+                <span className="material-symbols-outlined text-text-muted text-sm">open_in_new</span>
+              </div>
+              <div className="flex items-center gap-8">
+                <div className="relative flex-shrink-0 w-[180px] h-[180px]">
+                  <DonutChart income={totalIncome} expenses={totalExpenses} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Net</span>
+                    <span className={`text-lg font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {netBalance >= 0 ? '+' : ''}
+                      {netBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Income</div>
+                      <div className="text-xl font-black text-green-500 tabular-nums">
+                        {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Expenses</div>
+                      <div className="text-xl font-black text-red-500 tabular-nums">
+                        {totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-outline-variant/30 pt-4 flex items-center gap-3">
+                    <span className={`w-3 h-3 rounded-full flex-shrink-0 ${netBalance >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Net Balance</div>
+                      <div className={`text-xl font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {netBalance >= 0 ? '+' : ''}
+                        {netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Orders by Status */}
+          {showOrders && (
+            <div
+              onClick={() => navigate('/orders')}
+              className="bg-surface-container-lowest p-8 rounded-xl cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all border border-transparent"
+            >
+              <div className="mb-6 flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-extrabold text-on-surface">Orders by Status</h3>
+                  <p className="text-sm text-on-surface-variant">Distribution across all order stages</p>
+                </div>
+                <span className="material-symbols-outlined text-text-muted text-sm">open_in_new</span>
+              </div>
+              <div className="flex items-center gap-8">
+                <div className="relative flex-shrink-0 w-[180px] h-[180px]">
+                  <OrdersDonutChart segments={orderSegments} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Total</span>
+                    <span className="text-2xl font-black text-on-surface">{orders.length}</span>
+                  </div>
+                </div>
+                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
+                  {orderSegments.length === 0 ? (
+                    <p className="col-span-2 text-sm text-on-surface-variant">No orders yet.</p>
+                  ) : (
+                    orderSegments.map((seg) => (
+                      <div key={seg.status} className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold text-on-surface truncate">{seg.status}</div>
+                          <div className="text-[10px] text-on-surface-variant">
+                            {seg.count} · {orders.length ? Math.round((seg.count / orders.length) * 100) : 0}%
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* Logistics Pipeline */}
+      {showLogistics && (
+        <div
+          onClick={() => navigate('/logistics')}
+          className="bg-surface-container-lowest p-8 rounded-xl cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all border border-transparent"
+        >
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-extrabold text-on-surface">Logistics Pipeline</h3>
+              <p className="text-sm text-on-surface-variant">{totalLogistics} orders in logistics</p>
+            </div>
+            <span className="material-symbols-outlined text-text-muted text-sm">open_in_new</span>
+          </div>
+          <div className="grid grid-cols-5 gap-3">
+            {logisticCounts.map((s, i) => (
+              <div key={s.status} className="flex flex-col items-center gap-2 relative">
+                {i < logisticCounts.length - 1 && (
+                  <div className="absolute top-5 left-[calc(50%+20px)] right-[-calc(50%-20px)] h-px bg-outline-variant/40 w-[calc(100%-8px)]" />
+                )}
+                <div className={`w-10 h-10 rounded-full ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                  <span className={`material-symbols-outlined text-lg ${s.color}`}>{s.icon}</span>
+                </div>
+                <span className={`text-2xl font-black ${s.count > 0 ? s.color : 'text-on-surface-variant'}`}>{s.count}</span>
+                <span className="text-[10px] font-semibold text-on-surface-variant text-center leading-tight">{s.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity */}
+      {recentActivity.length > 0 && (
+        <div className="bg-surface-container-lowest rounded-xl p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-extrabold text-on-surface">Recent Activity</h3>
+          </div>
+          <div className="space-y-2 max-h-[320px] overflow-y-auto">
+            {recentActivity.map((item, i) => (
+              <div
+                key={`${item.title}-${i}`}
+                className="flex items-start gap-4 p-4 hover:bg-surface-container-low rounded-xl transition-colors"
+              >
+                <div className={`w-10 h-10 rounded-full ${item.iconBg} flex items-center justify-center ${item.iconColor} flex-shrink-0`}>
+                  <span className="material-symbols-outlined text-lg">{item.icon}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="text-sm font-bold text-on-surface">{item.title}</h4>
+                    <span className="text-[10px] font-medium text-on-surface-variant whitespace-nowrap">{timeAgo(item.date)}</span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant mt-1">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -6,20 +6,19 @@ import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
 
 export default function TopBar() {
-  const { user } = useAuth()
+  const { user, token, isAdmin } = useAuth()
   const { dark, toggleTheme } = useTheme()
-  const { reports, employees } = useData()
+  const { permissions, reports, siteVisits, machines, employees } = useData()
   const navigate = useNavigate()
   const [now, setNow] = useState(new Date())
-  const [showOverdue, setShowOverdue] = useState(false)
+  const [showAlarms, setShowAlarms] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const overdueRef = useRef(null)
+  const [leaveAlerts, setLeaveAlerts] = useState([])
+  const alarmsRef = useRef(null)
   const userMenuRef = useRef(null)
 
-  const today = new Date(new Date().toDateString())
-  const overdueReports = (reports || []).filter(
-    (r) => r.dueDate && new Date(r.dueDate) < today && r.column !== 'completed' && r.column !== 'cancelled'
-  )
+  const dept = user?.department
+  const canSee = (page) => isAdmin || (permissions[dept] || []).includes(page)
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000)
@@ -27,25 +26,68 @@ export default function TopBar() {
   }, [])
 
   useEffect(() => {
-    if (!showOverdue && !showUserMenu) return
+    if (!showAlarms && !showUserMenu) return
     function handleClick(e) {
-      if (showOverdue && overdueRef.current && !overdueRef.current.contains(e.target)) setShowOverdue(false)
+      if (showAlarms && alarmsRef.current && !alarmsRef.current.contains(e.target)) setShowAlarms(false)
       if (showUserMenu && userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
-  }, [showOverdue, showUserMenu])
-
-  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-  const utcOffset = -now.getTimezoneOffset() / 60
-  const timezone = `UTC${utcOffset >= 0 ? '+' : ''}${utcOffset}`
-  const date = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  }, [showAlarms, showUserMenu])
 
   const matchedEmployee = user?.employeeId
     ? (employees || []).find((e) => e.id === user.employeeId)
     : user?.email
     ? (employees || []).find((e) => e.email && e.email.toLowerCase() === user.email.toLowerCase())
     : null
+
+  // Fetch leave alerts — admin sees all pending, managers see their subordinates'
+  useEffect(() => {
+    if (!token || !employees.length) return
+    let url
+    if (isAdmin) {
+      url = `${API_URL}/leave-requests`
+    } else if (matchedEmployee?.isManager) {
+      url = `${API_URL}/leave-requests?supervisorId=${matchedEmployee.id}`
+    } else {
+      setLeaveAlerts([])
+      return
+    }
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => setLeaveAlerts(Array.isArray(data) ? data.filter((r) => r.status === 'Pending') : []))
+      .catch(() => {})
+  }, [token, isAdmin, matchedEmployee?.id, matchedEmployee?.isManager, employees.length])
+
+  // Alert computations
+  const today = new Date(new Date().toDateString())
+  const in3Days = new Date(today); in3Days.setDate(today.getDate() + 3)
+  const in7Days = new Date(today); in7Days.setDate(today.getDate() + 7)
+
+  const overdueReports = canSee('reports')
+    ? (reports || []).filter((r) => r.dueDate && new Date(r.dueDate) < today && r.column !== 'completed' && r.column !== 'cancelled')
+    : []
+
+  const upcomingVisits = canSee('work-orders')
+    ? (siteVisits || []).filter((v) => {
+        const d = new Date(v.date)
+        return v.status === 'Scheduled' && d >= today && d <= in3Days
+      })
+    : []
+
+  const maintenanceAlerts = canSee('maintenance')
+    ? (machines || []).filter((m) => {
+        if (!m.nextMaintenanceDue) return false
+        return new Date(m.nextMaintenanceDue) <= in7Days
+      })
+    : []
+
+  const totalAlarms = overdueReports.length + upcomingVisits.length + maintenanceAlerts.length + leaveAlerts.length
+
+  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+  const utcOffset = -now.getTimezoneOffset() / 60
+  const timezone = `UTC${utcOffset >= 0 ? '+' : ''}${utcOffset}`
+  const date = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -70,55 +112,170 @@ export default function TopBar() {
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <div className="relative" ref={overdueRef}>
+
+          {/* Alarm Bell */}
+          <div className="relative" ref={alarmsRef}>
             <button
-              onClick={() => setShowOverdue((v) => !v)}
+              onClick={() => setShowAlarms((v) => !v)}
               className="p-2 text-text-muted hover:text-primary transition-colors rounded-full hover:bg-hover-bg relative"
             >
               <span className="material-symbols-outlined">notifications</span>
-              {overdueReports.length > 0 && (
+              {totalAlarms > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-error text-on-error text-[9px] font-black flex items-center justify-center">
-                  {overdueReports.length}
+                  {totalAlarms > 9 ? '9+' : totalAlarms}
                 </span>
               )}
             </button>
-            {showOverdue && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-surface-container-lowest rounded-2xl shadow-2xl shadow-inverse-surface/20 border border-surface-container-low overflow-hidden z-50">
-                <div className="px-4 pt-4 pb-2 border-b border-surface-container-low">
-                  <span className="text-xs font-extrabold text-on-surface">Overdue Tasks</span>
+
+            {showAlarms && (
+              <div className="absolute right-0 top-full mt-2 w-96 bg-surface-container-lowest rounded-2xl shadow-2xl shadow-inverse-surface/20 border border-surface-container-low overflow-hidden z-50">
+                <div className="px-4 pt-4 pb-3 border-b border-surface-container-low flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-on-surface">Alerts</span>
+                  {totalAlarms > 0 && (
+                    <span className="text-[10px] font-bold text-error bg-error-container px-2 py-0.5 rounded-full">
+                      {totalAlarms} active
+                    </span>
+                  )}
                 </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {overdueReports.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-on-surface-variant text-sm">
-                      <span className="material-symbols-outlined text-2xl block mb-1">check_circle</span>
-                      No overdue tasks
+
+                <div className="max-h-[420px] overflow-y-auto">
+                  {totalAlarms === 0 ? (
+                    <div className="px-4 py-8 text-center text-on-surface-variant text-sm">
+                      <span className="material-symbols-outlined text-3xl block mb-2 text-success">check_circle</span>
+                      No active alerts
                     </div>
                   ) : (
-                    overdueReports.map((r) => (
-                      <div key={r.id} className="px-4 py-3 hover:bg-hover-bg transition-colors border-b border-surface-container-low last:border-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-on-surface truncate">{r.title}</p>
-                          <span className="text-[10px] font-bold text-error whitespace-nowrap">
-                            {Math.ceil((today - new Date(r.dueDate)) / 86400000)}d overdue
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-on-surface-variant">
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">business</span>
-                            {r.customer?.name || 'No customer'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">engineering</span>
-                            {r.technician?.name || 'Unassigned'}
-                          </span>
-                        </div>
-                      </div>
-                    ))
+                    <>
+                      {/* Overdue Tasks */}
+                      {overdueReports.length > 0 && (
+                        <section>
+                          <div className="px-4 py-2 bg-surface-container-low flex items-center justify-between sticky top-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-error">assignment_late</span>
+                              <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Overdue Tasks</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-error">{overdueReports.length}</span>
+                          </div>
+                          {overdueReports.map((r) => (
+                            <div
+                              key={r.id}
+                              onClick={() => { navigate('/reports'); setShowAlarms(false) }}
+                              className="px-4 py-2.5 hover:bg-hover-bg transition-colors border-b border-surface-container-low last:border-0 cursor-pointer"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-on-surface truncate">{r.title}</p>
+                                <span className="text-[10px] font-bold text-error whitespace-nowrap">
+                                  {Math.ceil((today - new Date(r.dueDate)) / 86400000)}d overdue
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-on-surface-variant mt-0.5 truncate">
+                                {r.customer?.name || 'No customer'} · {r.employee?.name || 'Unassigned'}
+                              </p>
+                            </div>
+                          ))}
+                        </section>
+                      )}
+
+                      {/* Upcoming Site Visits */}
+                      {upcomingVisits.length > 0 && (
+                        <section>
+                          <div className="px-4 py-2 bg-surface-container-low flex items-center justify-between sticky top-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-primary">location_on</span>
+                              <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Upcoming Site Visits</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-primary">{upcomingVisits.length}</span>
+                          </div>
+                          {upcomingVisits.map((v) => {
+                            const diff = Math.ceil((new Date(v.date) - today) / 86400000)
+                            return (
+                              <div
+                                key={v.id}
+                                onClick={() => { navigate('/work-orders'); setShowAlarms(false) }}
+                                className="px-4 py-2.5 hover:bg-hover-bg transition-colors border-b border-surface-container-low last:border-0 cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-on-surface truncate">{v.title}</p>
+                                  <span className="text-[10px] font-bold text-primary whitespace-nowrap">
+                                    {diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `In ${diff}d`}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-on-surface-variant mt-0.5 truncate">
+                                  {v.customerName || '—'} · {v.time || ''}
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </section>
+                      )}
+
+                      {/* Maintenance Due */}
+                      {maintenanceAlerts.length > 0 && (
+                        <section>
+                          <div className="px-4 py-2 bg-surface-container-low flex items-center justify-between sticky top-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-tertiary">build</span>
+                              <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Maintenance Due</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-tertiary">{maintenanceAlerts.length}</span>
+                          </div>
+                          {maintenanceAlerts.map((m) => {
+                            const diff = Math.ceil((new Date(m.nextMaintenanceDue) - today) / 86400000)
+                            return (
+                              <div
+                                key={m.id}
+                                onClick={() => { navigate('/maintenance'); setShowAlarms(false) }}
+                                className="px-4 py-2.5 hover:bg-hover-bg transition-colors border-b border-surface-container-low last:border-0 cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-on-surface truncate">{m.name}</p>
+                                  <span className={`text-[10px] font-bold whitespace-nowrap ${diff < 0 ? 'text-error' : 'text-tertiary'}`}>
+                                    {diff < 0 ? `${Math.abs(diff)}d overdue` : diff === 0 ? 'Due today' : `In ${diff}d`}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-on-surface-variant mt-0.5 truncate">
+                                  {m.code} · {m.location || '—'}
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </section>
+                      )}
+
+                      {/* Pending Leave Requests */}
+                      {leaveAlerts.length > 0 && (
+                        <section>
+                          <div className="px-4 py-2 bg-surface-container-low flex items-center justify-between sticky top-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-secondary">event_busy</span>
+                              <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">Pending Leave</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-secondary">{leaveAlerts.length}</span>
+                          </div>
+                          {leaveAlerts.map((lr) => (
+                            <div
+                              key={lr.id}
+                              onClick={() => { navigate('/attendance?tab=team'); setShowAlarms(false) }}
+                              className="px-4 py-2.5 hover:bg-hover-bg transition-colors border-b border-surface-container-low last:border-0 cursor-pointer"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-on-surface truncate">{lr.employee?.name || 'Employee'}</p>
+                                <span className="text-[10px] font-bold text-secondary whitespace-nowrap">{lr.type}</span>
+                              </div>
+                              <p className="text-[11px] text-on-surface-variant mt-0.5">
+                                {lr.startDate} → {lr.endDate} · {lr.days}d
+                              </p>
+                            </div>
+                          ))}
+                        </section>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
             )}
           </div>
+
           <button className="p-2 text-text-muted hover:text-primary transition-colors rounded-full hover:bg-hover-bg">
             <span className="material-symbols-outlined">help_outline</span>
           </button>

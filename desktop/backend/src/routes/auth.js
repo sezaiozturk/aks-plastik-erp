@@ -4,10 +4,38 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const nodemailer = require('nodemailer')
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit')
 const { authenticate, adminOnly, JWT_SECRET } = require('../middleware/auth')
 
 const prisma = new PrismaClient()
 const router = Router()
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.body.email ? req.body.email.toLowerCase() : ipKeyGenerator(req),
+  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+const forgotLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.body.email ? req.body.email.toLowerCase() : ipKeyGenerator(req),
+  message: { error: 'Too many requests. Please try again in 1 hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.body.email ? req.body.email.toLowerCase() : ipKeyGenerator(req),
+  message: { error: 'Too many reset attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 const smtpTransport = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -20,7 +48,7 @@ const smtpTransport = nodemailer.createTransport({
 })
 
 // POST login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body
     const user = await prisma.user.findUnique({ where: { email } })
@@ -45,7 +73,7 @@ router.post('/login', async (req, res) => {
 })
 
 // POST forgot password — sends reset email
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotLimiter, async (req, res) => {
   try {
     const { email } = req.body
     const user = await prisma.user.findUnique({ where: { email } })
@@ -101,7 +129,7 @@ router.post('/forgot-password', async (req, res) => {
 })
 
 // POST reset password — verifies code and sets new password
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', resetLimiter, async (req, res) => {
   try {
     const { email, code, newPassword } = req.body
 

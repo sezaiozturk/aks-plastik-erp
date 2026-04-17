@@ -595,7 +595,11 @@ export default function Attendance() {
   const { user, token, isAdmin } = useAuth()
   const { employees } = useData()
   const [searchParams] = useSearchParams()
-  const [tab, setTab] = useState(() => searchParams.get('newRequest') === 'true' ? 'leaves' : 'attendance')
+  const [tab, setTab] = useState(() => {
+    if (searchParams.get('tab') === 'team') return 'team'
+    if (searchParams.get('newRequest') === 'true') return 'leaves'
+    return 'attendance'
+  })
 
   // Match logged-in user to their linked employee record
   const myEmployee = user?.employeeId
