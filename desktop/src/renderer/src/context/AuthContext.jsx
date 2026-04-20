@@ -1,37 +1,103 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { API_URL } from '../config'
+
 const AuthContext = createContext(null)
 
+function parseJWT(token) {
+  try {
+    const payload = token.split('.')[1]
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
+}
+
+function isExpired(token) {
+  const payload = parseJWT(token)
+  if (!payload?.exp) return true
+  return Date.now() >= payload.exp * 1000 - 30_000 // 30s buffer
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser]   = useState(null)
   const [token, setToken] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const refreshTokenRef = useRef(null)
 
+  // Auto-refresh: when access token nears expiry, get a new one
   useEffect(() => {
-    setLoading(false)
-  }, [])
+    if (!token) return
+    const payload = parseJWT(token)
+    if (!payload?.exp) return
 
-  async function login(email, password) {
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Login failed')
-    setToken(data.token)
-    setUser(data.user)
+    const msUntilRefresh = payload.exp * 1000 - Date.now() - 60_000 // refresh 60s early
+    if (msUntilRefresh <= 0) return
+
+    const timer = setTimeout(async () => {
+      if (!refreshTokenRef.current) return
+      const result = await window.api.authRefresh(refreshTokenRef.current)
+      if (result.ok) {
+        refreshTokenRef.current = result.tokens.refresh_token
+        setToken(result.tokens.access_token)
+      } else {
+        logout()
+      }
+    }, msUntilRefresh)
+
+    return () => clearTimeout(timer)
+  }, [token])
+
+  async function login() {
+    setLoading(true)
+    try {
+      const result = await window.api.authLogin()
+      if (!result.ok) throw new Error(result.error || 'Login failed')
+
+      const { access_token, refresh_token } = result.tokens
+      refreshTokenRef.current = refresh_token
+
+      // Fetch full user profile from our backend (includes role, department, etc.)
+      const profileRes = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+      })
+      if (!profileRes.ok) throw new Error('User not registered in system')
+      const profile = await profileRes.json()
+
+      setToken(access_token)
+      setUser(profile)
+    } catch (err) {
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function logout() {
+  async function logout() {
+    const rt = refreshTokenRef.current
+    refreshTokenRef.current = null
     setToken(null)
     setUser(null)
+    if (rt) window.api.authLogout(rt).catch(() => {})
+  }
+
+  // Expose a helper so other contexts can get a fresh token
+  async function getToken() {
+    if (!token) return null
+    if (!isExpired(token)) return token
+
+    if (!refreshTokenRef.current) { logout(); return null }
+    const result = await window.api.authRefresh(refreshTokenRef.current)
+    if (!result.ok) { logout(); return null }
+
+    refreshTokenRef.current = result.tokens.refresh_token
+    setToken(result.tokens.access_token)
+    return result.tokens.access_token
   }
 
   const isAdmin = user?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAdmin, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, getToken, isAdmin, loading }}>
       {children}
     </AuthContext.Provider>
   )

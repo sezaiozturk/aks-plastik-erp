@@ -1,207 +1,18 @@
 const { Router } = require('express')
 const { PrismaClient } = require('@prisma/client')
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
-const crypto = require('crypto')
-const nodemailer = require('nodemailer')
-const { rateLimit, ipKeyGenerator } = require('express-rate-limit')
-const { authenticate, adminOnly, JWT_SECRET } = require('../middleware/auth')
+const { authenticate, adminOnly } = require('../middleware/auth')
+const kc = require('../lib/keycloakAdmin')
 
 const prisma = new PrismaClient()
 const router = Router()
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  keyGenerator: (req) => req.body.email ? req.body.email.toLowerCase() : ipKeyGenerator(req),
-  message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-})
-
-const forgotLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  keyGenerator: (req) => req.body.email ? req.body.email.toLowerCase() : ipKeyGenerator(req),
-  message: { error: 'Too many requests. Please try again in 1 hour.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-})
-
-const resetLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  keyGenerator: (req) => req.body.email ? req.body.email.toLowerCase() : ipKeyGenerator(req),
-  message: { error: 'Too many reset attempts. Please try again in 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-})
-
-const smtpTransport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
-
-// POST login
-router.post('/login', loginLimiter, async (req, res) => {
-  try {
-    const { email, password } = req.body
-    const user = await prisma.user.findUnique({ where: { email } })
-    if (!user) return res.status(401).json({ error: 'Invalid email or password' })
-
-    const valid = await bcrypt.compare(password, user.password)
-    if (!valid) return res.status(401).json({ error: 'Invalid email or password' })
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department || null, employeeId: user.employeeId || null },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    )
-
-    res.json({
-      token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, department: user.department || null, employeeId: user.employeeId || null },
-    })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// POST forgot password — sends reset email
-router.post('/forgot-password', forgotLimiter, async (req, res) => {
-  try {
-    const { email } = req.body
-    const user = await prisma.user.findUnique({ where: { email } })
-
-    // Always return success to avoid revealing whether email exists
-    if (!user) return res.json({ success: true })
-
-    // Generate a secure random token
-    const token = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
-
-    // Invalidate any existing tokens for this user
-    await prisma.passwordResetToken.updateMany({
-      where: { userId: user.id, used: false },
-      data: { used: true },
-    })
-
-    await prisma.passwordResetToken.create({
-      data: { token, userId: user.id, expiresAt },
-    })
-
-    // Send reset email
-    const resetCode = token.slice(0, 8).toUpperCase()
-    try {
-      await smtpTransport.sendMail({
-        from: process.env.SMTP_FROM || 'Plan-S Field Hub <no-reply@fieldhub.com>',
-        to: user.email,
-        subject: 'Password Reset — Plan-S Field Hub',
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-            <h2>Password Reset Request</h2>
-            <p>Hello ${user.name},</p>
-            <p>We received a request to reset your password. Use the code below to set a new password:</p>
-            <div style="background: #f4f4f5; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0;">
-              <span style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${resetCode}</span>
-            </div>
-            <p>This code expires in 1 hour.</p>
-            <p>If you didn't request this, you can safely ignore this email.</p>
-            <p style="color: #888; font-size: 12px; margin-top: 32px;">Plan-S Field Hub</p>
-          </div>
-        `,
-      })
-    } catch (mailErr) {
-      console.warn('SMTP send failed, logging reset code to console instead.')
-      console.log(`[PASSWORD RESET] Code for ${user.email}: ${resetCode}`)
-    }
-
-    res.json({ success: true })
-  } catch (err) {
-    console.error('Forgot password error:', err)
-    res.status(500).json({ error: 'Failed to process request. Please try again.' })
-  }
-})
-
-// POST reset password — verifies code and sets new password
-router.post('/reset-password', resetLimiter, async (req, res) => {
-  try {
-    const { email, code, newPassword } = req.body
-
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' })
-    }
-
-    const user = await prisma.user.findUnique({ where: { email } })
-    if (!user) return res.status(400).json({ error: 'Invalid reset code' })
-
-    // Find a valid, unused token that starts with the provided code
-    const tokens = await prisma.passwordResetToken.findMany({
-      where: { userId: user.id, used: false, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    const matched = tokens.find(
-      (t) => t.token.slice(0, 8).toUpperCase() === code.toUpperCase()
-    )
-
-    if (!matched) {
-      return res.status(400).json({ error: 'Invalid or expired reset code' })
-    }
-
-    // Mark token as used and update password
-    const hashed = await bcrypt.hash(newPassword, 10)
-    await prisma.$transaction([
-      prisma.passwordResetToken.update({
-        where: { id: matched.id },
-        data: { used: true },
-      }),
-      prisma.user.update({
-        where: { id: user.id },
-        data: { password: hashed },
-      }),
-    ])
-
-    res.json({ success: true })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// GET current user
-router.get('/me', authenticate, async (req, res) => {
+// GET current user — called by AuthContext after Keycloak login
+router.get('/me', authenticate, (req, res) => {
   res.json(req.user)
 })
 
-// PATCH change own password
-router.patch('/change-password', authenticate, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' })
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } })
-    const valid = await bcrypt.compare(currentPassword, user.password)
-    if (!valid) return res.status(401).json({ error: 'Current password is incorrect' })
-
-    const hashed = await bcrypt.hash(newPassword, 10)
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { password: hashed },
-    })
-    res.json({ success: true })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
-
-// GET sales team users (any authenticated user — used for order sales rep dropdown)
+// GET sales team users
 router.get('/salesteam', authenticate, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -228,10 +39,11 @@ router.get('/users', authenticate, adminOnly, async (req, res) => {
   }
 })
 
-// POST create user (admin only)
+// POST create user — also creates the user in Keycloak
 router.post('/users', authenticate, adminOnly, async (req, res) => {
   try {
     const { email, password, name, phone, role, department, employeeId } = req.body
+
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return res.status(400).json({ error: 'Email already exists' })
 
@@ -240,11 +52,14 @@ router.post('/users', authenticate, adminOnly, async (req, res) => {
       if (taken) return res.status(400).json({ error: 'This employee already has a user account' })
     }
 
-    const hashed = await bcrypt.hash(password, 10)
+    // Create in Keycloak first — fail early if Keycloak rejects it
+    await kc.createUser(email, name, password)
+
+    const placeholderHash = await bcrypt.hash(Math.random().toString(36), 10)
     const user = await prisma.user.create({
       data: {
         email,
-        password: hashed,
+        password: placeholderHash,
         name,
         phone: phone || null,
         role: role || 'user',
@@ -253,23 +68,35 @@ router.post('/users', authenticate, adminOnly, async (req, res) => {
       },
       select: { id: true, email: true, name: true, phone: true, role: true, department: true, employeeId: true, createdAt: true },
     })
+
     res.status(201).json(user)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// PUT update user (admin only)
+// PUT update user — also syncs email/name to Keycloak
 router.put('/users/:id', authenticate, adminOnly, async (req, res) => {
   try {
-    const { name, email, phone, role, password, department } = req.body
-    const data = { name, email, phone: phone || null, role, department: role === 'user' ? (department || null) : null }
-    if (password && password.length >= 6) {
-      data.password = await bcrypt.hash(password, 10)
+    const { name, email, phone, role, department } = req.body
+
+    const existing = await prisma.user.findUnique({ where: { id: req.params.id } })
+    if (!existing) return res.status(404).json({ error: 'User not found' })
+
+    // Sync to Keycloak if email or name changed
+    if (email !== existing.email || name !== existing.name) {
+      await kc.updateUser(existing.email, { email, name })
     }
+
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data,
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        role,
+        department: role === 'user' ? (department || null) : null,
+      },
       select: { id: true, email: true, name: true, phone: true, role: true, department: true, employeeId: true, createdAt: true },
     })
     res.json(user)
@@ -278,13 +105,32 @@ router.put('/users/:id', authenticate, adminOnly, async (req, res) => {
   }
 })
 
-// DELETE user (admin only)
+// DELETE user — also deletes from Keycloak
 router.delete('/users/:id', authenticate, adminOnly, async (req, res) => {
   try {
     if (req.user.id === req.params.id) {
       return res.status(400).json({ error: 'Cannot delete yourself' })
     }
+
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    await kc.deleteUser(user.email)
     await prisma.user.delete({ where: { id: req.params.id } })
+
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST send password reset email via Keycloak
+router.post('/users/:id/reset-password', authenticate, adminOnly, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } })
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    await kc.sendPasswordResetEmail(user.email)
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

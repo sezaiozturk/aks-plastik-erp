@@ -2,6 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
+  // Keycloak auth
+  authLogin:   ()             => ipcRenderer.invoke('auth:login'),
+  authRefresh: (refreshToken) => ipcRenderer.invoke('auth:refresh', refreshToken),
+  authLogout:  (refreshToken) => ipcRenderer.invoke('auth:logout', refreshToken),
   runPython: (code) => ipcRenderer.invoke('python:run', code),
   checkPython: () => ipcRenderer.invoke('python:check'),
   // Serial port

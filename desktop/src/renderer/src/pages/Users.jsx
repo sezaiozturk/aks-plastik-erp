@@ -101,13 +101,12 @@ export default function Users() {
     setConfirmEdit(false)
   }
 
-  async function sendResetEmail(email) {
+  async function sendResetEmail(userId) {
     setResetEmailStatus('sending')
     try {
-      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+      const res = await fetch(`${API_URL}/auth/users/${userId}/reset-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) throw new Error()
       setResetEmailStatus('sent')
@@ -489,7 +488,7 @@ export default function Users() {
               )}
 
               <button
-                onClick={() => sendResetEmail(viewUser.email)}
+                onClick={() => sendResetEmail(viewUser.id)}
                 disabled={resetEmailStatus === 'sending' || resetEmailStatus === 'sent'}
                 className="w-full py-2.5 rounded-xl border-2 border-outline-variant text-on-surface-variant text-sm font-bold hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >

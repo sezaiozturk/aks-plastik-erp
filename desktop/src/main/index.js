@@ -4,6 +4,7 @@ import { spawn, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
 import { SerialPort } from 'serialport'
 import { ReadlineParser } from '@serialport/parser-readline'
+import * as keycloak from './keycloak.js'
 
 const isDev = !app.isPackaged
 
@@ -179,6 +180,65 @@ ipcMain.handle('stm32:run', (_, args) => {
     proc.on('close', (code) => { sendLog(`Exited with code ${code}`, code === 0 ? 'ok' : 'err'); resolve({ ok: code === 0, exitCode: code }) })
     proc.on('error', (err) => { sendLog(`Error: ${err.message}`, 'err'); resolve({ ok: false, error: err.message }) })
   })
+})
+
+// ── Keycloak auth ──
+ipcMain.handle('auth:login', async () => {
+  const { verifier, state, authUrl } = keycloak.buildAuthRequest()
+
+  return new Promise((resolve, reject) => {
+    const loginWin = new BrowserWindow({
+      width: 520,
+      height: 700,
+      resizable: false,
+      title: 'AKS — Sign In',
+      webPreferences: { nodeIntegration: false, contextIsolation: true },
+    })
+
+    loginWin.setMenuBarVisibility(false)
+    loginWin.loadURL(authUrl)
+
+    let handled = false
+
+    async function handleCallback(url) {
+      if (handled || !url.startsWith(keycloak.REDIRECT_URI)) return
+      handled = true
+      loginWin.destroy()
+      try {
+        const parsed = new URL(url)
+        const error = parsed.searchParams.get('error')
+        if (error) throw new Error(parsed.searchParams.get('error_description') || error)
+        const code = parsed.searchParams.get('code')
+        const returnedState = parsed.searchParams.get('state')
+        if (returnedState !== state) throw new Error('State mismatch — possible CSRF')
+        if (!code) throw new Error('No authorization code received')
+        const tokens = await keycloak.exchangeCode(code, verifier)
+        resolve({ ok: true, tokens })
+      } catch (err) {
+        resolve({ ok: false, error: err.message })
+      }
+    }
+
+    loginWin.webContents.on('will-redirect', (_, url) => handleCallback(url))
+    loginWin.webContents.on('will-navigate', (_, url) => handleCallback(url))
+    loginWin.on('closed', () => {
+      if (!handled) resolve({ ok: false, error: 'Login cancelled' })
+    })
+  })
+})
+
+ipcMain.handle('auth:refresh', async (_, refreshToken) => {
+  try {
+    const tokens = await keycloak.refreshAccessToken(refreshToken)
+    return { ok: true, tokens }
+  } catch {
+    return { ok: false }
+  }
+})
+
+ipcMain.handle('auth:logout', async (_, refreshToken) => {
+  if (refreshToken) await keycloak.revokeToken(refreshToken)
+  return { ok: true }
 })
 
 function createWindow() {

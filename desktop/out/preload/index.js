@@ -2,6 +2,10 @@
 const electron = require("electron");
 electron.contextBridge.exposeInMainWorld("api", {
   platform: process.platform,
+  // Keycloak auth
+  authLogin: () => electron.ipcRenderer.invoke("auth:login"),
+  authRefresh: (refreshToken) => electron.ipcRenderer.invoke("auth:refresh", refreshToken),
+  authLogout: (refreshToken) => electron.ipcRenderer.invoke("auth:logout", refreshToken),
   runPython: (code) => electron.ipcRenderer.invoke("python:run", code),
   checkPython: () => electron.ipcRenderer.invoke("python:check"),
   // Serial port

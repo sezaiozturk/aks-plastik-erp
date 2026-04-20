@@ -5,6 +5,7 @@ const child_process = require("child_process");
 const fs = require("fs");
 const serialport = require("serialport");
 const require$$0 = require("stream");
+const crypto = require("crypto");
 var dist$1 = {};
 var dist = {};
 Object.defineProperty(dist, "__esModule", { value: true });
@@ -60,6 +61,72 @@ class ReadlineParser extends parser_delimiter_1.DelimiterParser {
   }
 }
 ReadlineParser_1 = dist$1.ReadlineParser = ReadlineParser;
+const KEYCLOAK_URL = "http://localhost:8080";
+const REALM = "AKS";
+const CLIENT_ID = "aks-erp";
+const REDIRECT_URI = "aks-erp://auth/callback";
+const BASE = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect`;
+function buildAuthRequest() {
+  const verifier = crypto.randomBytes(32).toString("base64url");
+  const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
+  const state = crypto.randomBytes(16).toString("hex");
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: "code",
+    scope: "openid email profile",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    state
+  });
+  return { verifier, state, authUrl: `${BASE}/auth?${params}` };
+}
+async function exchangeCode(code, verifier) {
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    code,
+    code_verifier: verifier
+  });
+  const res = await fetch(`${BASE}/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString()
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Token exchange failed: ${text}`);
+  }
+  return res.json();
+}
+async function revokeToken(refreshToken) {
+  const body = new URLSearchParams({
+    client_id: CLIENT_ID,
+    token: refreshToken,
+    token_type_hint: "refresh_token"
+  });
+  await fetch(`${BASE}/revoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString()
+  }).catch(() => {
+  });
+}
+async function refreshAccessToken(refreshToken) {
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    client_id: CLIENT_ID,
+    refresh_token: refreshToken
+  });
+  const res = await fetch(`${BASE}/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString()
+  });
+  if (!res.ok) throw new Error("Token refresh failed");
+  return res.json();
+}
 const isDev = !electron.app.isPackaged;
 let activePort = null;
 let activeParser = null;
@@ -230,6 +297,56 @@ electron.ipcMain.handle("stm32:run", (_, args) => {
       resolve({ ok: false, error: err.message });
     });
   });
+});
+electron.ipcMain.handle("auth:login", async () => {
+  const { verifier, state, authUrl } = buildAuthRequest();
+  return new Promise((resolve, reject) => {
+    const loginWin = new electron.BrowserWindow({
+      width: 520,
+      height: 700,
+      resizable: false,
+      title: "AKS — Sign In",
+      webPreferences: { nodeIntegration: false, contextIsolation: true }
+    });
+    loginWin.setMenuBarVisibility(false);
+    loginWin.loadURL(authUrl);
+    let handled = false;
+    async function handleCallback(url) {
+      if (handled || !url.startsWith(REDIRECT_URI)) return;
+      handled = true;
+      loginWin.destroy();
+      try {
+        const parsed = new URL(url);
+        const error = parsed.searchParams.get("error");
+        if (error) throw new Error(parsed.searchParams.get("error_description") || error);
+        const code = parsed.searchParams.get("code");
+        const returnedState = parsed.searchParams.get("state");
+        if (returnedState !== state) throw new Error("State mismatch — possible CSRF");
+        if (!code) throw new Error("No authorization code received");
+        const tokens = await exchangeCode(code, verifier);
+        resolve({ ok: true, tokens });
+      } catch (err) {
+        resolve({ ok: false, error: err.message });
+      }
+    }
+    loginWin.webContents.on("will-redirect", (_, url) => handleCallback(url));
+    loginWin.webContents.on("will-navigate", (_, url) => handleCallback(url));
+    loginWin.on("closed", () => {
+      if (!handled) resolve({ ok: false, error: "Login cancelled" });
+    });
+  });
+});
+electron.ipcMain.handle("auth:refresh", async (_, refreshToken) => {
+  try {
+    const tokens = await refreshAccessToken(refreshToken);
+    return { ok: true, tokens };
+  } catch {
+    return { ok: false };
+  }
+});
+electron.ipcMain.handle("auth:logout", async (_, refreshToken) => {
+  if (refreshToken) await revokeToken(refreshToken);
+  return { ok: true };
 });
 function createWindow() {
   const win = new electron.BrowserWindow({
