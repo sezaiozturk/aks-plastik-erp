@@ -38,7 +38,7 @@ export default function Login() {
 
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-theme-border p-8 space-y-5">
           <h2 className="text-lg font-bold text-on-surface text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Sign In
+            Welcome
           </h2>
 
           {error && (
@@ -60,7 +60,7 @@ export default function Login() {
             ) : (
               <>
                 <span className="material-symbols-outlined text-base">login</span>
-                Sign In with Keycloak
+                Sign In
               </>
             )}
           </button>
