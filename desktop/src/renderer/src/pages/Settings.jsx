@@ -1111,7 +1111,8 @@ function OrderStatusTab() {
   const { userStatusPermissions, updateUserStatusPermissions } = useData()
   const [users, setUsers] = useState([])
   const [saving, setSaving] = useState({})
-  const [pending, setPending] = useState(null) // { status, newUserId }
+  const [openDropdown, setOpenDropdown] = useState(null)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     fetch(`${API_URL}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
@@ -1120,101 +1121,121 @@ function OrderStatusTab() {
       .catch(() => {})
   }, [token])
 
-  function getAssignedUserId(status) {
-    for (const [userId, statuses] of Object.entries(userStatusPermissions)) {
-      if (statuses.includes(status)) return userId
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpenDropdown(null)
     }
-    return ''
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  function getAssignedUserIds(status) {
+    return Object.entries(userStatusPermissions)
+      .filter(([, statuses]) => statuses.includes(status))
+      .map(([userId]) => userId)
   }
 
-  async function confirmAssign() {
-    const { status, newUserId } = pending
-    setPending(null)
+  async function toggleUserForStatus(status, userId) {
+    const isAssigned = (userStatusPermissions[userId] || []).includes(status)
     setSaving((s) => ({ ...s, [status]: true }))
     try {
-      const prevUserId = getAssignedUserId(status)
-      if (prevUserId && prevUserId !== newUserId) {
-        const prevStatuses = (userStatusPermissions[prevUserId] || []).filter((s) => s !== status)
-        await updateUserStatusPermissions(prevUserId, prevStatuses)
-      }
-      if (newUserId) {
-        const nextStatuses = [...new Set([...(userStatusPermissions[newUserId] || []), status])]
-        await updateUserStatusPermissions(newUserId, nextStatuses)
+      if (isAssigned) {
+        const next = (userStatusPermissions[userId] || []).filter((s) => s !== status)
+        await updateUserStatusPermissions(userId, next)
+      } else {
+        const next = [...new Set([...(userStatusPermissions[userId] || []), status])]
+        await updateUserStatusPermissions(userId, next)
       }
     } finally {
       setSaving((s) => ({ ...s, [status]: false }))
     }
   }
 
-  const pendingUser = pending ? users.find((u) => u.id === pending.newUserId) : null
-
   return (
     <div>
       <p className="text-sm text-text-muted mb-6">
-        Configure which user can advance orders from each status to the next.
+        Configure which employees can advance orders from each status to the next.
       </p>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4" ref={dropdownRef}>
         {STATUS_KEYS.map((status) => {
-          const assignedUserId = getAssignedUserId(status)
+          const assignedIds = getAssignedUserIds(status)
+          const assignedUsers = users.filter((u) => assignedIds.includes(u.id))
+          const isOpen = openDropdown === status
           return (
-            <div key={status} className="bg-surface-container-lowest rounded-xl border border-theme-border overflow-hidden">
+            <div key={status} className="bg-surface-container-lowest rounded-xl border border-theme-border overflow-visible">
               <div className="px-4 py-3 border-b border-theme-border flex items-center gap-2">
                 <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${orderStatusColor[status] || 'bg-surface-container-high text-text-muted'}`}>
                   {status}
                 </span>
-              </div>
-              <div className="px-4 py-3 flex items-center gap-2">
-                <select
-                  value={assignedUserId}
-                  onChange={(e) => setPending({ status, newUserId: e.target.value })}
-                  disabled={!!saving[status]}
-                  className="flex-1 text-sm bg-surface-container border border-theme-border rounded-lg px-3 py-2 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">— Unassigned —</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}{user.role === 'admin' ? ' (Admin)' : user.department ? ` (${user.department})` : ''}
-                    </option>
-                  ))}
-                </select>
                 {saving[status] && (
-                  <span className="material-symbols-outlined text-sm text-text-muted animate-spin">progress_activity</span>
+                  <span className="material-symbols-outlined text-sm text-text-muted animate-spin ml-auto">progress_activity</span>
                 )}
+              </div>
+              <div className="px-4 py-3 space-y-2">
+                {/* Assigned user chips */}
+                {assignedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {assignedUsers.map((u) => (
+                      <span
+                        key={u.id}
+                        className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full"
+                      >
+                        {u.name}
+                        <button
+                          onClick={() => toggleUserForStatus(status, u.id)}
+                          disabled={!!saving[status]}
+                          className="hover:text-error transition disabled:opacity-40"
+                        >
+                          <span className="material-symbols-outlined text-xs leading-none">close</span>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add employee dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(isOpen ? null : status)}
+                    disabled={!!saving[status]}
+                    className="flex items-center gap-1.5 text-xs text-text-muted hover:text-primary border border-dashed border-theme-border rounded-lg px-3 py-1.5 w-full justify-center hover:border-primary transition disabled:opacity-40"
+                  >
+                    <span className="material-symbols-outlined text-sm">person_add</span>
+                    Add employee
+                  </button>
+                  {isOpen && (
+                    <div className="absolute left-0 top-full mt-1 z-30 bg-surface-container-lowest border border-theme-border rounded-xl shadow-xl w-full min-w-[200px] max-h-52 overflow-y-auto">
+                      {users.length === 0 && (
+                        <p className="text-xs text-text-muted px-3 py-2">No users found</p>
+                      )}
+                      {users.map((u) => {
+                        const checked = assignedIds.includes(u.id)
+                        return (
+                          <label
+                            key={u.id}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-hover-bg cursor-pointer transition"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleUserForStatus(status, u.id)}
+                              className="w-3.5 h-3.5 accent-primary"
+                            />
+                            <span className="text-sm text-on-surface flex-1">{u.name}</span>
+                            <span className="text-xs text-text-muted">
+                              {u.role === 'admin' ? 'Admin' : u.department || ''}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )
         })}
       </div>
-
-      {/* Confirmation modal */}
-      {pending && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-container-low rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
-            <h3 className="text-base font-semibold text-on-surface mb-2">Confirm Assignment</h3>
-            <p className="text-sm text-text-muted mb-1">
-              Assign <span className="font-semibold text-on-surface">{pendingUser ? pendingUser.name : 'Unassigned'}</span> to the{' '}
-              <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${orderStatusColor[pending.status] || 'bg-surface-container-high text-text-muted'}`}>
-                {pending.status}
-              </span>{' '}
-              status?
-            </p>
-            <div className="flex gap-3 mt-5">
-              <button
-                onClick={() => setPending(null)}
-                className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmAssign}
-                className="flex-1 bg-primary text-on-primary rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
