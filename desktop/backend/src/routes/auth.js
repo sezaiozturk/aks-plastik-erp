@@ -124,6 +124,24 @@ router.delete('/users/:id', authenticate, adminOnly, async (req, res) => {
   }
 })
 
+// PATCH change password — authenticated user changes their own password
+router.patch('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'currentPassword and newPassword are required' })
+    }
+
+    const valid = await kc.verifyPassword(req.user.email, currentPassword)
+    if (!valid) return res.status(401).json({ error: 'Current password is incorrect' })
+
+    await kc.changePassword(req.user.email, newPassword)
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // POST send password reset email via Keycloak
 router.post('/users/:id/reset-password', authenticate, adminOnly, async (req, res) => {
   try {

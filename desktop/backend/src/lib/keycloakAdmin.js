@@ -100,4 +100,42 @@ async function sendPasswordResetEmail(email) {
   if (!res.ok) throw new Error('Failed to send password reset email')
 }
 
-module.exports = { createUser, updateUser, deleteUser, sendPasswordResetEmail }
+// Verifies current password via Keycloak direct grant (requires Direct Access Grants enabled on aks-erp client)
+async function verifyPassword(email, password) {
+  const res = await fetch(`${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'password',
+      client_id: 'aks-erp',
+      username: email,
+      password,
+    }).toString(),
+  })
+  if (res.ok) return true
+  const body = await res.json().catch(() => ({}))
+  // If Direct Access Grants is disabled on the client, Keycloak returns unauthorized_client.
+  // Throw so the caller can surface a useful error instead of "wrong password".
+  if (body.error === 'unauthorized_client') {
+    throw new Error('Direct Access Grants is not enabled on the aks-erp Keycloak client')
+  }
+  return false
+}
+
+async function changePassword(email, newPassword) {
+  const token = await getAdminToken()
+  const kcUser = await findUserByEmail(email, token)
+  if (!kcUser) throw new Error('User not found in Keycloak')
+
+  const res = await fetch(`${ADMIN_BASE}/users/${kcUser.id}/reset-password`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ type: 'password', value: newPassword, temporary: false }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Failed to update password: ${text}`)
+  }
+}
+
+module.exports = { createUser, updateUser, deleteUser, sendPasswordResetEmail, verifyPassword, changePassword }
