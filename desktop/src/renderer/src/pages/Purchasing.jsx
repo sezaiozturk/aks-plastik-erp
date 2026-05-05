@@ -349,6 +349,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
   const selectedQuote = quotations.find((q) => q.selected)
   const isTerminal = TERMINAL.includes(r.status)
   const isAdmin = user?.role === 'admin'
+  const canEditDelete = isAdmin || (canCreateEdit && r.status === 'Request')
   const canAdvanceFromCurrent = isAdmin || (userPurchasingStatusPermissions[user?.id] || []).includes(r.status)
 
   function nextStatus() {
@@ -407,8 +408,8 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
               </span>
             </div>
             <div className="flex items-center gap-1">
-              {canCreateEdit && <button onClick={onEdit} className="text-text-muted hover:text-primary transition p-1 rounded-lg hover:bg-hover-bg" title="Edit"><span className="material-symbols-outlined text-sm">edit</span></button>}
-              <button onClick={onDelete} className="text-text-muted hover:text-error transition p-1 rounded-lg hover:bg-hover-bg" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>
+              {canEditDelete && <button onClick={onEdit} className="text-text-muted hover:text-primary transition p-1 rounded-lg hover:bg-hover-bg" title="Edit"><span className="material-symbols-outlined text-sm">edit</span></button>}
+              {canEditDelete && <button onClick={onDelete} className="text-text-muted hover:text-error transition p-1 rounded-lg hover:bg-hover-bg" title="Delete"><span className="material-symbols-outlined text-sm">delete</span></button>}
               <button onClick={onClose} className="text-text-muted hover:text-error p-1 rounded-lg hover:bg-hover-bg"><span className="material-symbols-outlined">close</span></button>
             </div>
           </div>
@@ -671,12 +672,14 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
         <div className="bg-surface-container-lowest border-t border-theme-border px-6 py-4 flex items-center gap-3 rounded-b-2xl">
           {!isTerminal && (
             <>
-              <button
-                onClick={() => onUpdate({ status: 'Cancelled' })}
-                className="px-4 py-2 rounded-lg border border-error/30 text-error text-xs font-semibold hover:bg-error/5 transition"
-              >
-                Cancel Request
-              </button>
+              {canCreateEdit && (
+                <button
+                  onClick={() => onUpdate({ status: 'Cancelled' })}
+                  className="px-4 py-2 rounded-lg border border-error/30 text-error text-xs font-semibold hover:bg-error/5 transition"
+                >
+                  Cancel Request
+                </button>
+              )}
               <div className="flex-1" />
               <button
                 disabled={!canAdvance()}
