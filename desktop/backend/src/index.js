@@ -27,6 +27,7 @@ const proxyRoutes = require('./routes/proxy')
 const purchasingRoutes = require('./routes/purchasing')
 const userStatusPermissionRoutes = require('./routes/userStatusPermissions')
 const userPurchasingStatusPermissionRoutes = require('./routes/userPurchasingStatusPermissions')
+const syncRoutes = require('./routes/sync')
 const app = express()
 const PORT = process.env.PORT || 3001
 
@@ -61,6 +62,7 @@ app.use('/api/proxy', authenticate, proxyRoutes)
 app.use('/api/purchasing', authenticate, purchasingRoutes)
 app.use('/api/user-status-permissions', authenticate, userStatusPermissionRoutes)
 app.use('/api/user-purchasing-status-permissions', authenticate, userPurchasingStatusPermissionRoutes)
+app.use('/api/sync', authenticate, syncRoutes)
 
 app.listen(PORT, () => {
   console.log(`AKS ERP API running on http://localhost:${PORT}`)

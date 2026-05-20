@@ -32,6 +32,15 @@ export function DataProvider({ children }) {
       .then((data) => { setCustomers(data); setReady(true) })
       .catch(() => setReady(true))
   }, [token])
+
+  // On startup: sync customers from external ERP, then refresh the list
+  useEffect(() => {
+    if (!token) return
+    fetch(`${API_URL}/sync/customers`, { method: 'POST', headers })
+      .then(() => refreshCustomers())
+      .catch(() => refreshCustomers())
+  }, [token])
+
   useEffect(() => { refreshCustomers() }, [token])
 
   const refreshReports = useCallback(() => {

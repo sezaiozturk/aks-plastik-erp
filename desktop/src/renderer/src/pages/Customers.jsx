@@ -23,6 +23,12 @@ const emptyForm = {
   taxId: '',
   taxOffice: '',
   country: '',
+  ticaretSicil: '',
+  mersisNo: '',
+  bolge: '',
+  cariTip: '',
+  istatistikGrup: '',
+  mukellefTipi: 'Vergi Mükellefi',
   // Address
   address: '',
   city: '',
@@ -52,6 +58,11 @@ const emptyForm = {
   paymentTerms: '',
   // Contact Person
   contactName: '',
+  contactPersonPhone: '',
+  contactPersonEmail: '',
+  contactNamePurchasing: '',
+  contactPersonPhonePurchasing: '',
+  contactPersonEmailPurchasing: '',
   contactPhone: '',
   contactEmail: '',
   contactPosition: '',
@@ -65,7 +76,7 @@ const emptyForm = {
 
 const TAB_DEFS = [
   { id: 'identity',  label: 'Identity',   icon: 'badge'                   },
-  { id: 'address',   label: 'Address',    icon: 'location_on'             },
+  { id: 'address',   label: 'Customer Address and Contact', icon: 'location_on' },
   { id: 'tax',       label: 'Tax & Docs', icon: 'receipt_long'            },
   { id: 'financial', label: 'Financial',  icon: 'account_balance_wallet'  },
   { id: 'contact',   label: 'Contact',    icon: 'contact_phone'           },
@@ -83,9 +94,33 @@ function getTabFields(tabId, form) {
           ? [{ id: 'fullName', label: 'Full Name', icon: 'person', type: 'text', col: 2, placeholder: 'e.g. John Doe' }]
           : [{ id: 'companyName', label: 'Company Name', icon: 'business', type: 'text', col: 2, placeholder: 'e.g. Acme Corporation' }]
         ),
-        { id: 'taxId', label: 'Tax Identification No. (TIN / TCKN)', icon: 'fingerprint', type: 'text', col: 2, placeholder: 'e.g. 1234567890' },
+        {
+          id: 'mukellefTipi', label: 'Mükellef Tipi', icon: 'gavel', type: 'radio', col: 2,
+          options: [
+            { value: 'Vergi Mükellefi', label: 'Vergi Mükellefidir' },
+            { value: 'Şahıs', label: 'Şahıstır' },
+          ],
+        },
+        {
+          id: 'taxId', label: 'Tax Identification No. (TIN / TCKN)', icon: 'fingerprint', type: 'text', col: 2,
+          placeholder: form.mukellefTipi === 'Şahıs' ? '11 haneli TCKN' : '10 haneli vergi numarası',
+          maxLength: form.mukellefTipi === 'Şahıs' ? 11 : 10,
+        },
         { id: 'taxOffice', label: 'Tax Office', icon: 'account_balance', type: 'text', col: 1, placeholder: 'Tax office name' },
         { id: 'country', label: 'Country', icon: 'public', type: 'text', col: 1, placeholder: 'e.g. Turkey' },
+        { id: 'ticaretSicil', label: 'Ticaret Sicil No', icon: 'receipt', type: 'text', col: 1, placeholder: 'Ticaret sicil numarası' },
+        { id: 'mersisNo', label: 'Mersis No', icon: 'pin', type: 'text', col: 1, placeholder: 'Mersis numarası' },
+        { id: 'bolge', label: 'Bölge', icon: 'travel_explore', type: 'text', col: 1, placeholder: 'Bölge adı' },
+        {
+          id: 'cariTip', label: 'Cari Tip', icon: 'person_search', type: 'select', col: 1,
+          options: [
+            { value: '', label: 'Seçiniz...' },
+            { value: 'Alıcı', label: 'Alıcı' },
+            { value: 'Satıcı', label: 'Satıcı' },
+            { value: 'Alıcı/Satıcı', label: 'Alıcı/Satıcı' },
+          ],
+        },
+        { id: 'istatistikGrup', label: 'İstatistik Grup', icon: 'bar_chart', type: 'text', col: 2, placeholder: 'İstatistik grup adı' },
       ]
     case 'address':
       return [
@@ -94,7 +129,9 @@ function getTabFields(tabId, form) {
         { id: 'district', label: 'District', icon: 'map', type: 'text', col: 1, placeholder: 'District / Neighbourhood' },
         { id: 'postalCode', label: 'Postal Code', icon: 'markunread_mailbox', type: 'text', col: 1, placeholder: 'ZIP / Postal code' },
         { id: 'phone', label: 'Phone Number', icon: 'phone', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
-        { id: 'email', label: 'Email Address', icon: 'mail', type: 'email', col: 2, placeholder: 'info@company.com' },
+        { id: 'email', label: 'Email Address', icon: 'mail', type: 'email', col: 1, placeholder: 'info@company.com' },
+        { id: 'contactPhone', label: 'Customer Phone Number', icon: 'smartphone', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
+        { id: 'contactEmail', label: 'Customer Email Address', icon: 'alternate_email', type: 'email', col: 1, placeholder: 'info@company.com' },
       ]
     case 'tax':
       return [
@@ -140,10 +177,12 @@ function getTabFields(tabId, form) {
       ]
     case 'contact':
       return [
-        { id: 'contactName', label: 'Contact Person Name', icon: 'person', type: 'text', col: 2, placeholder: 'Full name' },
-        { id: 'contactPhone', label: 'Phone Number', icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
-        { id: 'contactEmail', label: 'Email Address', icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: 'person@company.com' },
-        { id: 'contactPosition', label: 'Position / Department', icon: 'work', type: 'text', col: 2, placeholder: 'e.g. Sales Manager' },
+        { id: 'contactName', label: 'Contact Person Name (Finance)', icon: 'person', type: 'text', col: 2, placeholder: 'Full name' },
+        { id: 'contactPersonPhone', label: 'Contact Person Phone (Finance)', icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
+        { id: 'contactPersonEmail', label: 'Contact Person Email (Finance)', icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: 'person@company.com' },
+        { id: 'contactNamePurchasing', label: 'Contact Person Name (Purchasing)', icon: 'person', type: 'text', col: 2, placeholder: 'Full name' },
+        { id: 'contactPersonPhonePurchasing', label: 'Contact Person Phone (Purchasing)', icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
+        { id: 'contactPersonEmailPurchasing', label: 'Contact Person Email (Purchasing)', icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: 'person@company.com' },
         { id: '_div_opt', label: 'Optional Fields', icon: 'tune', type: 'divider', col: 2 },
         { id: 'industry', label: 'Industry / Sector', icon: 'factory', type: 'text', col: 1, placeholder: 'e.g. Manufacturing' },
         {
@@ -160,7 +199,7 @@ function getTabFields(tabId, form) {
 }
 
 function FieldInput({ field, value, onChange, error }) {
-  const { id, label, icon, type, placeholder, options } = field
+  const { id, label, icon, type, placeholder, options, maxLength } = field
 
   if (type === 'divider') {
     return (
@@ -171,6 +210,36 @@ function FieldInput({ field, value, onChange, error }) {
           {label}
         </span>
         <div className="flex-1 h-px bg-surface-container-high" />
+      </div>
+    )
+  }
+
+  if (type === 'radio') {
+    return (
+      <div>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">
+          {label}
+        </label>
+        <div className="flex gap-2">
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onChange(o.value)}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${
+                value === o.value
+                  ? 'bg-primary/10 ring-2 ring-primary text-primary'
+                  : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                {value === o.value ? 'radio_button_checked' : 'radio_button_unchecked'}
+              </span>
+              <span className="text-sm font-semibold">{o.label}</span>
+            </button>
+          ))}
+        </div>
+        {error && <p className="text-[10px] text-error font-medium mt-1">{error}</p>}
       </div>
     )
   }
@@ -261,6 +330,7 @@ function FieldInput({ field, value, onChange, error }) {
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          maxLength={maxLength}
           className="bg-transparent border-none outline-none text-sm text-on-surface w-full placeholder-slate-400"
         />
       </div>
@@ -286,7 +356,14 @@ function AddCustomerModal({ onClose, onSave }) {
     if (!form.phone.trim()) e.phone = 'Required'
     else if (!/^[+\d\s\-().]{7,}$/.test(form.phone)) e.phone = 'Invalid phone number'
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email address'
+    if (form.contactPersonEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactPersonEmail)) e.contactPersonEmail = 'Invalid email'
+    if (form.contactPersonEmailPurchasing.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactPersonEmailPurchasing)) e.contactPersonEmailPurchasing = 'Invalid email'
     if (form.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) e.contactEmail = 'Invalid email'
+    if (form.taxId.trim()) {
+      const expected = form.mukellefTipi === 'Şahıs' ? 11 : 10
+      if (!/^\d+$/.test(form.taxId) || form.taxId.length !== expected)
+        e.taxId = `${expected} haneli rakam giriniz`
+    }
     return e
   }
 
@@ -602,6 +679,12 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
     taxId:           customer.taxId           || '',
     taxOffice:       customer.taxOffice       || '',
     country:         customer.country         || '',
+    ticaretSicil:    customer.ticaretSicil    || '',
+    mersisNo:        customer.mersisNo        || '',
+    bolge:           customer.bolge           || '',
+    cariTip:         customer.cariTip         || '',
+    istatistikGrup:  customer.istatistikGrup  || '',
+    mukellefTipi:    customer.mukellefTipi    || 'Vergi Mükellefi',
     address:         customer.address         || '',
     city:            customer.city            || '',
     district:        customer.district        || '',
@@ -624,10 +707,15 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
     invoiceType:     customer.invoiceType     || '',
     paymentMethod:   customer.paymentMethod   || '',
     paymentTerms:    customer.paymentTerms    || '',
-    contactName:     customer.contactName     || '',
-    contactPhone:    customer.contactPhone    || '',
-    contactEmail:    customer.contactEmail    || '',
-    contactPosition: customer.contactPosition || '',
+    contactName:                  customer.contactName                  || '',
+    contactPersonPhone:           customer.contactPersonPhone           || '',
+    contactPersonEmail:           customer.contactPersonEmail           || '',
+    contactNamePurchasing:        customer.contactNamePurchasing        || '',
+    contactPersonPhonePurchasing: customer.contactPersonPhonePurchasing || '',
+    contactPersonEmailPurchasing: customer.contactPersonEmailPurchasing || '',
+    contactPhone:                 customer.contactPhone                 || '',
+    contactEmail:        customer.contactEmail        || '',
+    contactPosition:     customer.contactPosition     || '',
     industry:        customer.industry        || '',
     customerCategory: customer.customerCategory || '',
     salesRepName:    customer.salesRepName    || '',
@@ -643,7 +731,14 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
     if (!name.trim()) e[form.customerType === 'Individual' ? 'fullName' : 'companyName'] = 'Required'
     if (form.phone.trim() && !/^[+\d\s\-().]{7,}$/.test(form.phone)) e.phone = 'Invalid phone number'
     if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email'
+    if (form.contactPersonEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactPersonEmail)) e.contactPersonEmail = 'Invalid email'
+    if (form.contactPersonEmailPurchasing.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactPersonEmailPurchasing)) e.contactPersonEmailPurchasing = 'Invalid email'
     if (form.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) e.contactEmail = 'Invalid email'
+    if (form.taxId.trim()) {
+      const expected = form.mukellefTipi === 'Şahıs' ? 11 : 10
+      if (!/^\d+$/.test(form.taxId) || form.taxId.length !== expected)
+        e.taxId = `${expected} haneli rakam giriniz`
+    }
     return e
   }
 
@@ -664,6 +759,12 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
       taxId:           customer.taxId           || '',
       taxOffice:       customer.taxOffice       || '',
       country:         customer.country         || '',
+      ticaretSicil:    customer.ticaretSicil    || '',
+      mersisNo:        customer.mersisNo        || '',
+      bolge:           customer.bolge           || '',
+      cariTip:         customer.cariTip         || '',
+      istatistikGrup:  customer.istatistikGrup  || '',
+      mukellefTipi:    customer.mukellefTipi    || 'Vergi Mükellefi',
       address:         customer.address         || '',
       city:            customer.city            || '',
       district:        customer.district        || '',
@@ -804,7 +905,13 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                   <DetailRow icon="person"    label="Full Name"         value={customer.fullName} />
                 )}
                 <DetailRow icon="fingerprint" label="Tax ID (TIN/TCKN)" value={customer.taxId} />
+                <DetailRow icon="gavel"          label="Mükellef Tipi" value={customer.mukellefTipi || 'Vergi Mükellefi'} />
                 <DetailRow icon="account_balance" label="Tax Office"    value={customer.taxOffice} />
+                <DetailRow icon="receipt"        label="Ticaret Sicil No" value={customer.ticaretSicil} />
+                <DetailRow icon="pin"            label="Mersis No"        value={customer.mersisNo} />
+                <DetailRow icon="travel_explore" label="Bölge"            value={customer.bolge} />
+                <DetailRow icon="person_search"  label="Cari Tip"         value={customer.cariTip} />
+                <DetailRow icon="bar_chart"      label="İstatistik Grup"  value={customer.istatistikGrup} />
                 <div className="flex items-center gap-3 py-2">
                   <div className="flex-1 h-px bg-surface-container-high" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
@@ -818,8 +925,10 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 <DetailRow icon="map"                label="District"     value={customer.district} />
                 <DetailRow icon="markunread_mailbox" label="Postal Code"  value={customer.postalCode} />
                 <DetailRow icon="public"             label="Country"      value={customer.country} />
-                <DetailRow icon="phone"              label="Phone"        value={customer.phone} />
-                <DetailRow icon="mail"               label="Email"        value={customer.email} />
+                <DetailRow icon="phone"              label="Phone"                  value={customer.phone} />
+                <DetailRow icon="mail"               label="Email"                  value={customer.email} />
+                <DetailRow icon="smartphone"         label="Customer Phone Number"  value={customer.contactPhone} />
+                <DetailRow icon="alternate_email"    label="Customer Email Address" value={customer.contactEmail} />
                 <div className="flex items-center gap-3 py-2">
                   <div className="flex-1 h-px bg-surface-container-high" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
@@ -860,10 +969,12 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                   </span>
                   <div className="flex-1 h-px bg-surface-container-high" />
                 </div>
-                <DetailRow icon="person"           label="Contact Name"     value={customer.contactName} />
-                <DetailRow icon="phone_in_talk"    label="Contact Phone"    value={customer.contactPhone} />
-                <DetailRow icon="forward_to_inbox" label="Contact Email"    value={customer.contactEmail} />
-                <DetailRow icon="work"             label="Position / Dept." value={customer.contactPosition} />
+                <DetailRow icon="person"           label="Contact Person Name (Finance)" value={customer.contactName} />
+                <DetailRow icon="phone_in_talk"    label="Contact Person Phone (Finance)"        value={customer.contactPersonPhone} />
+                <DetailRow icon="forward_to_inbox" label="Contact Person Email (Finance)"        value={customer.contactPersonEmail} />
+                <DetailRow icon="person"           label="Contact Person Name (Purchasing)" value={customer.contactNamePurchasing} />
+                <DetailRow icon="phone_in_talk"    label="Contact Person Phone (Purchasing)" value={customer.contactPersonPhonePurchasing} />
+                <DetailRow icon="forward_to_inbox" label="Contact Person Email (Purchasing)" value={customer.contactPersonEmailPurchasing} />
                 <div className="flex items-center gap-3 py-2">
                   <div className="flex-1 h-px bg-surface-container-high" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-1.5">
@@ -1212,6 +1323,12 @@ export default function Customers() {
               taxId:           form.taxId,
               taxOffice:       form.taxOffice,
               country:         form.country,
+              ticaretSicil:    form.ticaretSicil,
+              mersisNo:        form.mersisNo,
+              bolge:           form.bolge,
+              cariTip:         form.cariTip,
+              istatistikGrup:  form.istatistikGrup,
+              mukellefTipi:    form.mukellefTipi,
               address:         form.address,
               city:            form.city,
               district:        form.district,
@@ -1235,10 +1352,15 @@ export default function Customers() {
               invoiceType:     form.invoiceType,
               paymentMethod:   form.paymentMethod,
               paymentTerms:    form.paymentTerms,
-              contactName:     form.contactName,
-              contactPhone:    form.contactPhone,
-              contactEmail:    form.contactEmail,
-              contactPosition: form.contactPosition,
+              contactName:                  form.contactName,
+              contactPersonPhone:           form.contactPersonPhone,
+              contactPersonEmail:           form.contactPersonEmail,
+              contactNamePurchasing:        form.contactNamePurchasing,
+              contactPersonPhonePurchasing: form.contactPersonPhonePurchasing,
+              contactPersonEmailPurchasing: form.contactPersonEmailPurchasing,
+              contactPhone:                 form.contactPhone,
+              contactEmail:       form.contactEmail,
+              contactPosition:    form.contactPosition,
               industry:        form.industry,
               customerCategory: form.customerCategory,
               salesRepName:    form.salesRepName,
@@ -1344,9 +1466,6 @@ export default function Customers() {
                 </td>
                 <td className="px-6 py-5">
                   <div className="font-semibold text-on-surface">{customer.contactName || '—'}</div>
-                  {customer.contactPosition && (
-                    <div className="text-xs text-on-surface-variant">{customer.contactPosition}</div>
-                  )}
                 </td>
                 <td className="px-6 py-5 text-on-surface-variant text-sm font-medium">
                   {[customer.city, customer.country].filter(Boolean).join(', ') || customer.region}

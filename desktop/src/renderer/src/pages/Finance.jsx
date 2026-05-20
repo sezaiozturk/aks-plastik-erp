@@ -11,8 +11,7 @@ const ITEMS_PER_PAGE = 15
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'TRY', 'AED', 'SAR', 'JPY', 'CNY', 'INR', 'CAD', 'AUD']
 
 const INCOME_CATEGORIES = [
-  'Sales Revenue', 'Service Revenue', 'Consulting',
-  'Interest Income', 'Refund Received', 'Other Income',
+  'Sales Revenue', 'Other',
 ]
 const EXPENSE_CATEGORIES = [
   'Salaries & Wages', 'Rent & Lease', 'Utilities', 'Raw Materials',
@@ -29,6 +28,24 @@ const emptyForm = {
   reference: '',
   description: '',
   orderId: '',
+  paymentMethod: '',
+  checkYil: '',
+  checkBanka: '',
+  checkBelgeNo: '',
+  checkVade: '',
+  checkBedel: '',
+  checkCiranta: '',
+  checkCirantaAdi: '',
+  checkKendi: false,
+  checkBorclu: '',
+  checkBorcluVKN: '',
+  checkCekNo: '',
+  checkSubeAdi: '',
+  checkCekHesabi: '',
+  checkIBAN: '',
+  checkYore: '',
+  checkYoreAdi: '',
+  checkAciklama: '',
 }
 
 function fmt(n) {
@@ -47,13 +64,15 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 pb-4 shrink-0">
           <h2 className="text-base font-bold text-on-surface">{title}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error transition">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
+
+        <div className="overflow-y-auto flex-1 px-6 pb-2">
 
         {/* Type toggle */}
         <div className="flex gap-2 mb-4">
@@ -115,9 +134,110 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Invoice / Reference #</label>
-              <input className={inp('reference')} value={form.reference} onChange={set('reference')} placeholder="INV-0001" />
+              <label className="block text-xs font-semibold text-text-muted mb-1">Payment Method</label>
+              <select className={inp('paymentMethod')} value={form.paymentMethod} onChange={set('paymentMethod')}>
+                <option value="">— Select —</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Cash">Cash</option>
+                <option value="Check">Check</option>
+              </select>
             </div>
+          </div>
+          {/* Check fields */}
+          {form.paymentMethod === 'Check' && (
+            <div className="border border-theme-border rounded-xl p-4 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm">receipt</span>
+                Çek Bilgileri
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Yıl</label>
+                  <input className={inp('checkYil')} value={form.checkYil} onChange={set('checkYil')} placeholder="2025" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Banka</label>
+                  <input className={inp('checkBanka')} value={form.checkBanka} onChange={set('checkBanka')} placeholder="Banka adı" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Belge No</label>
+                  <input className={inp('checkBelgeNo')} value={form.checkBelgeNo} onChange={set('checkBelgeNo')} placeholder="Belge numarası" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Çek No.</label>
+                  <input className={inp('checkCekNo')} value={form.checkCekNo} onChange={set('checkCekNo')} placeholder="Çek numarası" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Vade</label>
+                  <input type="date" className={inp('checkVade')} value={form.checkVade} onChange={set('checkVade')} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Bedel</label>
+                  <input type="number" min="0" step="0.01" className={inp('checkBedel')} value={form.checkBedel} onChange={set('checkBedel')} placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Şube Adı</label>
+                  <input className={inp('checkSubeAdi')} value={form.checkSubeAdi} onChange={set('checkSubeAdi')} placeholder="Şube adı" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Çek Hesabı</label>
+                  <input className={inp('checkCekHesabi')} value={form.checkCekHesabi} onChange={set('checkCekHesabi')} placeholder="Hesap no" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-text-muted mb-1">IBAN</label>
+                  <input className={inp('checkIBAN')} value={form.checkIBAN} onChange={set('checkIBAN')} placeholder="TR00 0000 0000 0000 0000 0000 00" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Borçlu</label>
+                  <input className={inp('checkBorclu')} value={form.checkBorclu} onChange={set('checkBorclu')} placeholder="Borçlu adı" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Borçlu VKN</label>
+                  <input className={inp('checkBorcluVKN')} value={form.checkBorcluVKN} onChange={set('checkBorcluVKN')} placeholder="Vergi kimlik no" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Ciranta</label>
+                  <input className={inp('checkCiranta')} value={form.checkCiranta} onChange={set('checkCiranta')} placeholder="Ciranta" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Ciranta Adı</label>
+                  <input className={inp('checkCirantaAdi')} value={form.checkCirantaAdi} onChange={set('checkCirantaAdi')} placeholder="Ciranta adı" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Yöre</label>
+                  <input className={inp('checkYore')} value={form.checkYore} onChange={set('checkYore')} placeholder="Yöre" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Yöre Adı</label>
+                  <input className={inp('checkYoreAdi')} value={form.checkYoreAdi} onChange={set('checkYoreAdi')} placeholder="Yöre adı" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-semibold text-text-muted mb-1">Açıklama</label>
+                  <input className={inp('checkAciklama')} value={form.checkAciklama} onChange={set('checkAciklama')} placeholder="Açıklama" />
+                </div>
+                <div className="col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, checkKendi: !f.checkKendi }))}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all w-full ${
+                      form.checkKendi ? 'bg-primary/10 ring-2 ring-primary' : 'bg-surface-container-high'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-[18px] ${form.checkKendi ? 'text-primary' : 'text-on-surface-variant'}`}>
+                      {form.checkKendi ? 'check_box' : 'check_box_outline_blank'}
+                    </span>
+                    <span className={`text-sm font-semibold ${form.checkKendi ? 'text-primary' : 'text-on-surface-variant'}`}>
+                      Kendi
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">Invoice / Reference #</label>
+            <input className={inp('reference')} value={form.reference} onChange={set('reference')} placeholder="INV-0001" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-text-muted mb-1">Linked Order</label>
@@ -135,7 +255,9 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
           </div>
         </div>
 
-        <div className="flex gap-3 mt-5">
+        </div>{/* end scrollable area */}
+
+        <div className="flex gap-3 p-6 pt-4 border-t border-theme-border shrink-0">
           <button onClick={onClose} className="flex-1 border border-theme-border rounded-xl py-2.5 text-sm text-text-muted hover:bg-hover-bg transition">
             Cancel
           </button>
@@ -450,7 +572,21 @@ export default function Finance() {
 
   function openAdd() { setForm({ ...emptyForm }); setErrors({}); setShowAdd(true) }
   function openEdit(item) {
-    setForm({ type: item.type, category: item.category || 'General', amount: item.amount, currency: item.currency || 'USD', date: item.date, reference: item.reference || '', description: item.description || '', orderId: item.orderId || '' })
+    setForm({
+      type: item.type, category: item.category || 'General', amount: item.amount,
+      currency: item.currency || 'USD', date: item.date, reference: item.reference || '',
+      description: item.description || '', orderId: item.orderId || '',
+      paymentMethod: item.paymentMethod || '',
+      checkYil: item.checkYil || '', checkBanka: item.checkBanka || '',
+      checkBelgeNo: item.checkBelgeNo || '', checkVade: item.checkVade || '',
+      checkBedel: item.checkBedel || '', checkCiranta: item.checkCiranta || '',
+      checkCirantaAdi: item.checkCirantaAdi || '', checkKendi: item.checkKendi || false,
+      checkBorclu: item.checkBorclu || '', checkBorcluVKN: item.checkBorcluVKN || '',
+      checkCekNo: item.checkCekNo || '', checkSubeAdi: item.checkSubeAdi || '',
+      checkCekHesabi: item.checkCekHesabi || '', checkIBAN: item.checkIBAN || '',
+      checkYore: item.checkYore || '', checkYoreAdi: item.checkYoreAdi || '',
+      checkAciklama: item.checkAciklama || '',
+    })
     setErrors({})
     setEditItem(item)
   }
