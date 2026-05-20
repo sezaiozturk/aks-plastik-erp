@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 
@@ -37,6 +38,7 @@ const statusColor = {
 
 // ─── Order Detail Modal ───────────────────────────────────────────────────────
 function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
+  const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
   const subtotal = (order.items || []).reduce(
     (s, it) => s + (parseFloat(it.unitPrice) || 0) * (parseInt(it.quantity) || 0), 0
@@ -52,7 +54,7 @@ function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
           <div>
             <p className="text-xs font-mono text-text-muted mb-1">{order.code}</p>
             <h2 className="text-xl font-bold text-on-surface">{order.customer?.name || '—'}</h2>
-            <p className="text-sm text-text-muted mt-0.5">Sales Rep: {order.salesRep?.name || order.employee?.name || '—'}</p>
+            <p className="text-sm text-text-muted mt-0.5">{t('orders.salesRep')}: {order.salesRep?.name || order.employee?.name || '—'}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusStyle[order.status] || 'bg-surface-container-high text-text-muted'}`}>
@@ -69,11 +71,11 @@ function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-container-high text-text-muted text-xs uppercase tracking-wider">
-                <th className="text-left px-4 py-2.5 font-semibold">Stock No</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Product</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Qty</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Unit Price</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Line Total</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('products.stockNo')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('orders.product')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.qty')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.unitPrice')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.lineTotal')}</th>
               </tr>
             </thead>
             <tbody>
@@ -110,7 +112,7 @@ function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
         {/* Notes */}
         {order.notes && (
           <div className="bg-surface-container-high rounded-xl px-4 py-3 text-sm text-text-muted mb-4">
-            <span className="font-semibold text-on-surface mr-2">Notes:</span>{order.notes}
+            <span className="font-semibold text-on-surface mr-2">{t('common.notes')}:</span>{order.notes}
           </div>
         )}
 
@@ -122,7 +124,7 @@ function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
               className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition"
             >
               <span className="material-symbols-outlined text-base">arrow_forward</span>
-              Mark as {next}
+              {t('orders.markAs', { status: next })}
             </button>
           </div>
         )}
@@ -133,10 +135,10 @@ function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
               Change status to <strong>{next}</strong>?
             </p>
             <button onClick={() => setConfirming(false)} className="text-xs text-text-muted hover:text-on-surface px-2 py-1 rounded transition">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button onClick={() => onAdvance(order.id, next)} className="text-xs font-semibold text-white bg-primary hover:opacity-90 px-3 py-1 rounded-lg transition">
-              Confirm
+              {t('common.confirm')}
             </button>
           </div>
         )}
@@ -147,6 +149,7 @@ function OrderDetailModal({ order, onClose, onAdvance, canAct, canChangeTo }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Logistics() {
+  const { t } = useTranslation()
   const { orders, updateOrder, refreshOrders, statusPermissions } = useData()
   const { isAdmin, user: currentUser } = useAuth()
   const canAct = isAdmin || currentUser?.department === 'Logistic Department'
@@ -204,7 +207,7 @@ export default function Logistics() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Logistics</h1>
+          <h1 className="text-2xl font-bold text-on-surface">{t('logistics.title')}</h1>
           <p className="text-sm text-text-muted mt-0.5">{logisticOrders.length} orders in logistics</p>
         </div>
         <button
@@ -212,7 +215,7 @@ export default function Logistics() {
           className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition"
         >
           <span className="material-symbols-outlined text-base">refresh</span>
-          Refresh
+          {t('common.refresh')}
         </button>
       </div>
 
@@ -238,7 +241,7 @@ export default function Logistics() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
           <input
             className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-            placeholder="Search order, customer, product…"
+            placeholder={t('logistics.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -248,7 +251,7 @@ export default function Logistics() {
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
-          <option value="">All Statuses</option>
+          <option value="">{t('orders.allStatuses')}</option>
           {LOGISTIC_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         {(search || filterStatus) && (
@@ -257,7 +260,7 @@ export default function Logistics() {
             className="flex items-center gap-1 text-xs text-text-muted hover:text-error transition"
           >
             <span className="material-symbols-outlined text-base">close</span>
-            Clear
+            {t('common.clear')}
           </button>
         )}
       </div>
@@ -267,19 +270,19 @@ export default function Logistics() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-4 py-4 font-semibold">Order</th>
-              <th className="text-left px-4 py-4 font-semibold">Customer</th>
-              <th className="text-left px-4 py-4 font-semibold">Products</th>
-              <th className="text-right px-4 py-4 font-semibold">Qty</th>
-              <th className="text-right px-4 py-4 font-semibold">Total</th>
-              <th className="text-left px-4 py-4 font-semibold">Status</th>
-              <th className="text-left px-4 py-4 font-semibold">Date</th>
+              <th className="text-left px-4 py-4 font-semibold">{t('orders.order')}</th>
+              <th className="text-left px-4 py-4 font-semibold">{t('common.customer')}</th>
+              <th className="text-left px-4 py-4 font-semibold">{t('nav.products')}</th>
+              <th className="text-right px-4 py-4 font-semibold">{t('orders.qty')}</th>
+              <th className="text-right px-4 py-4 font-semibold">{t('orders.total')}</th>
+              <th className="text-left px-4 py-4 font-semibold">{t('common.status')}</th>
+              <th className="text-left px-4 py-4 font-semibold">{t('common.date')}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-16 text-text-muted">No orders found</td>
+                <td colSpan={7} className="text-center py-16 text-text-muted">{t('logistics.noData')}</td>
               </tr>
             ) : (
               filtered.map((o) => {

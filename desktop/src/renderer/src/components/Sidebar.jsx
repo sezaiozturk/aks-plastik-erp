@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
@@ -6,25 +7,26 @@ import aksLogoLight from '../assets/aks_logo.png'
 import aksLogoDark from '../assets/aks_logo_dark.png'
 
 const ALL_NAV_ITEMS = [
-  { key: 'dashboard',   to: '/dashboard',   icon: 'dashboard',              label: 'Dashboard' },
-  { key: 'customers',   to: '/customers',   icon: 'groups',                 label: 'Customers' },
-  { key: 'products',    to: '/products',    icon: 'inventory_2',            label: 'Products' },
-  { key: 'orders',      to: '/orders',      icon: 'shopping_cart',          label: 'Orders' },
-  { key: 'work-orders', to: '/work-orders', icon: 'location_on',            label: 'Site Visits' },
-  { key: 'reports',     to: '/reports',     icon: 'analytics',              label: 'Tasks' },
-  { key: 'production',  to: '/production',  icon: 'precision_manufacturing',label: 'Production' },
-  { key: 'maintenance', to: '/maintenance', icon: 'build',                  label: 'Maintenance & Repair' },
-  { key: 'logistics',   to: '/logistics',   icon: 'local_shipping',         label: 'Logistics' },
-  { key: 'purchasing',  to: '/purchasing',  icon: 'shopping_bag',           label: 'Purchasing' },
+  { key: 'dashboard',   to: '/dashboard',   icon: 'dashboard',               tKey: 'nav.dashboard' },
+  { key: 'customers',   to: '/customers',   icon: 'groups',                  tKey: 'nav.customers' },
+  { key: 'products',    to: '/products',    icon: 'inventory_2',             tKey: 'nav.products' },
+  { key: 'orders',      to: '/orders',      icon: 'shopping_cart',           tKey: 'nav.orders' },
+  { key: 'work-orders', to: '/work-orders', icon: 'location_on',             tKey: 'nav.siteVisits' },
+  { key: 'reports',     to: '/reports',     icon: 'analytics',               tKey: 'nav.tasks' },
+  { key: 'production',  to: '/production',  icon: 'precision_manufacturing', tKey: 'nav.production' },
+  { key: 'maintenance', to: '/maintenance', icon: 'build',                   tKey: 'nav.maintenance' },
+  { key: 'logistics',   to: '/logistics',   icon: 'local_shipping',          tKey: 'nav.logistics' },
+  { key: 'purchasing',  to: '/purchasing',  icon: 'shopping_bag',            tKey: 'nav.purchasing' },
 ]
 
 const adminNavItems = [
-  { to: '/finance',   icon: 'account_balance_wallet', label: 'Finance' },
-  { to: '/employees', icon: 'badge',                  label: 'Employees' },
-{ to: '/settings',  icon: 'settings',               label: 'Settings' },
+  { to: '/finance',   icon: 'account_balance_wallet', tKey: 'nav.finance' },
+  { to: '/employees', icon: 'badge',                  tKey: 'nav.employees' },
+  { to: '/settings',  icon: 'settings',               tKey: 'nav.settings' },
 ]
 
 export default function Sidebar() {
+  const { t } = useTranslation()
   const { logout, isAdmin, user } = useAuth()
   const { dark } = useTheme()
   const { permissions } = useData()
@@ -50,7 +52,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="overflow-y-auto space-y-1" style={{ maxHeight: 'calc(10 * 56px)' }}>
-        {items.map(({ to, icon, label }) => (
+        {items.map(({ to, icon, tKey }) => (
           <NavLink
             key={to}
             to={to}
@@ -66,7 +68,7 @@ export default function Sidebar() {
                   {icon}
                 </span>
                 <span className="text-sm font-medium" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                  {label}
+                  {t(tKey)}
                 </span>
               </>
             )}
@@ -82,7 +84,7 @@ export default function Sidebar() {
         >
           <span className="material-symbols-outlined">logout</span>
           <span className="text-sm font-medium" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Log Out
+            {t('nav.logout')}
           </span>
         </button>
       </div>

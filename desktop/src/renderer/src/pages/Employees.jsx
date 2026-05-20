@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import { API_URL } from '../config'
@@ -59,14 +60,14 @@ const emptyForm = {
 }
 
 const TABS = [
-  { id: 'identity',    label: 'Identity',        icon: 'badge'                  },
-  { id: 'contact',     label: 'Contact',          icon: 'contact_phone'          },
-  { id: 'finance',     label: 'Salary & Finance', icon: 'account_balance_wallet' },
-  { id: 'legal',       label: 'SGK & Legal',      icon: 'gavel'                  },
-  { id: 'education',   label: 'Education',        icon: 'school'                 },
-  { id: 'operational', label: 'Docs & System',    icon: 'folder_managed'         },
-  { id: 'job',         label: 'Job Info',         icon: 'work'                   },
-  { id: 'access',      label: 'Access & Role',    icon: 'shield_person'          },
+  { id: 'identity',    labelKey: 'employees.tabIdentity',  icon: 'badge'                  },
+  { id: 'contact',     labelKey: 'employees.tabContact',   icon: 'contact_phone'          },
+  { id: 'finance',     labelKey: 'employees.tabFinance',   icon: 'account_balance_wallet' },
+  { id: 'legal',       labelKey: 'employees.tabLegal',     icon: 'gavel'                  },
+  { id: 'education',   labelKey: 'employees.tabEducation', icon: 'school'                 },
+  { id: 'operational', labelKey: 'employees.tabDocs',      icon: 'folder_managed'         },
+  { id: 'job',         labelKey: 'employees.tabJob',       icon: 'work'                   },
+  { id: 'access',      labelKey: 'employees.tabAccess',    icon: 'shield_person'          },
 ]
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ function DocCheckbox({ label, checked, onChange }) {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveError, employee, allEmployees, onPhotoFileSelected }) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('identity')
   const { roles, permissions, updateRolePermissions, uploadEmployeePhoto } = useData()
   const { token } = useAuth()
@@ -219,18 +221,18 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
 
         {/* Tabs */}
         <div className="flex overflow-x-auto shrink-0 border-b border-theme-border">
-          {TABS.map(t => (
+          {TABS.map(tabItem => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tabItem.id}
+              onClick={() => setTab(tabItem.id)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition -mb-px ${
-                tab === t.id
+                tab === tabItem.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-text-muted hover:text-on-surface'
               }`}
             >
-              <span className="material-symbols-outlined text-sm">{t.icon}</span>
-              {t.label}
+              <span className="material-symbols-outlined text-sm">{tabItem.icon}</span>
+              {t(tabItem.labelKey)}
             </button>
           ))}
         </div>
@@ -354,7 +356,7 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
               <Field label="Salary Type (Maaş Türü)">
                 <select className={inp(errors, 'salaryType')} value={form.salaryType} onChange={set('salaryType')}>
                   <option value="">Select…</option>
-                  {SALARY_TYPES.map(t => <option key={t}>{t}</option>)}
+                  {SALARY_TYPES.map(st => <option key={st}>{st}</option>)}
                 </select>
               </Field>
               <Field label="Premium (Prim)">
@@ -387,7 +389,7 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
               <Field label="Insurance Type (Sigorta Türü)">
                 <select className={inp(errors, 'insuranceType')} value={form.insuranceType} onChange={set('insuranceType')}>
                   <option value="">Select…</option>
-                  {INSURANCE_TYPES.map(t => <option key={t}>{t}</option>)}
+                  {INSURANCE_TYPES.map(ins => <option key={ins}>{ins}</option>)}
                 </select>
               </Field>
               <Field label="Occupation Code (Meslek Kodu)">
@@ -499,7 +501,7 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
               <Field label="Work Type">
                 <select className={inp(errors, 'workType')} value={form.workType} onChange={set('workType')}>
                   <option value="">Select…</option>
-                  {WORK_TYPES.map(t => <option key={t}>{t}</option>)}
+                  {WORK_TYPES.map(wt => <option key={wt}>{wt}</option>)}
                 </select>
               </Field>
               <Field label="Work Location">
@@ -569,13 +571,13 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
                           onClick={() => setConfirmManager(null)}
                           className="flex-1 py-2 rounded-lg border border-theme-border text-sm text-text-muted hover:bg-hover-bg transition"
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                         <button
                           onClick={confirmManagerToggle}
                           className="flex-1 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:opacity-90 transition"
                         >
-                          Confirm
+                          {t('common.confirm')}
                         </button>
                       </div>
                     </div>
@@ -667,10 +669,10 @@ function EmployeeModal({ title, form, setForm, onClose, onSave, errors, saveErro
           {saveError && <p className="text-xs text-error mb-3">{saveError}</p>}
           <div className="flex gap-3">
             <button onClick={onClose} className="flex-1 border border-theme-border rounded-xl py-2.5 text-sm text-text-muted hover:bg-hover-bg transition">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button onClick={onSave} className="flex-1 bg-primary text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition">
-              Save Employee
+              {t('employees.saveEmployee')}
             </button>
           </div>
         </div>
@@ -726,6 +728,7 @@ function formFromEmployee(emp) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Employees() {
+  const { t } = useTranslation()
   const { employees, addEmployee, updateEmployee, deleteEmployee, isAdmin, uploadEmployeePhoto } = useData()
   const pendingPhotoFileRef = useRef(null)
   const [search, setSearch]   = useState('')
@@ -786,7 +789,7 @@ export default function Employees() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this employee?')) return
+    if (!confirm(t('employees.deleteEmployee'))) return
     await deleteEmployee(id)
   }
 
@@ -804,13 +807,13 @@ export default function Employees() {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Employees</h1>
-          <p className="text-sm text-text-muted mt-0.5">{employees.length} total employees</p>
+          <h1 className="text-2xl font-bold text-on-surface">{t('employees.title')}</h1>
+          <p className="text-sm text-text-muted mt-0.5">{t('employees.totalEmployees', { count: employees.length })}</p>
         </div>
         {isAdmin && (
           <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
             <span className="material-symbols-outlined text-base">add</span>
-            Add Employee
+            {t('employees.addEmployee')}
           </button>
         )}
       </div>
@@ -820,7 +823,7 @@ export default function Employees() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
           <input
             className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-            placeholder="Search employees…"
+            placeholder={t('employees.searchPlaceholder')}
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
@@ -831,13 +834,13 @@ export default function Employees() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-6 py-4 font-semibold">Employee</th>
-              <th className="text-left px-6 py-4 font-semibold">Department</th>
-              <th className="text-left px-6 py-4 font-semibold">Position</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('employees.title')}</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('employees.department')}</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('employees.position')}</th>
               <th className="text-left px-6 py-4 font-semibold">Contact</th>
               <th className="text-left px-6 py-4 font-semibold">Supervisor</th>
-              <th className="text-left px-6 py-4 font-semibold">Status</th>
-              {isAdmin && <th className="text-right px-6 py-4 font-semibold">Actions</th>}
+              <th className="text-left px-6 py-4 font-semibold">{t('common.status')}</th>
+              {isAdmin && <th className="text-right px-6 py-4 font-semibold">{t('common.actions')}</th>}
             </tr>
           </thead>
           <tbody>
@@ -845,7 +848,7 @@ export default function Employees() {
               <tr>
                 <td colSpan={isAdmin ? 7 : 6} className="text-center py-16 text-text-muted">
                   <span className="material-symbols-outlined text-4xl block mb-2 opacity-30">badge</span>
-                  No employees found
+                  {t('employees.noEmployees')}
                 </td>
               </tr>
             ) : (
@@ -903,9 +906,9 @@ export default function Employees() {
         <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
           <span>{filtered.length} employees</span>
           <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.prev')}</button>
             <span className="px-3 py-1.5">{page} / {totalPages}</span>
-            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
+            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.next')}</button>
           </div>
         </div>
       )}
@@ -952,7 +955,7 @@ export default function Employees() {
                         onClick={() => { setViewEmployee(null); openEdit(viewEmployee) }}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition"
                       >
-                        <span className="material-symbols-outlined text-sm">edit</span>Edit
+                        <span className="material-symbols-outlined text-sm">edit</span>{t('common.edit')}
                       </button>
                     )}
                     <button onClick={() => setViewEmployee(null)} className="p-1.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition">
@@ -1054,7 +1057,7 @@ export default function Employees() {
               {/* Footer */}
               <div className="px-6 py-4 border-t border-theme-border shrink-0">
                 <button onClick={() => setViewEmployee(null)} className="w-full py-2.5 rounded-xl primary-gradient text-white text-sm font-bold hover:opacity-90 transition">
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </div>
@@ -1063,13 +1066,13 @@ export default function Employees() {
       })()}
 
       {showAdd && (
-        <EmployeeModal title="Add Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
+        <EmployeeModal title={t('employees.addEmployee')} form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => { setShowAdd(false); pendingPhotoFileRef.current = null }} onSave={handleAdd}
           employee={null} allEmployees={employees}
           onPhotoFileSelected={(file) => { pendingPhotoFileRef.current = file }} />
       )}
       {editItem && (
-        <EmployeeModal title="Edit Employee" form={form} setForm={setForm} errors={errors} saveError={saveError}
+        <EmployeeModal title={t('employees.editEmployee')} form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => setEditItem(null)} onSave={handleEdit} employee={editItem} allEmployees={employees} />
       )}
     </div>

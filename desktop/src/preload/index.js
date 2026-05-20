@@ -39,4 +39,21 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('stm32:log', handler)
     return () => ipcRenderer.removeListener('stm32:log', handler)
   },
+  // Auto-updater
+  onUpdateAvailable: (cb) => {
+    const handler = (_, info) => cb(info)
+    ipcRenderer.on('updater:update-available', handler)
+    return () => ipcRenderer.removeListener('updater:update-available', handler)
+  },
+  onDownloadProgress: (cb) => {
+    const handler = (_, p) => cb(p)
+    ipcRenderer.on('updater:download-progress', handler)
+    return () => ipcRenderer.removeListener('updater:download-progress', handler)
+  },
+  onUpdateDownloaded: (cb) => {
+    const handler = (_, info) => cb(info)
+    ipcRenderer.on('updater:update-downloaded', handler)
+    return () => ipcRenderer.removeListener('updater:update-downloaded', handler)
+  },
+  installUpdate: () => ipcRenderer.invoke('updater:install'),
 })

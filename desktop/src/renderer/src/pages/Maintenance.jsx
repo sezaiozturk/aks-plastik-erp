@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
 const MAINTENANCE_TYPES = ['Preventive', 'Corrective', 'Predictive', 'Emergency']
@@ -14,6 +15,7 @@ const statusColor = {
 
 // ─── Month Detail Popup ──────────────────────────────────────────────────────
 function MonthDetailPopup({ machine, year, month, onClose }) {
+  const { t } = useTranslation()
   const { addMonthlyTask, updateMonthlyTask, deleteMonthlyTask } = useData()
   const [newTask, setNewTask] = useState('')
   const [adding, setAdding] = useState(false)
@@ -89,8 +91,8 @@ function MonthDetailPopup({ machine, year, month, onClose }) {
                   </div>
                   {deletingId === t.id ? (
                     <span className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => handleDelete(t.id)} className="text-xs font-semibold text-white bg-error px-2 py-0.5 rounded transition">Yes</button>
-                      <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1">No</button>
+                      <button onClick={() => handleDelete(t.id)} className="text-xs font-semibold text-white bg-error px-2 py-0.5 rounded transition">{t('common.yes')}</button>
+                      <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1">{t('common.no')}</button>
                     </span>
                   ) : (
                     <button onClick={() => setDeletingId(t.id)} className="text-text-muted hover:text-error transition shrink-0">
@@ -120,7 +122,7 @@ function MonthDetailPopup({ machine, year, month, onClose }) {
               className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-40"
             >
               <span className="material-symbols-outlined text-base">add</span>
-              {adding ? 'Adding…' : 'Add'}
+              {adding ? 'Adding…' : t('common.add')}
             </button>
           </div>
         </div>
@@ -131,6 +133,7 @@ function MonthDetailPopup({ machine, year, month, onClose }) {
 
 // ─── Monthly Schedule Tab ────────────────────────────────────────────────────
 function MonthlyScheduleTab({ machine }) {
+  const { t } = useTranslation()
   const { addMonthlyTask, updateMonthlyTask, isAdmin } = useData()
   const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear())
   const [detailMonth, setDetailMonth] = useState(null)
@@ -266,7 +269,7 @@ function MonthlyScheduleTab({ machine }) {
                     }}
                     placeholder="Task…"
                   />
-                  <button onClick={() => handleQuickAdd(month)} disabled={!newTaskText.trim()} className="text-xs text-primary font-semibold px-1 disabled:opacity-40">Add</button>
+                  <button onClick={() => handleQuickAdd(month)} disabled={!newTaskText.trim()} className="text-xs text-primary font-semibold px-1 disabled:opacity-40">{t('common.add')}</button>
                 </div>
               )}
             </div>
@@ -289,6 +292,7 @@ function MonthlyScheduleTab({ machine }) {
 
 // ─── Maintenance History Tab ─────────────────────────────────────────────────
 function MaintenanceHistoryTab({ machine }) {
+  const { t } = useTranslation()
   const { addMaintenanceRecord, deleteMaintenanceRecord, isAdmin } = useData()
   const [mForm, setMForm] = useState({ date: '', type: 'Preventive', description: '', technician: '', cost: '', currency: 'USD', nextDue: '' })
   const [mSaving, setMSaving] = useState(false)
@@ -313,20 +317,20 @@ function MaintenanceHistoryTab({ machine }) {
       {/* Add record form */}
       {isAdmin && (
         <div className="bg-surface-container-high rounded-xl p-4 mb-5">
-          <p className="text-xs font-semibold text-text-muted mb-3">Add Maintenance Record</p>
+          <p className="text-xs font-semibold text-text-muted mb-3">{t('maintenance.newRecord')}</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-text-muted mb-1">Date <span className="text-error">*</span></label>
+              <label className="block text-xs text-text-muted mb-1">{t('common.date')} <span className="text-error">*</span></label>
               <input type="date" className={inp()} value={mForm.date} onChange={(e) => setMForm((f) => ({ ...f, date: e.target.value }))} />
             </div>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Type</label>
+              <label className="block text-xs text-text-muted mb-1">{t('maintenance.type')}</label>
               <select className={inp()} value={mForm.type} onChange={(e) => setMForm((f) => ({ ...f, type: e.target.value }))}>
-                {MAINTENANCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                {MAINTENANCE_TYPES.map((typ) => <option key={typ} value={typ}>{typ}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Technician</label>
+              <label className="block text-xs text-text-muted mb-1">{t('maintenance.technician')}</label>
               <input className={inp()} value={mForm.technician} onChange={(e) => setMForm((f) => ({ ...f, technician: e.target.value }))} placeholder="Name or company" />
             </div>
             <div>
@@ -339,11 +343,11 @@ function MaintenanceHistoryTab({ machine }) {
               </div>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs text-text-muted mb-1">Description</label>
+              <label className="block text-xs text-text-muted mb-1">{t('common.description')}</label>
               <input className={inp()} value={mForm.description} onChange={(e) => setMForm((f) => ({ ...f, description: e.target.value }))} placeholder="What was done?" />
             </div>
             <div>
-              <label className="block text-xs text-text-muted mb-1">Next Maintenance Due</label>
+              <label className="block text-xs text-text-muted mb-1">{t('maintenance.nextDue')}</label>
               <input type="date" className={inp()} value={mForm.nextDue} onChange={(e) => setMForm((f) => ({ ...f, nextDue: e.target.value }))} />
             </div>
             <div className="flex items-end">
@@ -353,7 +357,7 @@ function MaintenanceHistoryTab({ machine }) {
                 className="flex items-center gap-1.5 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-40 w-full justify-center"
               >
                 <span className="material-symbols-outlined text-base">add</span>
-                {mSaving ? 'Saving…' : 'Add Record'}
+                {mSaving ? 'Saving…' : t('maintenance.newRecord')}
               </button>
             </div>
           </div>
@@ -368,13 +372,13 @@ function MaintenanceHistoryTab({ machine }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-container-high text-text-muted text-xs uppercase tracking-wider border-b border-theme-border">
-                <th className="text-left px-3 py-2.5 font-semibold">Date</th>
-                <th className="text-left px-3 py-2.5 font-semibold">Type</th>
-                <th className="text-left px-3 py-2.5 font-semibold">Technician</th>
-                <th className="text-left px-3 py-2.5 font-semibold">Description</th>
+                <th className="text-left px-3 py-2.5 font-semibold">{t('common.date')}</th>
+                <th className="text-left px-3 py-2.5 font-semibold">{t('maintenance.type')}</th>
+                <th className="text-left px-3 py-2.5 font-semibold">{t('maintenance.technician')}</th>
+                <th className="text-left px-3 py-2.5 font-semibold">{t('common.description')}</th>
                 <th className="text-right px-3 py-2.5 font-semibold">Cost</th>
-                <th className="text-left px-3 py-2.5 font-semibold">Currency</th>
-                <th className="text-left px-3 py-2.5 font-semibold">Next Due</th>
+                <th className="text-left px-3 py-2.5 font-semibold">{t('common.currency')}</th>
+                <th className="text-left px-3 py-2.5 font-semibold">{t('maintenance.nextDue')}</th>
                 {isAdmin && <th className="px-3 py-2.5"></th>}
               </tr>
             </thead>
@@ -394,8 +398,8 @@ function MaintenanceHistoryTab({ machine }) {
                     <td className="px-3 py-2.5 text-right">
                       {deletingMId === r.id ? (
                         <span className="flex items-center gap-1 justify-end">
-                          <button onClick={async () => { await deleteMaintenanceRecord(machine.id, r.id); setDeletingMId(null) }} className="text-xs font-semibold text-white bg-error px-2 py-0.5 rounded transition">Yes</button>
-                          <button onClick={() => setDeletingMId(null)} className="text-xs text-text-muted px-1 transition">No</button>
+                          <button onClick={async () => { await deleteMaintenanceRecord(machine.id, r.id); setDeletingMId(null) }} className="text-xs font-semibold text-white bg-error px-2 py-0.5 rounded transition">{t('common.yes')}</button>
+                          <button onClick={() => setDeletingMId(null)} className="text-xs text-text-muted px-1 transition">{t('common.no')}</button>
                         </span>
                       ) : (
                         <button onClick={() => setDeletingMId(r.id)} className="text-text-muted hover:text-error transition">
@@ -416,6 +420,7 @@ function MaintenanceHistoryTab({ machine }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function Maintenance() {
+  const { t } = useTranslation()
   const { machines } = useData()
   const [selectedId, setSelectedId] = useState(null)
   const [tab, setTab] = useState('history')
@@ -436,8 +441,8 @@ export default function Maintenance() {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface">Maintenance & Repair</h1>
-        <p className="text-sm text-text-muted mt-0.5">Track maintenance history and monthly schedules for all machines.</p>
+        <h1 className="text-2xl font-bold text-on-surface">{t('maintenance.title')}</h1>
+        <p className="text-sm text-text-muted mt-0.5">{t('maintenance.subtitle')}</p>
       </div>
 
       <div className="flex gap-6" style={{ minHeight: 'calc(100vh - 200px)' }}>
@@ -447,14 +452,14 @@ export default function Maintenance() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
             <input
               className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-              placeholder="Search machines…"
+              placeholder={t('maintenance.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <div className="bg-surface-container-lowest rounded-2xl border border-theme-border overflow-hidden">
             {filtered.length === 0 ? (
-              <p className="text-center py-10 text-sm text-text-muted">No machines found.</p>
+              <p className="text-center py-10 text-sm text-text-muted">{t('settings.noMachines')}</p>
             ) : (
               <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
                 {filtered.map((m) => {
@@ -521,7 +526,7 @@ export default function Maintenance() {
               <div className="flex gap-0 border-b border-theme-border mb-5">
                 <button className={tabCls('history')} onClick={() => setTab('history')}>
                   <span className="material-symbols-outlined text-base">build</span>
-                  Maintenance History
+                  {t('maintenance.title')}
                 </button>
                 <button className={tabCls('monthly')} onClick={() => setTab('monthly')}>
                   <span className="material-symbols-outlined text-base">calendar_month</span>

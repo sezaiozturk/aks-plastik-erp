@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
 
 function ChangePasswordModal({ token, onClose }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -15,8 +17,8 @@ function ChangePasswordModal({ token, onClose }) {
     e.preventDefault()
     setError('')
     setSuccess('')
-    if (form.newPassword !== form.confirmPassword) return setError('New passwords do not match')
-    if (form.newPassword.length < 6) return setError('New password must be at least 6 characters')
+    if (form.newPassword !== form.confirmPassword) return setError(t('account.passwordMismatch'))
+    if (form.newPassword.length < 6) return setError(t('account.passwordTooShort'))
     setConfirming(true)
   }
 
@@ -31,7 +33,7 @@ function ChangePasswordModal({ token, onClose }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setSuccess('Password changed successfully')
+      setSuccess(t('account.passwordChanged'))
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
     } catch (err) {
       setError(err.message)
@@ -57,8 +59,8 @@ function ChangePasswordModal({ token, onClose }) {
                 <span className="material-symbols-outlined text-white">lock</span>
               </div>
               <div>
-                <h2 className="text-lg font-extrabold text-white">Change Password</h2>
-                <p className="text-blue-200 text-xs mt-0.5">Update your account password</p>
+                <h2 className="text-lg font-extrabold text-white">{t('account.changePassword')}</h2>
+                <p className="text-blue-200 text-xs mt-0.5">{t('account.updateSubtitle')}</p>
               </div>
             </div>
             <button onClick={handleClose} className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-surface-container-lowest/10 transition-colors">
@@ -73,15 +75,15 @@ function ChangePasswordModal({ token, onClose }) {
             <div className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl text-on-surface-variant">help</span>
             </div>
-            <p className="text-base font-bold text-on-surface mb-1">Are you sure?</p>
-            <p className="text-sm text-on-surface-variant mb-6">Your password will be updated immediately.</p>
+            <p className="text-base font-bold text-on-surface mb-1">{t('account.areYouSure')}</p>
+            <p className="text-sm text-on-surface-variant mb-6">{t('account.willBeUpdated')}</p>
             <div className="flex gap-3 justify-center">
               <button onClick={() => setConfirming(false)} className="px-5 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">
-                Go Back
+                {t('account.goBack')}
               </button>
               <button onClick={handleConfirm} className="px-5 py-2.5 rounded-lg primary-gradient text-white text-sm font-bold hover:opacity-90 flex items-center gap-2">
                 <span className="material-symbols-outlined text-base">check</span>
-                Confirm
+                {t('common.confirm')}
               </button>
             </div>
           </div>
@@ -99,7 +101,7 @@ function ChangePasswordModal({ token, onClose }) {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1.5">Current Password</label>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">{t('account.currentPassword')}</label>
             <input
               type="password"
               value={form.currentPassword}
@@ -109,19 +111,19 @@ function ChangePasswordModal({ token, onClose }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1.5">New Password</label>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">{t('account.newPassword')}</label>
             <input
               type="password"
               value={form.newPassword}
               onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
               required
               minLength={6}
-              placeholder="Min 6 characters"
+              placeholder={t('account.minChars')}
               className="w-full px-3.5 py-2.5 rounded-lg border border-input-border bg-input-bg text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1.5">Confirm New Password</label>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">{t('account.confirmNewPassword')}</label>
             <input
               type="password"
               value={form.confirmPassword}
@@ -134,7 +136,7 @@ function ChangePasswordModal({ token, onClose }) {
 
           <div className="flex gap-3 justify-end pt-2">
             <button type="button" onClick={handleClose} className="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -142,7 +144,7 @@ function ChangePasswordModal({ token, onClose }) {
               className="px-5 py-2.5 rounded-lg primary-gradient text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">lock_reset</span>
-              {loading ? 'Updating...' : 'Update Password'}
+              {loading ? t('account.updating') : t('account.updatePassword')}
             </button>
           </div>
         </form>
@@ -153,6 +155,7 @@ function ChangePasswordModal({ token, onClose }) {
 }
 
 export default function Account() {
+  const { t } = useTranslation()
   const { user, token, logout } = useAuth()
   const { employees } = useData()
   const navigate = useNavigate()
@@ -181,7 +184,7 @@ export default function Account() {
       {showModal && <ChangePasswordModal token={token} onClose={() => setShowModal(false)} />}
 
       <h1 className="text-xl font-bold text-on-surface mb-6" style={{ fontFamily: 'Manrope, sans-serif' }}>
-        My Account
+        {t('account.title')}
       </h1>
 
       {/* Profile info */}
@@ -199,7 +202,7 @@ export default function Account() {
             <span className={`inline-flex mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
               user?.role === 'admin' ? 'status-scheduled-badge' : 'bg-surface-container-high text-on-surface-variant'
             }`}>
-              {user?.role === 'admin' ? 'Admin' : 'User'}
+              {user?.role === 'admin' ? t('topbar.admin') : t('topbar.user')}
             </span>
           </div>
         </div>
@@ -210,23 +213,23 @@ export default function Account() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-high hover:text-on-surface transition-colors"
           >
             <span className="material-symbols-outlined text-base">lock</span>
-            Change Password
+            {t('account.changePassword')}
           </button>
 
           {confirmLogout ? (
             <div className="flex items-center gap-2 ml-auto">
-              <span className="text-xs text-text-muted">Log out?</span>
+              <span className="text-xs text-text-muted">{t('account.logOutConfirm')}</span>
               <button
                 onClick={handleLogout}
                 className="px-3 py-2 rounded-lg bg-error text-white text-xs font-bold hover:opacity-90 transition-opacity"
               >
-                Yes, log out
+                {t('account.yesLogOut')}
               </button>
               <button
                 onClick={() => setConfirmLogout(false)}
                 className="px-3 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container-high transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           ) : (
@@ -235,7 +238,7 @@ export default function Account() {
               className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-lg border border-error/40 text-error text-sm font-semibold hover:bg-error/10 transition-colors"
             >
               <span className="material-symbols-outlined text-base">logout</span>
-              Log Out
+              {t('account.logOut')}
             </button>
           )}
         </div>

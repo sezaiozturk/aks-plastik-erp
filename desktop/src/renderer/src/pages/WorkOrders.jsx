@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import * as XLSX from 'xlsx'
@@ -50,6 +51,7 @@ function FieldErr({ label, icon, error, children, span2 = false }) {
 }
 
 function AddVisitModal({ customers, employees, onClose, onSave }) {
+  const { t } = useTranslation()
   const today = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({ title: '', customerId: '', location: '', employeeId: '', date: today, time: '09:00', notes: '' })
   const [errors, setErrors] = useState({})
@@ -84,8 +86,8 @@ function AddVisitModal({ customers, employees, onClose, onSave }) {
               <span className="material-symbols-outlined fill-icon">add_location_alt</span>
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-on-surface">New Site Visit</h2>
-              <p className="text-xs text-on-surface-variant">Schedule a field visit</p>
+              <h2 className="text-lg font-extrabold text-on-surface">{t('workOrders.newVisit')}</h2>
+              <p className="text-xs text-on-surface-variant">{t('workOrders.scheduleField')}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors">
@@ -94,32 +96,32 @@ function AddVisitModal({ customers, employees, onClose, onSave }) {
         </div>
 
         <div className="px-8 py-6 grid grid-cols-2 gap-5">
-          <FieldErr label="Visit Title" icon="title" error={errors.title} span2>
+          <FieldErr label={t('workOrders.visitTitle')} icon="title" error={errors.title} span2>
             <input type="text" placeholder="e.g. HVAC Inspection" value={form.title} onChange={set('title')} className={inputCls} />
           </FieldErr>
-          <Field label="Customer" icon="business" span2>
+          <Field label={t('common.customer')} icon="business" span2>
             <select value={form.customerId} onChange={set('customerId')} className={inputCls}>
-              <option value="">No customer</option>
+              <option value="">{t('common.noCustomer')}</option>
               {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
-          <Field label="Location" icon="location_on" span2>
+          <Field label={t('common.location')} icon="location_on" span2>
             <input type="text" placeholder="Address or site name" value={form.location} onChange={set('location')} className={inputCls} />
           </Field>
-          <Field label="Employee" icon="badge" span2>
+          <Field label={t('common.employee')} icon="badge" span2>
             <select value={form.employeeId} onChange={set('employeeId')} className={inputCls}>
-              <option value="">Unassigned</option>
+              <option value="">{t('common.unassigned')}</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </Field>
-          <FieldErr label="Date" icon="calendar_today" error={errors.date}>
+          <FieldErr label={t('common.date')} icon="calendar_today" error={errors.date}>
             <input type="date" value={form.date} onChange={set('date')} className={inputCls} />
           </FieldErr>
-          <Field label="Time" icon="schedule">
+          <Field label={t('workOrders.time')} icon="schedule">
             <input type="time" value={form.time} onChange={set('time')} className={inputCls} />
           </Field>
           <div className="col-span-2">
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">Notes</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('common.notes')}</label>
             <div className="flex items-start gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary transition-all">
               <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0 mt-0.5">notes</span>
               <textarea rows={3} placeholder="Optional notes…" value={form.notes} onChange={set('notes')} className={`${inputCls} resize-none`} />
@@ -128,10 +130,10 @@ function AddVisitModal({ customers, employees, onClose, onSave }) {
         </div>
 
         <div className="flex items-center justify-end gap-3 px-8 pb-8">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
           <button onClick={handleSave} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
             <span className="material-symbols-outlined text-base">save</span>
-            Schedule Visit
+            {t('workOrders.scheduleVisit')}
           </button>
         </div>
       </div>
@@ -167,6 +169,7 @@ const STATUS_CHANGE_ACTIVE = {
 }
 
 export function VisitDetailModal({ visit, customers, employees, onClose, onSave, onDelete }) {
+  const { t } = useTranslation()
   const { isAdmin } = useData()
   const { user } = useAuth()
   const canChangeStatus = isAdmin || user?.department === 'Sales'
@@ -253,7 +256,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
               </div>
               <div>
                 <h2 className="text-xl font-extrabold text-white leading-tight">
-                  {editing ? 'Edit Visit' : visit.title}
+                  {editing ? t('workOrders.editVisit') : visit.title}
                 </h2>
                 <p className="text-blue-200 text-xs font-medium mt-0.5">#{visit.id}</p>
               </div>
@@ -285,12 +288,12 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
         {/* View */}
         {!editing && (
           <div className="px-8 py-4 overflow-y-auto flex-1">
-            <DetailRow icon="business"      label="Customer"    value={visit.customerName} />
-            <DetailRow icon="location_on"   label="Location"    value={visit.location} />
-            <DetailRow icon="badge"         label="Employee"    value={visit.employeeName} />
-            {visit.notes && <DetailRow icon="notes" label="Notes" value={visit.notes} />}
+            <DetailRow icon="business"      label={t('common.customer')}    value={visit.customerName} />
+            <DetailRow icon="location_on"   label={t('common.location')}    value={visit.location} />
+            <DetailRow icon="badge"         label={t('common.employee')}    value={visit.employeeName} />
+            {visit.notes && <DetailRow icon="notes" label={t('common.notes')} value={visit.notes} />}
             {visit.status === 'Cancelled' && visit.cancelledReason && (
-              <DetailRow icon="cancel" label="Cancellation Reason" value={visit.cancelledReason} />
+              <DetailRow icon="cancel" label={t('workOrders.cancelReason')} value={visit.cancelledReason} />
             )}
           </div>
         )}
@@ -298,37 +301,37 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
         {/* Edit */}
         {editing && (
           <div className="px-8 py-6 grid grid-cols-2 gap-5 overflow-y-auto flex-1">
-            <FieldErr label="Visit Title" icon="title" error={errors.title} span2>
+            <FieldErr label={t('workOrders.visitTitle')} icon="title" error={errors.title} span2>
               <input type="text" value={form.title} onChange={set('title')} className={inputCls} />
             </FieldErr>
-            <Field label="Customer" icon="business" span2>
+            <Field label={t('common.customer')} icon="business" span2>
               <select value={form.customerId} onChange={set('customerId')} className={inputCls}>
-                <option value="">No customer</option>
+                <option value="">{t('common.noCustomer')}</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <Field label="Location" icon="location_on" span2>
+            <Field label={t('common.location')} icon="location_on" span2>
               <input type="text" value={form.location} onChange={set('location')} className={inputCls} />
             </Field>
-            <Field label="Employee" icon="badge">
+            <Field label={t('common.employee')} icon="badge">
               <select value={form.employeeId} onChange={set('employeeId')} className={inputCls}>
-                <option value="">Unassigned</option>
+                <option value="">{t('common.unassigned')}</option>
                 {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </Field>
-            <Field label="Status" icon="flag">
+            <Field label={t('common.status')} icon="flag">
               <select value={form.status} onChange={set('status')} className={inputCls}>
                 {STATUSES.map((s) => <option key={s}>{s}</option>)}
               </select>
             </Field>
-            <FieldErr label="Date" icon="calendar_today" error={errors.date}>
+            <FieldErr label={t('common.date')} icon="calendar_today" error={errors.date}>
               <input type="date" value={form.date} onChange={set('date')} className={inputCls} />
             </FieldErr>
-            <Field label="Time" icon="schedule">
+            <Field label={t('workOrders.time')} icon="schedule">
               <input type="time" value={form.time} onChange={set('time')} className={inputCls} />
             </Field>
             <div className="col-span-2">
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">Notes</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5">{t('common.notes')}</label>
               <div className="flex items-start gap-2 bg-surface-container-high rounded-lg px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary transition-all">
                 <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0 mt-0.5">notes</span>
                 <textarea rows={3} value={form.notes} onChange={set('notes')} className={`${inputCls} resize-none`} />
@@ -340,7 +343,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
         {/* Status change panel */}
         {!editing && showStatusPanel && (
           <div className="mx-8 mb-4 p-5 bg-surface-container-low rounded-2xl space-y-4 flex-shrink-0 border border-outline-variant/30">
-            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Change Status</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">{t('workOrders.changeStatus')}</p>
             <div className="flex flex-wrap gap-2">
               {STATUSES.map((s) => (
                 <button
@@ -357,7 +360,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
             {pendingStatus === 'Cancelled' && (
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">
-                  Cancellation Reason <span className="text-error">*</span>
+                  {t('workOrders.cancelReason')} <span className="text-error">*</span>
                 </label>
                 <textarea
                   autoFocus
@@ -370,7 +373,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
                   }`}
                 />
                 {cancelNoteError && (
-                  <p className="text-[11px] text-error font-medium mt-1">Cancellation reason is required.</p>
+                  <p className="text-[11px] text-error font-medium mt-1">{t('workOrders.cancelRequired')}</p>
                 )}
               </div>
             )}
@@ -379,7 +382,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
                 onClick={() => { setShowStatusPanel(false); setPendingStatus(visit.status); setCancelNote(''); setCancelNoteError(false) }}
                 className="px-4 py-2 rounded-lg text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleStatusChange}
@@ -387,7 +390,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
                 className="px-4 py-2 rounded-lg primary-gradient text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm">check</span>
-                Apply
+                {t('common.apply')}
               </button>
             </div>
           </div>
@@ -399,15 +402,15 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-emerald-700">check_circle</span>
               <div>
-                <p className="text-sm font-bold text-emerald-800">Mark as Completed?</p>
-                <p className="text-xs text-emerald-700/70 mt-0.5">Are you sure you want to complete this visit?</p>
+                <p className="text-sm font-bold text-emerald-800">{t('workOrders.markCompleted')}</p>
+                <p className="text-xs text-emerald-700/70 mt-0.5">{t('workOrders.confirmComplete')}</p>
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
-              <button onClick={() => setConfirmComplete(false)} className="px-4 py-2 rounded-xl text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors">Cancel</button>
+              <button onClick={() => setConfirmComplete(false)} className="px-4 py-2 rounded-xl text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors">{t('common.cancel')}</button>
               <button onClick={() => { setForm((p) => ({ ...p, status: 'Completed' })); setConfirmComplete(false) }} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-sm">check</span>
-                Yes, Complete
+                {t('workOrders.yesComplete')}
               </button>
             </div>
           </div>
@@ -419,15 +422,15 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-on-error-container">warning</span>
               <div>
-                <p className="text-sm font-bold text-on-error-container">Delete this visit?</p>
-                <p className="text-xs text-on-error-container/70 mt-0.5">This action cannot be undone.</p>
+                <p className="text-sm font-bold text-on-error-container">{t('workOrders.deleteVisit')}</p>
+                <p className="text-xs text-on-error-container/70 mt-0.5">{t('common.cantUndo')}</p>
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
-              <button onClick={() => setConfirming(false)} className="px-4 py-2 rounded-xl text-on-error-container text-xs font-bold hover:bg-error-container/60 transition-colors">Cancel</button>
+              <button onClick={() => setConfirming(false)} className="px-4 py-2 rounded-xl text-on-error-container text-xs font-bold hover:bg-error-container/60 transition-colors">{t('common.cancel')}</button>
               <button onClick={() => onDelete(visit.id)} className="px-4 py-2 rounded-xl bg-error text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-sm">delete</span>
-                Yes, Delete
+                {t('common.yesDelete')}
               </button>
             </div>
           </div>
@@ -439,14 +442,14 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
             <>
               <div className="flex items-center gap-2">
                 <button onClick={() => setEditing(true)} className="px-5 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2">
-                  <span className="material-symbols-outlined text-base">edit</span>Edit
+                  <span className="material-symbols-outlined text-base">edit</span>{t('common.edit')}
                 </button>
                 {canChangeStatus && (
                   <button
                     onClick={() => { setShowStatusPanel((v) => !v); setPendingStatus(visit.status); setCancelNote(''); setCancelNoteError(false) }}
                     className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all flex items-center gap-2 ${showStatusPanel ? 'border-secondary bg-secondary text-white' : 'border-secondary text-secondary hover:bg-secondary hover:text-white'}`}
                   >
-                    <span className="material-symbols-outlined text-base">flag</span>Status
+                    <span className="material-symbols-outlined text-base">flag</span>{t('common.status')}
                   </button>
                 )}
                 {isAdmin && (
@@ -454,17 +457,17 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
                   onClick={() => setConfirming((v) => !v)}
                   className={`px-5 py-2.5 rounded-xl border-2 text-sm font-bold transition-all flex items-center gap-2 ${confirming ? 'border-error bg-error text-white' : 'border-error text-error hover:bg-error hover:text-white'}`}
                 >
-                  <span className="material-symbols-outlined text-base">delete</span>Delete
+                  <span className="material-symbols-outlined text-base">delete</span>{t('common.delete')}
                 </button>
                 )}
               </div>
-              <button onClick={onClose} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity">Close</button>
+              <button onClick={onClose} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity">{t('common.close')}</button>
             </>
           ) : (
             <>
-              <button onClick={handleCancel} className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">Cancel</button>
+              <button onClick={handleCancel} className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">{t('common.cancel')}</button>
               <button onClick={handleSave} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
-                <span className="material-symbols-outlined text-base">save</span>Save Changes
+                <span className="material-symbols-outlined text-base">save</span>{t('common.saveChanges')}
               </button>
             </>
           )}
@@ -475,6 +478,7 @@ export function VisitDetailModal({ visit, customers, employees, onClose, onSave,
 }
 
 function VisitCard({ visit, onClick }) {
+  const { t } = useTranslation()
   const st = STATUS_STYLES[visit.status] ?? STATUS_STYLES['Scheduled']
   const isToday = visit.date === new Date().toISOString().split('T')[0]
 
@@ -487,7 +491,7 @@ function VisitCard({ visit, onClick }) {
       <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-3">
         <div className="flex flex-col">
           <span className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-primary' : 'text-on-surface-variant'}`}>
-            {isToday ? 'Today' : fmtDate(visit.date)}
+            {isToday ? t('workOrders.today') : fmtDate(visit.date)}
           </span>
           {visit.time && (
             <span className="text-xs font-bold text-on-surface mt-0.5 flex items-center gap-1">
@@ -536,7 +540,7 @@ function VisitCard({ visit, onClick }) {
         ) : (
           <div className="flex items-center gap-2 text-on-surface-variant/50">
             <span className="material-symbols-outlined text-[16px]">person_off</span>
-            <span className="text-xs font-medium italic">Unassigned</span>
+            <span className="text-xs font-medium italic">{t('common.unassigned')}</span>
           </div>
         )}
       </div>
@@ -545,6 +549,7 @@ function VisitCard({ visit, onClick }) {
 }
 
 export default function SiteVisits() {
+  const { t } = useTranslation()
   const { customers, employees, siteVisits, addSiteVisit, updateSiteVisit, deleteSiteVisit } = useData()
   const [showModal, setShowModal]     = useState(false)
   const [selected, setSelected]       = useState(null)
@@ -571,11 +576,11 @@ export default function SiteVisits() {
   }
 
   const stats = [
-    { label: 'Total Visits',  value: siteVisits.length,                                                icon: 'location_on',   color: 'bg-surface-tint'   },
-    { label: 'Scheduled',     value: siteVisits.filter((v) => v.status === 'Scheduled').length,        icon: 'calendar_today', color: 'bg-blue-400'       },
-    { label: 'In Progress',   value: siteVisits.filter((v) => v.status === 'In Progress').length,      icon: 'pending',       color: 'bg-amber-400'      },
-    { label: 'Completed',     value: siteVisits.filter((v) => v.status === 'Completed').length,        icon: 'check_circle',  color: 'bg-emerald-400'    },
-    { label: 'Cancelled',     value: siteVisits.filter((v) => v.status === 'Cancelled').length,        icon: 'cancel',        color: 'bg-red-400'        },
+    { label: t('workOrders.totalVisits'),  value: siteVisits.length,                                                icon: 'location_on',   color: 'bg-surface-tint'   },
+    { label: t('workOrders.scheduled'),    value: siteVisits.filter((v) => v.status === 'Scheduled').length,        icon: 'calendar_today', color: 'bg-blue-400'       },
+    { label: t('workOrders.inProgress'),   value: siteVisits.filter((v) => v.status === 'In Progress').length,      icon: 'pending',       color: 'bg-amber-400'      },
+    { label: t('workOrders.completed'),    value: siteVisits.filter((v) => v.status === 'Completed').length,        icon: 'check_circle',  color: 'bg-emerald-400'    },
+    { label: t('workOrders.cancelled'),    value: siteVisits.filter((v) => v.status === 'Cancelled').length,        icon: 'cancel',        color: 'bg-red-400'        },
   ]
 
   const q = search.toLowerCase()
@@ -622,9 +627,9 @@ export default function SiteVisits() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Site Visits</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">{t('workOrders.title')}</h1>
           <p className="text-on-surface-variant text-base">
-            Schedule and track field visits across your customer sites.
+            {t('workOrders.subtitle')}
           </p>
         </div>
         <button
@@ -632,7 +637,7 @@ export default function SiteVisits() {
           className="primary-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 flex items-center gap-2 hover:opacity-90 hover:scale-[1.02] transition-all self-start md:self-auto"
         >
           <span className="material-symbols-outlined">add_location_alt</span>
-          Schedule Visit
+          {t('workOrders.scheduleVisit')}
         </button>
       </div>
 
@@ -658,7 +663,7 @@ export default function SiteVisits() {
           <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
           <input
             type="text"
-            placeholder="Search visits..."
+            placeholder={t('workOrders.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400"
@@ -675,7 +680,7 @@ export default function SiteVisits() {
                   : 'border-outline-variant text-on-surface-variant hover:border-primary hover:text-primary'
               }`}
             >
-              {s || 'All'}
+              {s || t('common.all')}
             </button>
           ))}
         </div>
@@ -685,7 +690,7 @@ export default function SiteVisits() {
             className="primary-gradient text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 flex items-center gap-2 hover:opacity-90 hover:scale-[1.02] transition-all"
           >
             <span className="material-symbols-outlined text-lg">download</span>
-            Export
+            {t('common.export')}
           </button>
         </div>
       </div>
@@ -694,8 +699,8 @@ export default function SiteVisits() {
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-on-surface-variant/40">
           <span className="material-symbols-outlined text-6xl mb-4">location_off</span>
-          <p className="text-lg font-bold">No site visits yet</p>
-          <p className="text-sm mt-1">Click "Schedule Visit" to add your first one</p>
+          <p className="text-lg font-bold">{t('workOrders.noVisits')}</p>
+          <p className="text-sm mt-1">{t('workOrders.scheduleFirst')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 max-h-[560px] overflow-y-auto pr-1">

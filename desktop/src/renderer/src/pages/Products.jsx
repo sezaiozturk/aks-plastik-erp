@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as XLSX from 'xlsx'
 import { useData } from '../context/DataContext'
 
@@ -19,6 +20,7 @@ const emptyForm = {
 }
 
 function Modal({ title, form, setForm, onClose, onSave, errors }) {
+  const { t } = useTranslation()
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
   const inputCls = (field) =>
@@ -38,60 +40,60 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Stock No *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('products.stockNo')} *</label>
               <input className={inputCls('stockNo')} value={form.stockNo} onChange={set('stockNo')} placeholder="e.g. SKU-0012" />
               {errors.stockNo && <p className="text-xs text-error mt-1">{errors.stockNo}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Name *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.name')} *</label>
               <input className={inputCls('name')} value={form.name} onChange={set('name')} />
               {errors.name && <p className="text-xs text-error mt-1">{errors.name}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Category</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.category')}</label>
               <input className={inputCls('category')} value={form.category} onChange={set('category')} placeholder="e.g. Electronics" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Unit</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.unit')}</label>
               <input className={inputCls('unit')} value={form.unit} onChange={set('unit')} placeholder="pcs / kg / m" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.currency')}</label>
               <select className={inputCls('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Price *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.price')} *</label>
               <input type="number" min="0" step="0.01" className={inputCls('price')} value={form.price} onChange={set('price')} />
               {errors.price && <p className="text-xs text-error mt-1">{errors.price}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Stock</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('products.inStock')}</label>
               <input type="number" min="0" className={inputCls('stock')} value={form.stock} onChange={set('stock')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Min Stock</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('products.minStock')}</label>
               <input type="number" min="0" className={inputCls('minStock')} value={form.minStock} onChange={set('minStock')} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Description</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.description')}</label>
             <textarea rows={2} className={inputCls('description')} value={form.description} onChange={set('description')} />
           </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button onClick={onSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -100,6 +102,7 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
 }
 
 function DeleteConfirmModal({ product, onClose, onConfirm }) {
+  const { t } = useTranslation()
   const [typed, setTyped] = useState('')
   const match = typed === product.name
 
@@ -112,14 +115,14 @@ function DeleteConfirmModal({ product, onClose, onConfirm }) {
               <span className="material-symbols-outlined text-error text-2xl">delete_forever</span>
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-on-surface">Delete Product</h2>
-              <p className="text-xs text-on-surface-variant mt-0.5">This action cannot be undone.</p>
+              <h2 className="text-base font-extrabold text-on-surface">{t('products.deleteProduct')}</h2>
+              <p className="text-xs text-on-surface-variant mt-0.5">{t('common.cantUndo')}</p>
             </div>
           </div>
         </div>
         <div className="p-6 space-y-4">
           <p className="text-sm text-on-surface-variant">
-            Type <span className="font-bold text-on-surface">{product.name}</span> to confirm deletion.
+            {t('products.deleteConfirm', { name: product.name })}
           </p>
           <input
             autoFocus
@@ -134,7 +137,7 @@ function DeleteConfirmModal({ product, onClose, onConfirm }) {
               onClick={onClose}
               className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={onConfirm}
@@ -142,7 +145,7 @@ function DeleteConfirmModal({ product, onClose, onConfirm }) {
               className="flex-1 px-4 py-2.5 rounded-lg bg-error text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined text-base">delete</span>
-              Delete
+              {t('common.delete')}
             </button>
           </div>
         </div>
@@ -152,10 +155,11 @@ function DeleteConfirmModal({ product, onClose, onConfirm }) {
 }
 
 function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
+  const { t } = useTranslation()
   const stockBadge = (p) => {
-    if (p.stock === 0) return { label: 'Out of Stock', cls: 'bg-error/10 text-error' }
-    if (p.stock <= p.minStock) return { label: 'Low Stock', cls: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
-    return { label: 'In Stock', cls: 'bg-primary-fixed text-on-primary-fixed-variant' }
+    if (p.stock === 0) return { label: t('products.outOfStock'), cls: 'bg-error/10 text-error' }
+    if (p.stock <= p.minStock) return { label: t('products.lowStock'), cls: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
+    return { label: t('products.inStock'), cls: 'bg-primary-fixed text-on-primary-fixed-variant' }
   }
   const badge = stockBadge(product)
 
@@ -186,34 +190,34 @@ function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
         <div className="p-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Category</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.category')}</p>
               <p className="text-sm font-semibold text-on-surface">{product.category || '—'}</p>
             </div>
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Unit</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.unit')}</p>
               <p className="text-sm font-semibold text-on-surface">{product.unit || 'pcs'}</p>
             </div>
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Price</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.price')}</p>
               <p className="text-sm font-semibold text-on-surface">
                 <span className="text-xs text-on-surface-variant mr-1">{product.currency || 'USD'}</span>
                 {parseFloat(product.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Status</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.status')}</p>
               <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}>
                 {badge.label}
               </span>
             </div>
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Stock</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('products.inStock')}</p>
               <p className="text-sm font-semibold text-on-surface">
                 {product.stock} <span className="text-xs text-on-surface-variant">{product.unit || 'pcs'}</span>
               </p>
             </div>
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Min Stock</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('products.minStock')}</p>
               <p className="text-sm font-semibold text-on-surface">
                 {product.minStock} <span className="text-xs text-on-surface-variant">{product.unit || 'pcs'}</span>
               </p>
@@ -222,7 +226,7 @@ function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
 
           {product.description && (
             <div className="bg-surface-container-low rounded-xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Description</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.description')}</p>
               <p className="text-sm text-on-surface">{product.description}</p>
             </div>
           )}
@@ -237,14 +241,14 @@ function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
                 className="px-4 py-2.5 rounded-xl border-2 border-error/40 text-error text-sm font-bold hover:bg-error hover:text-white transition-all flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">delete</span>
-                Delete
+                {t('common.delete')}
               </button>
               <button
                 onClick={onEdit}
                 className="flex-1 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">edit</span>
-                Edit
+                {t('common.edit')}
               </button>
             </>
           )}
@@ -252,7 +256,7 @@ function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
             onClick={onClose}
             className={`${isAdmin ? '' : 'flex-1'} py-2.5 px-5 rounded-xl primary-gradient text-white text-sm font-bold hover:opacity-90 transition-opacity`}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>
@@ -263,6 +267,7 @@ function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
 const PRODUCT_COLUMNS = ['Stock No', 'Name', 'Category', 'Unit', 'Currency', 'Price', 'Stock', 'Min Stock', 'Description']
 
 export default function Products() {
+  const { t } = useTranslation()
   const { products, addProduct, updateProduct, deleteProduct, isAdmin } = useData()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -392,9 +397,9 @@ export default function Products() {
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   const stockBadge = (product) => {
-    if (product.stock === 0) return { label: 'Out of Stock', cls: 'bg-error/10 text-error' }
-    if (product.stock <= product.minStock) return { label: 'Low Stock', cls: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
-    return { label: 'In Stock', cls: 'bg-primary-fixed text-on-primary-fixed-variant' }
+    if (product.stock === 0) return { label: t('products.outOfStock'), cls: 'bg-error/10 text-error' }
+    if (product.stock <= product.minStock) return { label: t('products.lowStock'), cls: 'bg-tertiary-fixed text-on-tertiary-fixed-variant' }
+    return { label: t('products.inStock'), cls: 'bg-primary-fixed text-on-primary-fixed-variant' }
   }
 
   return (
@@ -402,25 +407,25 @@ export default function Products() {
       <input ref={importRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImport} />
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Products</h1>
-          <p className="text-sm text-text-muted mt-0.5">{products.length} total products</p>
+          <h1 className="text-2xl font-bold text-on-surface">{t('products.title')}</h1>
+          <p className="text-sm text-text-muted mt-0.5">{t('products.totalProducts', { count: products.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handleTemplate} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-base">download</span>
-            Template
+            {t('common.template')}
           </button>
           <button onClick={() => importRef.current.click()} disabled={importing} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition disabled:opacity-40">
             <span className="material-symbols-outlined text-base">upload</span>
-            {importing ? 'Importing…' : 'Import'}
+            {importing ? t('products.importing') : t('common.import')}
           </button>
           <button onClick={handleExport} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-base">table_view</span>
-            Export
+            {t('common.export')}
           </button>
           <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
             <span className="material-symbols-outlined text-base">add</span>
-            Add Product
+            {t('products.addProduct')}
           </button>
         </div>
       </div>
@@ -430,7 +435,7 @@ export default function Products() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
           <input
             className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-            placeholder="Search products…"
+            placeholder={t('products.searchPlaceholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           />
@@ -441,19 +446,19 @@ export default function Products() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-6 py-4 font-semibold">Stock No</th>
-              <th className="text-left px-6 py-4 font-semibold">Name</th>
-              <th className="text-left px-6 py-4 font-semibold">Category</th>
-              <th className="text-right px-6 py-4 font-semibold">Price</th>
-              <th className="text-right px-6 py-4 font-semibold">Stock</th>
-              <th className="text-left px-6 py-4 font-semibold">Status</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('products.stockNo')}</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('common.name')}</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('common.category')}</th>
+              <th className="text-right px-6 py-4 font-semibold">{t('common.price')}</th>
+              <th className="text-right px-6 py-4 font-semibold">{t('products.inStock')}</th>
+              <th className="text-left px-6 py-4 font-semibold">{t('common.status')}</th>
             </tr>
           </thead>
           <tbody>
             {paginated.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-16 text-text-muted">
-                  No products found
+                  {t('products.noProducts')}
                 </td>
               </tr>
             ) : (
@@ -487,18 +492,18 @@ export default function Products() {
         <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
           <span>{filtered.length} products</span>
           <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
+            <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.prev')}</button>
             <span className="px-3 py-1.5">{page} / {totalPages}</span>
-            <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
+            <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.next')}</button>
           </div>
         </div>
       )}
 
       {showAdd && (
-        <Modal title="Add Product" form={form} setForm={setForm} errors={errors} onClose={() => setShowAdd(false)} onSave={handleAdd} />
+        <Modal title={t('products.addProduct')} form={form} setForm={setForm} errors={errors} onClose={() => setShowAdd(false)} onSave={handleAdd} />
       )}
       {editItem && (
-        <Modal title="Edit Product" form={form} setForm={setForm} errors={errors} onClose={() => setEditItem(null)} onSave={handleEdit} />
+        <Modal title={t('products.editProduct')} form={form} setForm={setForm} errors={errors} onClose={() => setEditItem(null)} onSave={handleEdit} />
       )}
       {viewProduct && (
         <ProductDetailModal

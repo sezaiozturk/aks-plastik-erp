@@ -1,13 +1,14 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import * as XLSX from 'xlsx'
 
 const COLUMNS = [
-  { id: 'open',        label: 'Open',         icon: 'radio_button_unchecked', headerClass: 'bg-surface-container-high text-on-surface-variant', dotClass: 'bg-on-surface-variant/40' },
-  { id: 'review',      label: 'Under Review', icon: 'rate_review',            headerClass: 'status-scheduled-badge', dotClass: 'status-scheduled-dot' },
-  { id: 'in-progress', label: 'In Progress',  icon: 'pending',                headerClass: 'status-progress-badge',  dotClass: 'status-progress-dot'  },
-  { id: 'completed',   label: 'Completed',    icon: 'check_circle',           headerClass: 'status-completed-badge', dotClass: 'status-completed-dot' },
-  { id: 'cancelled',   label: 'Cancelled',    icon: 'cancel',                 headerClass: 'bg-error text-white',     dotClass: 'bg-white/40' },
+  { id: 'open',        labelKey: 'reports.colOpen',       icon: 'radio_button_unchecked', headerClass: 'bg-surface-container-high text-on-surface-variant', dotClass: 'bg-on-surface-variant/40' },
+  { id: 'review',      labelKey: 'reports.colReview',     icon: 'rate_review',            headerClass: 'status-scheduled-badge', dotClass: 'status-scheduled-dot' },
+  { id: 'in-progress', labelKey: 'reports.colInProgress', icon: 'pending',                headerClass: 'status-progress-badge',  dotClass: 'status-progress-dot'  },
+  { id: 'completed',   labelKey: 'reports.colCompleted',  icon: 'check_circle',           headerClass: 'status-completed-badge', dotClass: 'status-completed-dot' },
+  { id: 'cancelled',   labelKey: 'reports.colCancelled',  icon: 'cancel',                 headerClass: 'bg-error text-white',     dotClass: 'bg-white/40' },
 ]
 
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']
@@ -44,6 +45,7 @@ function Field({ label, icon, error, align = 'center', children }) {
 const inputCls = 'bg-transparent border-none outline-none text-sm text-on-surface w-full placeholder-slate-400'
 
 function AddCardModal({ defaultColumn, customers, employees, onClose, onSave }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     title: '', description: '', priority: 'Low',
     column: 'open', customerId: '', employeeId: '', dueDate: '',
@@ -74,8 +76,8 @@ function AddCardModal({ defaultColumn, customers, employees, onClose, onSave }) 
               <span className="material-symbols-outlined fill-icon">add_card</span>
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-on-surface">New Report</h2>
-              <p className="text-xs text-on-surface-variant">Add a card to the board</p>
+              <h2 className="text-lg font-extrabold text-on-surface">{t('reports.newReport')}</h2>
+              <p className="text-xs text-on-surface-variant">{t('reports.addCardBoard')}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors">
@@ -86,36 +88,36 @@ function AddCardModal({ defaultColumn, customers, employees, onClose, onSave }) 
         {/* Body */}
         <div className="px-8 py-6 grid grid-cols-2 gap-5">
           <div className="col-span-2">
-            <Field label="Title" icon="title" error={errors.title}>
-              <input type="text" placeholder="Report title" value={form.title} onChange={set('title')} className={inputCls} />
+            <Field label={t('common.title')} icon="title" error={errors.title}>
+              <input type="text" placeholder={t('reports.reportTitle')} value={form.title} onChange={set('title')} className={inputCls} />
             </Field>
           </div>
           <div className="col-span-2">
-            <Field label="Description" icon="description" align="start">
+            <Field label={t('common.description')} icon="description" align="start">
               <textarea rows={3} placeholder="Optional description…" value={form.description} onChange={set('description')} className={`${inputCls} resize-none`} />
             </Field>
           </div>
           <div className="col-span-2">
-            <Field label="Priority" icon="flag">
+            <Field label={t('common.priority')} icon="flag">
               <select value={form.priority} onChange={set('priority')} className={inputCls}>
                 {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
               </select>
             </Field>
           </div>
-          <Field label="Customer" icon="business">
+          <Field label={t('common.customer')} icon="business">
             <select value={form.customerId} onChange={set('customerId')} className={inputCls}>
-              <option value="">No customer</option>
+              <option value="">{t('common.noCustomer')}</option>
               {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
-          <Field label="Employee" icon="badge">
+          <Field label={t('common.employee')} icon="badge">
             <select value={form.employeeId} onChange={set('employeeId')} className={inputCls}>
-              <option value="">Unassigned</option>
+              <option value="">{t('common.unassigned')}</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </Field>
           <div className="col-span-2">
-            <Field label="Due Date" icon="event">
+            <Field label={t('common.dueDate')} icon="event">
               <input type="date" value={form.dueDate} onChange={set('dueDate')} className={inputCls} />
             </Field>
           </div>
@@ -124,11 +126,11 @@ function AddCardModal({ defaultColumn, customers, employees, onClose, onSave }) 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-8 pb-8">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button onClick={handleSave} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
             <span className="material-symbols-outlined text-base">save</span>
-            Add Card
+            {t('reports.addCard')}
           </button>
         </div>
       </div>
@@ -151,6 +153,7 @@ function DetailRow({ icon, label, value }) {
 }
 
 function CardDetailModal({ report, customers, employees, onClose, onSave, onDelete }) {
+  const { t } = useTranslation()
   const { isAdmin } = useData()
   const [editing, setEditing]       = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -201,7 +204,7 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
               </div>
               <div>
                 <h2 className="text-xl font-extrabold text-white leading-tight">
-                  {editing ? 'Edit Report' : report.title}
+                  {editing ? t('reports.editReport') : report.title}
                 </h2>
                 <p className="text-blue-200 text-xs font-medium mt-0.5">#{report.id}</p>
               </div>
@@ -218,7 +221,7 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
               </span>
               <span className="bg-surface-container-lowest/15 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px]">{col.icon}</span>
-                {col.label}
+                {t(col.labelKey)}
               </span>
             </div>
           )}
@@ -228,12 +231,12 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
         {!editing && (
           <div className="px-8 py-4 overflow-y-auto flex-1">
             {report.description && (
-              <DetailRow icon="description" label="Description" value={report.description} />
+              <DetailRow icon="description" label={t('common.description')} value={report.description} />
             )}
-            <DetailRow icon="business"     label="Customer"    value={report.customer?.name} />
-            <DetailRow icon="badge"        label="Employee"    value={report.employee?.name} />
-            <DetailRow icon="event"        label="Due Date"    value={report.dueDate ? fmtDate(report.dueDate) : '—'} />
-            <DetailRow icon="calendar_today" label="Created"   value={fmtDate(report.createdAt)} />
+            <DetailRow icon="business"     label={t('common.customer')}    value={report.customer?.name} />
+            <DetailRow icon="badge"        label={t('common.employee')}    value={report.employee?.name} />
+            <DetailRow icon="event"        label={t('common.dueDate')}     value={report.dueDate ? fmtDate(report.dueDate) : '—'} />
+            <DetailRow icon="calendar_today" label={t('common.created')}   value={fmtDate(report.createdAt)} />
           </div>
         )}
 
@@ -241,39 +244,39 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
         {editing && (
           <div className="px-8 py-6 grid grid-cols-2 gap-5 overflow-y-auto flex-1">
             <div className="col-span-2">
-              <Field label="Title" icon="title" error={errors.title}>
+              <Field label={t('common.title')} icon="title" error={errors.title}>
                 <input type="text" value={form.title} onChange={set('title')} className={inputCls} />
               </Field>
             </div>
             <div className="col-span-2">
-              <Field label="Description" icon="description" align="start">
+              <Field label={t('common.description')} icon="description" align="start">
                 <textarea rows={3} value={form.description} onChange={set('description')} className={`${inputCls} resize-none`} />
               </Field>
             </div>
-            <Field label="Priority" icon="flag">
+            <Field label={t('common.priority')} icon="flag">
               <select value={form.priority} onChange={set('priority')} className={inputCls}>
                 {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
               </select>
             </Field>
-            <Field label="Column" icon="view_kanban">
+            <Field label={t('reports.column')} icon="view_kanban">
               <select value={form.column} onChange={set('column')} className={inputCls}>
-                {COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                {COLUMNS.map((c) => <option key={c.id} value={c.id}>{t(c.labelKey)}</option>)}
               </select>
             </Field>
-            <Field label="Customer" icon="business">
+            <Field label={t('common.customer')} icon="business">
               <select value={form.customerId} onChange={set('customerId')} className={inputCls}>
-                <option value="">No customer</option>
+                <option value="">{t('common.noCustomer')}</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <Field label="Employee" icon="badge">
+            <Field label={t('common.employee')} icon="badge">
               <select value={form.employeeId} onChange={set('employeeId')} className={inputCls}>
-                <option value="">Unassigned</option>
+                <option value="">{t('common.unassigned')}</option>
                 {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </Field>
             <div className="col-span-2">
-              <Field label="Due Date" icon="event">
+              <Field label={t('common.dueDate')} icon="event">
                 <input type="date" value={form.dueDate} onChange={set('dueDate')} className={inputCls} />
               </Field>
             </div>
@@ -286,17 +289,17 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-on-error-container">warning</span>
               <div>
-                <p className="text-sm font-bold text-on-error-container">Delete this report?</p>
-                <p className="text-xs text-on-error-container/70 mt-0.5">This action cannot be undone.</p>
+                <p className="text-sm font-bold text-on-error-container">{t('reports.deleteReport')}</p>
+                <p className="text-xs text-on-error-container/70 mt-0.5">{t('common.cantUndo')}</p>
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <button onClick={() => setConfirming(false)} className="px-4 py-2 rounded-xl text-on-error-container text-xs font-bold hover:bg-error-container/60 transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={() => onDelete(report.id)} className="px-4 py-2 rounded-xl bg-error text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-sm">delete</span>
-                Yes, Delete
+                {t('common.yesDelete')}
               </button>
             </div>
           </div>
@@ -309,7 +312,7 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
               <div className="flex items-center gap-2">
                 <button onClick={() => setEditing(true)} className="px-5 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2">
                   <span className="material-symbols-outlined text-base">edit</span>
-                  Edit
+                  {t('common.edit')}
                 </button>
                 {isAdmin && (
                 <button
@@ -319,22 +322,22 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
                   }`}
                 >
                   <span className="material-symbols-outlined text-base">delete</span>
-                  Delete
+                  {t('common.delete')}
                 </button>
                 )}
               </div>
               <button onClick={onClose} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity">
-                Close
+                {t('common.close')}
               </button>
             </>
           ) : (
             <>
               <button onClick={handleCancel} className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={handleSave} className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
                 <span className="material-symbols-outlined text-base">save</span>
-                Save Changes
+                {t('common.saveChanges')}
               </button>
             </>
           )}
@@ -345,6 +348,7 @@ function CardDetailModal({ report, customers, employees, onClose, onSave, onDele
 }
 
 function KanbanCard({ report, onClick }) {
+  const { t } = useTranslation()
   return (
     <div
       draggable
@@ -363,21 +367,21 @@ function KanbanCard({ report, onClick }) {
       <div className="flex items-center justify-between gap-2 text-[11px] text-on-surface-variant">
         <div className="flex items-center gap-1 min-w-0">
           <span className="material-symbols-outlined text-[13px] flex-shrink-0">business</span>
-          <span className="truncate">{report.customer?.name || 'No customer'}</span>
+          <span className="truncate">{report.customer?.name || t('common.noCustomer')}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <span className="material-symbols-outlined text-[13px]">badge</span>
-          <span>{report.employee?.name || 'Unassigned'}</span>
+          <span>{report.employee?.name || t('common.unassigned')}</span>
         </div>
       </div>
 
-      <p className="text-[10px] text-on-surface-variant/50 mt-1 font-medium">Created at: {fmtDate(report.createdAt)}</p>
+      <p className="text-[10px] text-on-surface-variant/50 mt-1 font-medium">{t('reports.createdAt')} {fmtDate(report.createdAt)}</p>
       {report.dueDate && report.column !== 'cancelled' && (() => {
         const overdue = new Date(report.dueDate) < new Date(new Date().toDateString())
         return (
           <div className={`flex items-center gap-1 mt-1 text-[10px] font-medium ${overdue ? 'text-error' : 'text-on-surface-variant'}`}>
             <span className="material-symbols-outlined text-[12px]">{overdue ? 'warning' : 'event'}</span>
-            <span>{overdue ? 'Overdue' : 'Due'} {fmtDate(report.dueDate)}</span>
+            <span>{overdue ? t('reports.overdue') : t('reports.due')} {fmtDate(report.dueDate)}</span>
           </div>
         )
       })()}
@@ -386,6 +390,7 @@ function KanbanCard({ report, onClick }) {
 }
 
 export default function Reports() {
+  const { t } = useTranslation()
   const { customers, employees, reports, addReport, updateReport, deleteReport, moveReport } = useData()
   const [addModal, setAddModal]         = useState(null)
   const [detailReport, setDetailReport] = useState(null)
@@ -460,9 +465,9 @@ export default function Reports() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Tasks</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">{t('reports.title')}</h1>
           <p className="text-on-surface-variant text-base">
-            Track and manage field tasks across the support workflow.
+            {t('reports.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -473,7 +478,7 @@ export default function Reports() {
             </div>
             <div>
               <p className="text-3xl font-black text-on-surface leading-none">{reports.length}</p>
-              <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mt-1">Total Tasks</p>
+              <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mt-1">{t('reports.totalTasks')}</p>
             </div>
           </div>
           <button
@@ -481,7 +486,7 @@ export default function Reports() {
             className="primary-gradient text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 flex items-center gap-2 hover:opacity-90 hover:scale-[1.02] transition-all"
           >
             <span className="material-symbols-outlined text-base">add_task</span>
-            New Task
+            {t('reports.newTask')}
           </button>
         </div>
       </div>
@@ -492,7 +497,7 @@ export default function Reports() {
           <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
           <input
             type="text"
-            placeholder="Search tasks..."
+            placeholder={t('reports.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400"
@@ -504,7 +509,7 @@ export default function Reports() {
             className="primary-gradient text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-xl shadow-primary/20 flex items-center gap-2 hover:opacity-90 hover:scale-[1.02] transition-all"
           >
             <span className="material-symbols-outlined text-lg">download</span>
-            Export
+            {t('common.export')}
           </button>
         </div>
       </div>
@@ -528,7 +533,7 @@ export default function Reports() {
               <div className={`${col.headerClass} rounded-t-2xl px-4 py-3 flex items-center justify-between`}>
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px]">{col.icon}</span>
-                  <span className="text-sm font-bold">{col.label}</span>
+                  <span className="text-sm font-bold">{t(col.labelKey)}</span>
                   <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest/60 text-xs font-black">
                     {colReports.length}
                   </span>
@@ -556,7 +561,7 @@ export default function Reports() {
                 {colReports.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-10 text-on-surface-variant/30">
                     <span className="material-symbols-outlined text-3xl">inbox</span>
-                    <p className="text-xs font-medium mt-2">No reports</p>
+                    <p className="text-xs font-medium mt-2">{t('reports.noReports')}</p>
                   </div>
                 )}
               </div>

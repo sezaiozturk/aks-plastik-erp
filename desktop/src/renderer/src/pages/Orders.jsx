@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -66,6 +67,7 @@ const detailStatusStyle = {
 }
 
 function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
+  const { t } = useTranslation()
   const { userStatusPermissions } = useData()
   const [localStatus, setLocalStatus] = useState(order.status)
   const [pendingStatus, setPendingStatus] = useState(null)
@@ -107,12 +109,12 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-surface-container-high text-text-muted text-xs uppercase tracking-wider">
-                <th className="text-left px-4 py-2.5 font-semibold">Product</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Qty</th>
-                <th className="text-center px-4 py-2.5 font-semibold">Unit</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Unit Price</th>
-                <th className="text-right px-4 py-2.5 font-semibold">VAT %</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Line Total</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('orders.product')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.qty')}</th>
+                <th className="text-center px-4 py-2.5 font-semibold">{t('common.unit')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.unitPrice')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.vat')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('orders.lineTotal')}</th>
               </tr>
             </thead>
             <tbody>
@@ -142,7 +144,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
         {/* Totals */}
         <div className="flex flex-col items-end gap-1 text-sm mb-4">
           <span className="font-bold text-on-surface text-base border-t border-theme-border pt-1 mt-0.5">
-            Total: {currency} {parseFloat(order.totalAmount).toFixed(2)}
+            {t('orders.total')}: {currency} {parseFloat(order.totalAmount).toFixed(2)}
           </span>
         </div>
 
@@ -153,7 +155,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
               <div className="bg-surface-container-high rounded-xl px-4 py-3 flex items-center gap-2">
                 <span className="material-symbols-outlined text-base text-text-muted">local_shipping</span>
                 <div>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold">Shipment</p>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold">{t('orders.shipment')}</p>
                   <p className="text-sm text-on-surface font-medium">{order.shipmentType}</p>
                 </div>
               </div>
@@ -162,7 +164,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
               <div className="bg-surface-container-high rounded-xl px-4 py-3 flex items-center gap-2">
                 <span className="material-symbols-outlined text-base text-text-muted">payments</span>
                 <div>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold">Payment</p>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold">{t('orders.payment')}</p>
                   <p className="text-sm text-on-surface font-medium">{order.paymentMethod}</p>
                 </div>
               </div>
@@ -183,7 +185,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
             {isAdmin ? (
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-text-muted text-base">swap_horiz</span>
-                <label className="text-xs font-semibold text-text-muted whitespace-nowrap">Change Status</label>
+                <label className="text-xs font-semibold text-text-muted whitespace-nowrap">{t('orders.changeStatus')}</label>
                 <select
                   value={pendingStatus ?? localStatus}
                   onChange={(e) => setPendingStatus(e.target.value === localStatus ? null : e.target.value)}
@@ -195,13 +197,13 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
             ) : (
               !pendingStatus && canAdvanceFromCurrent && nextStatus && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-muted">Current: {localStatus}</span>
+                  <span className="text-xs text-text-muted">{t('orders.current')} {localStatus}</span>
                   <button
                     onClick={() => setPendingStatus(nextStatus)}
                     className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition"
                   >
                     <span className="material-symbols-outlined text-base">arrow_forward</span>
-                    Mark as {nextStatus}
+                    {t('orders.markAs', { status: nextStatus })}
                   </button>
                 </div>
               )
@@ -210,13 +212,13 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                 <span className="material-symbols-outlined text-amber-500 text-base">warning</span>
                 <p className="text-xs text-amber-700 flex-1">
-                  Change status from <strong>{localStatus}</strong> to <strong>{pendingStatus}</strong>?
+                  {t('orders.changeFrom', { from: localStatus, to: pendingStatus })}
                 </p>
                 <button onClick={() => setPendingStatus(null)} className="text-xs text-text-muted hover:text-on-surface px-2 py-1 rounded transition">
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button onClick={confirmStatusChange} className="text-xs font-semibold text-white bg-primary hover:opacity-90 px-3 py-1 rounded-lg transition">
-                  Confirm
+                  {t('common.confirm')}
                 </button>
               </div>
             )}
@@ -231,6 +233,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
 const SALES_DEPTS = ['Sales Manager', 'Sales Representative']
 
 function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, customers, employees, products, currentUser, salesTeam, isAdmin }) {
+  const { t } = useTranslation()
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
   const inputCls = (err) =>
@@ -284,7 +287,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Customer *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.customer')} *</label>
               <select className={inputCls(errors.customerId)} value={form.customerId} onChange={set('customerId')}>
                 <option value="">— Select customer —</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -292,7 +295,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
               {errors.customerId && <p className="text-xs text-error mt-1">{errors.customerId}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Sales Rep *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('orders.salesRep')} *</label>
               {(() => {
                 const isAdminOrManager = isAdmin || currentUser?.department === 'Sales Manager'
                 if (!isAdminOrManager) {
@@ -324,9 +327,9 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
           {/* Line items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-text-muted">Line Items *</label>
+              <label className="text-xs font-semibold text-text-muted">{t('orders.lineItems')} *</label>
               <button onClick={addItem} className="text-xs text-primary flex items-center gap-1 hover:underline">
-                <span className="material-symbols-outlined text-sm">add</span> Add Line
+                <span className="material-symbols-outlined text-sm">add</span> {t('orders.addLine')}
               </button>
             </div>
             {errors.items && <p className="text-xs text-error mb-2">{errors.items}</p>}
@@ -411,14 +414,14 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Shipment Type *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('orders.shipmentType')} *</label>
               <select className={inputCls(errors.shipmentType)} value={form.shipmentType} onChange={set('shipmentType')}>
                 {SHIPMENT_TYPES.map((s) => <option key={s} value={s}>{s || '— Select shipment type —'}</option>)}
               </select>
               {errors.shipmentType && <p className="text-xs text-error mt-1">{errors.shipmentType}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Payment Method *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('orders.paymentMethod')} *</label>
               <select className={inputCls(errors.paymentMethod)} value={form.paymentMethod} onChange={set('paymentMethod')}>
                 {PAYMENT_METHODS.map((p) => <option key={p} value={p}>{p || '— Select payment method —'}</option>)}
               </select>
@@ -427,7 +430,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
             <textarea rows={2} className={inputCls()} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
@@ -439,10 +442,10 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
         )}
         <div className="flex gap-3 mt-4">
           <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button onClick={onSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -494,6 +497,7 @@ function loadImageAsBase64(url) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Orders() {
+  const { t } = useTranslation()
   const { orders, addOrder, updateOrder, deleteOrder, refreshOrders, customers, employees, products, isAdmin, permissions } = useData()
   const { user: currentUser, token } = useAuth()
   const [salesTeam, setSalesTeam] = useState([])
@@ -839,13 +843,13 @@ export default function Orders() {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Orders</h1>
-          <p className="text-sm text-text-muted mt-0.5">{orders.length} total orders</p>
+          <h1 className="text-2xl font-bold text-on-surface">{t('orders.title')}</h1>
+          <p className="text-sm text-text-muted mt-0.5">{t('orders.totalOrders', { count: orders.length })}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={refreshOrders} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-base">refresh</span>
-            Refresh
+            {t('common.refresh')}
           </button>
           <div className="relative" ref={exportRef}>
             <button
@@ -861,11 +865,11 @@ export default function Orders() {
               <div className="absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-theme-border rounded-xl shadow-lg z-20 overflow-hidden">
                 <button onClick={handleExportExcel} className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-on-surface hover:bg-hover-bg transition text-left">
                   <span className="material-symbols-outlined text-base text-green-600">table_view</span>
-                  Export as Excel
+                  {t('common.exportExcel')}
                 </button>
                 <button onClick={handleExport} className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-on-surface hover:bg-hover-bg transition text-left">
                   <span className="material-symbols-outlined text-base text-red-500">picture_as_pdf</span>
-                  Export as PDF
+                  {t('common.exportPDF')}
                 </button>
               </div>
             )}
@@ -873,7 +877,7 @@ export default function Orders() {
           {canCreate && (
             <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
               <span className="material-symbols-outlined text-base">add</span>
-              New Order
+              {t('orders.newOrder')}
             </button>
           )}
         </div>
@@ -884,7 +888,7 @@ export default function Orders() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-lg">search</span>
           <input
             className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-            placeholder="Search order, customer, rep, product…"
+            placeholder={t('common.search')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           />
@@ -894,11 +898,11 @@ export default function Orders() {
           value={filterStatus}
           onChange={(e) => { setFilterStatus(e.target.value); setPage(1) }}
         >
-          <option value="">All Statuses</option>
+          <option value="">{t('orders.allStatuses')}</option>
           {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-text-muted whitespace-nowrap">From</span>
+          <span className="text-xs text-text-muted whitespace-nowrap">{t('common.from')}</span>
           <input
             type="date"
             className="bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
@@ -907,7 +911,7 @@ export default function Orders() {
           />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-text-muted whitespace-nowrap">To</span>
+          <span className="text-xs text-text-muted whitespace-nowrap">{t('common.to')}</span>
           <input
             type="date"
             className="bg-surface-container-lowest border border-theme-border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
@@ -921,7 +925,7 @@ export default function Orders() {
             className="flex items-center gap-1 text-xs text-text-muted hover:text-error transition"
           >
             <span className="material-symbols-outlined text-base">close</span>
-            Clear
+            {t('common.clear')}
           </button>
         )}
       </div>
@@ -939,20 +943,20 @@ export default function Orders() {
                   className="w-4 h-4 rounded accent-primary cursor-pointer"
                 />
               </th>
-              <th className="text-left px-4 py-2 font-semibold">Order</th>
-              <th className="text-left px-4 py-2 font-semibold">Customer</th>
-              <th className="text-left px-4 py-2 font-semibold">Sales Rep</th>
-              <th className="text-right px-4 py-2 font-semibold">Total</th>
-              <th className="text-left px-4 py-2 font-semibold">Status</th>
-              <th className="text-left px-4 py-2 font-semibold">Date</th>
-              <th className="text-left px-4 py-2 font-semibold">Time</th>
-              {(canDelete || canEditProcessing) && <th className="text-right px-4 py-2 font-semibold">Actions</th>}
+              <th className="text-left px-4 py-2 font-semibold">{t('orders.order')}</th>
+              <th className="text-left px-4 py-2 font-semibold">{t('common.customer')}</th>
+              <th className="text-left px-4 py-2 font-semibold">{t('orders.salesRep')}</th>
+              <th className="text-right px-4 py-2 font-semibold">{t('orders.total')}</th>
+              <th className="text-left px-4 py-2 font-semibold">{t('common.status')}</th>
+              <th className="text-left px-4 py-2 font-semibold">{t('common.date')}</th>
+              <th className="text-left px-4 py-2 font-semibold">{t('workOrders.time')}</th>
+              {(canDelete || canEditProcessing) && <th className="text-right px-4 py-2 font-semibold">{t('common.actions')}</th>}
             </tr>
           </thead>
           <tbody>
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={(canDelete || canEditProcessing) ? 9 : 8} className="text-center py-16 text-text-muted">No orders found</td>
+                <td colSpan={(canDelete || canEditProcessing) ? 9 : 8} className="text-center py-16 text-text-muted">{t('orders.noOrders')}</td>
               </tr>
             ) : (
               paginated.map((o) => {
@@ -1015,9 +1019,9 @@ export default function Orders() {
       <div className="flex items-center justify-between mt-4 text-sm text-text-muted">
         <span>{filtered.length} orders</span>
         <div className="flex gap-2">
-          <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
+          <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.prev')}</button>
           <span className="px-3 py-1.5">{page} / {totalPages}</span>
-          <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
+          <button disabled={page === totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.next')}</button>
         </div>
       </div>
 
@@ -1028,15 +1032,15 @@ export default function Orders() {
           <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-sm p-8">
             <div className="flex items-center gap-3 mb-4">
               <span className="material-symbols-outlined text-error text-3xl">delete_forever</span>
-              <h2 className="text-lg font-bold text-on-surface">Delete Order?</h2>
+              <h2 className="text-lg font-bold text-on-surface">{t('orders.deleteOrder')}</h2>
             </div>
-            <p className="text-sm text-text-muted mb-6">This action cannot be undone. The order and all its line items will be permanently deleted.</p>
+            <p className="text-sm text-text-muted mb-6">{t('orders.deleteConfirm')}</p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDeleteId(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button onClick={handleDelete} className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           </div>
@@ -1044,12 +1048,12 @@ export default function Orders() {
       )}
 
       {showAdd && (
-        <OrderModal title="New Order" form={form} setForm={setForm} errors={errors} saveError={saveError}
+        <OrderModal title={t('orders.newOrder')} form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => { setShowAdd(false); setSaveError('') }} onSave={handleAdd}
           customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} isAdmin={isAdmin} />
       )}
       {editItem && (
-        <OrderModal title="Edit Order" form={form} setForm={setForm} errors={errors} saveError={saveError}
+        <OrderModal title={t('orders.editOrder')} form={form} setForm={setForm} errors={errors} saveError={saveError}
           onClose={() => { setEditItem(null); setSaveError('') }} onSave={handleEdit}
           customers={customers} employees={employees} products={products} currentUser={currentUser} salesTeam={salesTeam} isAdmin={isAdmin} />
       )}

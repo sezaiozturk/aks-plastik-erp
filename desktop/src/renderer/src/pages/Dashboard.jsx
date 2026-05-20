@@ -102,12 +102,12 @@ function OrdersDonutChart({ segments }) {
   )
 }
 
-function timeAgo(dateStr) {
+function timeAgo(dateStr, t) {
   const now = new Date()
   const date = new Date(dateStr)
   const diffMs = now - date
   const mins = Math.floor(diffMs / 60000)
-  if (mins < 1) return 'Just now'
+  if (mins < 1) return t('dashboard.justNow')
   if (mins < 60) return `${mins}m ago`
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
@@ -168,12 +168,14 @@ function buildActivity(customers, employees, reports, siteVisits) {
 }
 
 
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const { isAdmin, user } = useAuth()
   const { reports, employees, customers, siteVisits, financeRecords, orders, permissions } = useData()
   const navigate = useNavigate()
@@ -207,48 +209,48 @@ export default function Dashboard() {
     {
       page: 'reports',
       href: '/reports',
-      label: 'Total Tasks',
+      label: t('dashboard.totalTasks'),
       value: String(reports.length),
       icon: 'add_task',
       iconColor: 'text-primary',
       accent: true,
-      trend: `${reports.filter((r) => r.column === 'in-progress').length} in progress`,
+      trend: `${reports.filter((r) => r.column === 'in-progress').length} ${t('dashboard.inProgress')}`,
       trendIcon: 'pending',
       trendColor: 'text-secondary',
     },
     {
       page: '__admin__',
       href: '/employees',
-      label: 'Total Employees',
+      label: t('dashboard.totalEmployees'),
       value: String(totalEmps),
       icon: 'badge',
       iconColor: 'text-secondary',
       accent: false,
-      trend: `${activeEmps} active`,
+      trend: `${activeEmps} ${t('topbar.active')}`,
       trendIcon: 'check_circle',
       trendColor: 'text-secondary',
     },
     {
       page: 'customers',
       href: '/customers',
-      label: 'Customers Served',
+      label: t('dashboard.customersServed'),
       value: customers.length.toLocaleString(),
       icon: 'groups',
       iconColor: 'text-tertiary',
       accent: false,
-      trend: `${customers.length} registered`,
+      trend: `${customers.length} ${t('dashboard.registered')}`,
       trendIcon: 'check_circle',
       trendColor: 'text-tertiary',
     },
     {
       page: 'work-orders',
       href: '/work-orders',
-      label: 'Site Visits',
+      label: t('dashboard.siteVisitsLabel'),
       value: String(siteVisits.length),
       icon: 'location_on',
       iconColor: 'text-metric-visits-icon',
       accent: false,
-      trend: `${siteVisits.filter((v) => v.status === 'In Progress').length} in progress`,
+      trend: `${siteVisits.filter((v) => v.status === 'In Progress').length} ${t('dashboard.inProgress')}`,
       trendIcon: 'pending',
       trendColor: 'text-tertiary',
     },
@@ -271,9 +273,9 @@ export default function Dashboard() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">Dashboard Overview</h1>
+          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">{t('dashboard.title')}</h1>
           <p className="text-on-surface-variant mt-1 font-medium">
-            Monitoring real-time operational efficiency across all regions.
+            {t('dashboard.subtitle')}
           </p>
         </div>
       </div>
@@ -318,8 +320,8 @@ export default function Dashboard() {
             >
               <div className="mb-6 flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-extrabold text-on-surface">Finance Overview</h3>
-                  <p className="text-sm text-on-surface-variant">Income, expenses and net balance</p>
+                  <h3 className="text-lg font-extrabold text-on-surface">{t('dashboard.financeOverview')}</h3>
+                  <p className="text-sm text-on-surface-variant">{t('dashboard.financeSubtitle')}</p>
                 </div>
                 <span className="material-symbols-outlined text-text-muted text-sm">open_in_new</span>
               </div>
@@ -327,7 +329,7 @@ export default function Dashboard() {
                 <div className="relative flex-shrink-0 w-[180px] h-[180px]">
                   <DonutChart income={totalIncome} expenses={totalExpenses} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Net</span>
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{t('dashboard.net')}</span>
                     <span className={`text-lg font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {netBalance >= 0 ? '+' : ''}
                       {netBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
@@ -338,7 +340,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
                     <div className="flex-1">
-                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Income</div>
+                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('dashboard.income')}</div>
                       <div className="text-xl font-black text-green-500 tabular-nums">
                         {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
@@ -347,7 +349,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
                     <div className="flex-1">
-                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Expenses</div>
+                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('dashboard.expenses')}</div>
                       <div className="text-xl font-black text-red-500 tabular-nums">
                         {totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
@@ -356,7 +358,7 @@ export default function Dashboard() {
                   <div className="border-t border-outline-variant/30 pt-4 flex items-center gap-3">
                     <span className={`w-3 h-3 rounded-full flex-shrink-0 ${netBalance >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
                     <div className="flex-1">
-                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Net Balance</div>
+                      <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{t('dashboard.netBalance')}</div>
                       <div className={`text-xl font-black tabular-nums ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {netBalance >= 0 ? '+' : ''}
                         {netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -376,8 +378,8 @@ export default function Dashboard() {
             >
               <div className="mb-6 flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-extrabold text-on-surface">Orders by Status</h3>
-                  <p className="text-sm text-on-surface-variant">Distribution across all order stages</p>
+                  <h3 className="text-lg font-extrabold text-on-surface">{t('dashboard.ordersByStatus')}</h3>
+                  <p className="text-sm text-on-surface-variant">{t('dashboard.ordersSubtitle')}</p>
                 </div>
                 <span className="material-symbols-outlined text-text-muted text-sm">open_in_new</span>
               </div>
@@ -385,13 +387,13 @@ export default function Dashboard() {
                 <div className="relative flex-shrink-0 w-[180px] h-[180px]">
                   <OrdersDonutChart segments={orderSegments} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Total</span>
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{t('dashboard.total')}</span>
                     <span className="text-2xl font-black text-on-surface">{orders.length}</span>
                   </div>
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
                   {orderSegments.length === 0 ? (
-                    <p className="col-span-2 text-sm text-on-surface-variant">No orders yet.</p>
+                    <p className="col-span-2 text-sm text-on-surface-variant">{t('dashboard.noOrders')}</p>
                   ) : (
                     orderSegments.map((seg) => (
                       <div key={seg.status} className="flex items-center gap-2">
@@ -421,8 +423,8 @@ export default function Dashboard() {
         >
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h3 className="text-lg font-extrabold text-on-surface">Logistics Pipeline</h3>
-              <p className="text-sm text-on-surface-variant">{totalLogistics} orders in logistics</p>
+              <h3 className="text-lg font-extrabold text-on-surface">{t('dashboard.logisticsPipeline')}</h3>
+              <p className="text-sm text-on-surface-variant">{t('dashboard.ordersInLogistics', { count: totalLogistics })}</p>
             </div>
             <span className="material-symbols-outlined text-text-muted text-sm">open_in_new</span>
           </div>
@@ -447,7 +449,7 @@ export default function Dashboard() {
       {recentActivity.length > 0 && (
         <div className="bg-surface-container-lowest rounded-xl p-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-extrabold text-on-surface">Recent Activity</h3>
+            <h3 className="text-lg font-extrabold text-on-surface">{t('dashboard.recentActivity')}</h3>
           </div>
           <div className="space-y-2 max-h-[320px] overflow-y-auto">
             {recentActivity.map((item, i) => (
@@ -461,7 +463,7 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start gap-2">
                     <h4 className="text-sm font-bold text-on-surface">{item.title}</h4>
-                    <span className="text-[10px] font-medium text-on-surface-variant whitespace-nowrap">{timeAgo(item.date)}</span>
+                    <span className="text-[10px] font-medium text-on-surface-variant whitespace-nowrap">{timeAgo(item.date, t)}</span>
                   </div>
                   <p className="text-xs text-on-surface-variant mt-1">{item.desc}</p>
                 </div>

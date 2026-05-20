@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import { useCurrencyRates } from '../hooks/useCurrencyRates'
 import jsPDF from 'jspdf'
@@ -57,6 +58,7 @@ function fmt(n) {
 
 // ─── Modal ───────────────────────────────────────────────────────────────────
 function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, ratesBase }) {
+  const { t } = useTranslation()
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
   const inp = (field) =>
     `w-full bg-surface-container-lowest border rounded-xl px-3 py-2 text-sm text-on-surface outline-none focus:border-primary transition ${errors[field] ? 'border-error' : 'border-theme-border'}`
@@ -76,18 +78,18 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
 
         {/* Type toggle */}
         <div className="flex gap-2 mb-4">
-          {['income', 'expense'].map(t => (
+          {['income', 'expense'].map(type => (
             <button
-              key={t}
-              onClick={() => setForm(f => ({ ...f, type: t, category: t === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0] }))}
+              key={type}
+              onClick={() => setForm(f => ({ ...f, type, category: type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0] }))}
               className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition flex items-center justify-center gap-1.5 ${
-                form.type === t
-                  ? t === 'income' ? 'bg-primary text-white border-primary' : 'bg-error text-white border-error'
+                form.type === type
+                  ? type === 'income' ? 'bg-primary text-white border-primary' : 'bg-error text-white border-error'
                   : 'border-theme-border text-text-muted hover:bg-hover-bg'
               }`}
             >
-              <span className="material-symbols-outlined text-base">{t === 'income' ? 'trending_up' : 'trending_down'}</span>
-              {t === 'income' ? 'Income' : 'Expense'}
+              <span className="material-symbols-outlined text-base">{type === 'income' ? 'trending_up' : 'trending_down'}</span>
+              {type === 'income' ? t('finance.income') : t('finance.expense')}
             </button>
           ))}
         </div>
@@ -95,12 +97,12 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Date *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.date')} *</label>
               <input type="date" className={inp('date')} value={form.date} onChange={set('date')} />
               {errors.date && <p className="text-xs text-error mt-1">{errors.date}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Amount *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.amount')} *</label>
               <div className="flex gap-1.5">
                 <select
                   className="bg-surface-container-lowest border border-theme-border rounded-xl px-2 py-2 text-sm text-on-surface outline-none focus:border-primary shrink-0"
@@ -128,13 +130,13 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Category</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.category')}</label>
               <select className={inp('category')} value={form.category} onChange={set('category')}>
                 {categories.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Payment Method</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('finance.paymentMethod')}</label>
               <select className={inp('paymentMethod')} value={form.paymentMethod} onChange={set('paymentMethod')}>
                 <option value="">— Select —</option>
                 <option value="Credit Card">Credit Card</option>
@@ -236,7 +238,7 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Invoice / Reference #</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.reference')}</label>
             <input className={inp('reference')} value={form.reference} onChange={set('reference')} placeholder="INV-0001" />
           </div>
           <div>
@@ -249,7 +251,7 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notes / Description</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.description')}</label>
             <textarea rows={2} className={inp('description')} value={form.description}
               onChange={set('description')} placeholder="Additional details…" />
           </div>
@@ -259,11 +261,11 @@ function Modal({ title, form, setForm, onClose, onSave, errors, orders, rates, r
 
         <div className="flex gap-3 p-6 pt-4 border-t border-theme-border shrink-0">
           <button onClick={onClose} className="flex-1 border border-theme-border rounded-xl py-2.5 text-sm text-text-muted hover:bg-hover-bg transition">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button onClick={onSave}
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition hover:opacity-90 ${form.type === 'income' ? 'bg-primary' : 'bg-error'}`}>
-            Save
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -286,6 +288,7 @@ function DetailRow({ icon, label, value }) {
 }
 
 function RecordDetailModal({ record, onClose, orders, customers }) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('details')
 
   const linkedOrder = record.orderId ? orders.find(o => o.id === record.orderId) : null
@@ -294,9 +297,9 @@ function RecordDetailModal({ record, onClose, orders, customers }) {
     : null
 
   const tabs = [
-    { id: 'details',  label: 'Transaction',  icon: 'receipt_long'  },
-    ...(linkedOrder    ? [{ id: 'order',    label: 'Linked Order', icon: 'shopping_cart' }] : []),
-    ...(linkedCustomer ? [{ id: 'customer', label: 'Customer',     icon: 'business'      }] : []),
+    { id: 'details',  label: 'Transaction',          icon: 'receipt_long'  },
+    ...(linkedOrder    ? [{ id: 'order',    label: 'Linked Order',         icon: 'shopping_cart' }] : []),
+    ...(linkedCustomer ? [{ id: 'customer', label: t('common.customer'),   icon: 'business'      }] : []),
   ]
 
   const orderStatusColor = {
@@ -324,7 +327,7 @@ function RecordDetailModal({ record, onClose, orders, customers }) {
                 <p className="font-mono text-sm font-bold text-on-surface">{record.code}</p>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${record.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
                   <span className="material-symbols-outlined text-xs">{record.type === 'income' ? 'arrow_circle_down' : 'arrow_circle_up'}</span>
-                  {record.type === 'income' ? 'Income' : 'Expense'}
+                  {record.type === 'income' ? t('finance.income') : t('finance.expense')}
                 </span>
               </div>
               <p className={`text-2xl font-bold tabular-nums leading-none ${record.type === 'income' ? 'text-primary' : 'text-error'}`}>
@@ -341,13 +344,13 @@ function RecordDetailModal({ record, onClose, orders, customers }) {
         {/* Tabs */}
         {tabs.length > 1 && (
           <div className="flex px-6 shrink-0 border-b border-theme-border">
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
+            {tabs.map(tabItem => (
+              <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
                 className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 transition -mb-px ${
-                  tab === t.id ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-on-surface'
+                  tab === tabItem.id ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-on-surface'
                 }`}>
-                <span className="material-symbols-outlined text-sm">{t.icon}</span>
-                {t.label}
+                <span className="material-symbols-outlined text-sm">{tabItem.icon}</span>
+                {tabItem.label}
               </button>
             ))}
           </div>
@@ -520,6 +523,7 @@ function RecordDetailModal({ record, onClose, orders, customers }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function Finance() {
+  const { t } = useTranslation()
   const { financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, refreshFinanceRecords, orders, customers, isAdmin } = useData()
   const { rates, base: ratesBase } = useCurrencyRates()
   const [search, setSearch] = useState('')
@@ -756,14 +760,14 @@ export default function Finance() {
       {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-on-surface">Finance</h1>
+          <h1 className="text-xl font-bold text-on-surface">{t('finance.title')}</h1>
           <p className="text-xs text-text-muted mt-0.5">Track income, expenses and cash flow</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={refreshFinanceRecords}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-sm">refresh</span>
-            Refresh
+            {t('common.refresh')}
           </button>
           <div className="relative">
             <button
@@ -771,7 +775,7 @@ export default function Finance() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-theme-border text-xs text-text-muted hover:bg-hover-bg transition"
             >
               <span className="material-symbols-outlined text-sm">download</span>
-              Export
+              {t('common.export')}
               <span className="material-symbols-outlined text-sm">expand_more</span>
             </button>
             {showExportMenu && (
@@ -801,7 +805,7 @@ export default function Finance() {
             <button onClick={openAdd}
               className="flex items-center gap-1.5 primary-gradient text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
               <span className="material-symbols-outlined text-sm">add</span>
-              Add Record
+              {t('finance.addRecord')}
             </button>
           )}
         </div>
@@ -814,7 +818,7 @@ export default function Finance() {
             <span className="material-symbols-outlined text-primary text-base">trending_up</span>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">Total Income</p>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{t('finance.totalIncome')}</p>
             <p className="text-base font-bold text-primary tabular-nums">{fmt(summary.income)}</p>
             <p className="text-[10px] text-text-muted">{summary.incomeCount} tx</p>
           </div>
@@ -825,7 +829,7 @@ export default function Finance() {
             <span className="material-symbols-outlined text-error text-base">trending_down</span>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">Total Expenses</p>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{t('finance.totalExpense')}</p>
             <p className="text-base font-bold text-error tabular-nums">{fmt(summary.expense)}</p>
             <p className="text-[10px] text-text-muted">{summary.expenseCount} tx</p>
           </div>
@@ -836,7 +840,7 @@ export default function Finance() {
             <span className={`material-symbols-outlined text-base ${summary.balance >= 0 ? 'text-green-600' : 'text-red-500'}`}>account_balance</span>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">Net Balance</p>
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">{t('finance.netBalance')}</p>
             <p className={`text-base font-bold tabular-nums ${summary.balance >= 0 ? 'text-green-700' : 'text-red-600'}`}>
               {summary.balance >= 0 ? '+' : '-'}{fmt(Math.abs(summary.balance))}
             </p>
@@ -872,16 +876,20 @@ export default function Finance() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-base">search</span>
           <input
             className="w-full bg-surface-container-lowest border border-theme-border rounded-xl pl-9 pr-3 py-1.5 text-xs text-on-surface outline-none focus:border-primary"
-            placeholder="Search code, category, reference…"
+            placeholder={t('finance.searchPlaceholder')}
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
           />
         </div>
         <div className="flex gap-0.5 bg-surface-container-lowest border border-theme-border rounded-xl p-0.5">
-          {['all', 'income', 'expense'].map(t => (
-            <button key={t} onClick={() => { setTypeFilter(t); setPage(1) }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === t ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-bg'}`}>
-              {t}
+          {[
+            { value: 'all',     label: t('common.all') },
+            { value: 'income',  label: t('finance.income') },
+            { value: 'expense', label: t('finance.expense') },
+          ].map(({ value, label }) => (
+            <button key={value} onClick={() => { setTypeFilter(value); setPage(1) }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition capitalize ${typeFilter === value ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-bg'}`}>
+              {label}
             </button>
           ))}
         </div>
@@ -903,7 +911,7 @@ export default function Finance() {
           <button onClick={() => { setSearch(''); setTypeFilter('all'); setCategoryFilter('all'); setDateFilter('all'); setPage(1) }}
             className="flex items-center gap-1 text-xs text-text-muted hover:text-error transition">
             <span className="material-symbols-outlined text-sm">close</span>
-            Clear
+            {t('common.clear')}
           </button>
         )}
       </div>
@@ -930,13 +938,13 @@ export default function Finance() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-surface-container-lowest z-10">
               <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-                <th className="text-left px-4 py-2.5 font-semibold">Code</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Type</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Category</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Date</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Reference</th>
-                <th className="text-left px-4 py-2.5 font-semibold">Description</th>
-                <th className="text-right px-4 py-2.5 font-semibold">Amount</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('finance.records')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('finance.type')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('finance.category')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('common.date')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('finance.reference')}</th>
+                <th className="text-left px-4 py-2.5 font-semibold">{t('common.description')}</th>
+                <th className="text-right px-4 py-2.5 font-semibold">{t('finance.amount')}</th>
                 {isAdmin && <th className="px-4 py-2.5 w-20" />}
               </tr>
             </thead>
@@ -945,7 +953,7 @@ export default function Finance() {
                 <tr>
                   <td colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-text-muted">
                     <span className="material-symbols-outlined text-4xl block mb-2 opacity-30">receipt_long</span>
-                    No records found
+                    {t('finance.noRecords')}
                   </td>
                 </tr>
               ) : (
@@ -955,7 +963,7 @@ export default function Finance() {
                     <td className="px-4 py-2.5">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${r.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
                         <span className="material-symbols-outlined text-xs">{r.type === 'income' ? 'arrow_circle_down' : 'arrow_circle_up'}</span>
-                        {r.type === 'income' ? 'Income' : 'Expense'}
+                        {r.type === 'income' ? t('finance.income') : t('finance.expense')}
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-xs text-text-muted">{r.category}</td>
@@ -970,8 +978,8 @@ export default function Finance() {
                       <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                         {deletingId === r.id ? (
                           <div className="flex items-center gap-1 justify-end">
-                            <button onClick={() => handleDelete(r.id)} className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">Yes</button>
-                            <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1 transition">No</button>
+                            <button onClick={() => handleDelete(r.id)} className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">{t('common.yes')}</button>
+                            <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1 transition">{t('common.no')}</button>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-0.5">
@@ -997,21 +1005,21 @@ export default function Finance() {
             <span>Page {page} of {totalPages} · {filtered.length} records</span>
             <div className="flex gap-1.5">
               <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Prev</button>
+                className="px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.prev')}</button>
               <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">Next</button>
+                className="px-3 py-1 rounded-lg border border-theme-border disabled:opacity-40 hover:bg-hover-bg transition">{t('common.next')}</button>
             </div>
           </div>
         )}
       </div>
 
       {showAdd && (
-        <Modal title="New Transaction" form={form} setForm={setForm} errors={errors}
+        <Modal title={t('finance.addRecord')} form={form} setForm={setForm} errors={errors}
           onClose={() => setShowAdd(false)} onSave={handleAdd} orders={orders}
           rates={rates} ratesBase={ratesBase} />
       )}
       {editItem && (
-        <Modal title="Edit Transaction" form={form} setForm={setForm} errors={errors}
+        <Modal title={t('finance.editRecord')} form={form} setForm={setForm} errors={errors}
           onClose={() => setEditItem(null)} onSave={handleEdit} orders={orders}
           rates={rates} ratesBase={ratesBase} />
       )}

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import aksLogoLight from '../assets/aks_logo.png'
 import aksLogoDark from '../assets/aks_logo_dark.png'
 
 export default function Login() {
+  const { t } = useTranslation()
   const { login, loading } = useAuth()
   const { dark, toggleTheme } = useTheme()
   const [error, setError] = useState('')
@@ -14,7 +16,7 @@ export default function Login() {
     try {
       await login()
     } catch (err) {
-      setError(err.message || 'Login failed')
+      setError(err.message || t('login.loginFailed'))
     }
   }
 
@@ -38,7 +40,7 @@ export default function Login() {
 
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-theme-border p-8 space-y-5">
           <h2 className="text-lg font-bold text-on-surface text-center" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            Welcome
+            {t('login.welcome')}
           </h2>
 
           {error && (
@@ -55,18 +57,18 @@ export default function Login() {
             {loading ? (
               <>
                 <span className="material-symbols-outlined text-base animate-spin">progress_activity</span>
-                Signing in…
+                {t('login.signingIn')}
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-base">login</span>
-                Sign In
+                {t('login.signIn')}
               </>
             )}
           </button>
 
           <p className="text-xs text-text-muted text-center">
-            Your credentials are managed by your administrator.
+            {t('login.credentials')}
           </p>
         </div>
 

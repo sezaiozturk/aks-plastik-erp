@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
@@ -70,6 +71,7 @@ function StatCard({ icon, label, value, sub, color = 'text-primary' }) {
 
 // ── Request Modal ────────────────────────────────────────────────────────────
 function RequestModal({ initial, onClose, onSave }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     title: '', description: '', department: '', requestedBy: '',
     priority: 'Medium', category: 'General', estimatedAmount: '',
@@ -96,17 +98,17 @@ function RequestModal({ initial, onClose, onSave }) {
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Title *</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.title')} *</label>
             <input className={inp('title')} value={form.title} onChange={set('title')} placeholder="e.g. CNC Machine Spare Parts Purchase" />
             {errors.title && <p className="text-xs text-error mt-1">{errors.title}</p>}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Description</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.description')}</label>
             <textarea rows={2} className={inp('description')} value={form.description} onChange={set('description')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Department</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.department')}</label>
               <input className={inp('department')} value={form.department} onChange={set('department')} />
             </div>
             <div>
@@ -116,13 +118,13 @@ function RequestModal({ initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Priority</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.priority')}</label>
               <select className={inp('priority')} value={form.priority} onChange={set('priority')}>
                 {PRIORITIES.map((p) => <option key={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Category</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.category')}</label>
               <select className={inp('category')} value={form.category} onChange={set('category')}>
                 {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
@@ -138,20 +140,20 @@ function RequestModal({ initial, onClose, onSave }) {
               <input type="number" min="0" step="0.01" className={inp('estimatedAmount')} value={form.estimatedAmount} onChange={set('estimatedAmount')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.currency')}</label>
               <select className={inp('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
             <textarea rows={2} className={inp('notes')} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
-          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
+          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">{t('common.save')}</button>
         </div>
       </div>
     </div>
@@ -160,6 +162,7 @@ function RequestModal({ initial, onClose, onSave }) {
 
 // ── Quotation Modal ──────────────────────────────────────────────────────────
 function QuotationModal({ suppliers, initial, onClose, onSave }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState(initial || {
     supplierId: '', supplierName: '', quotationNo: '', quotationDate: new Date().toISOString().split('T')[0],
     amount: '', currency: 'TRY', vat: '20', deliveryDays: '', paymentTerms: '', warranty: '', notes: '',
@@ -185,7 +188,7 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Supplier</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.supplier')}</label>
             <select className={inp('supplierId')} value={form.supplierId} onChange={set('supplierId')}>
               <option value="">-- Manual Entry --</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -217,7 +220,7 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
               <input type="number" min="0" max="100" className={inp('vat')} value={form.vat} onChange={set('vat')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.currency')}</label>
               <select className={inp('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
@@ -238,13 +241,13 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
             <input className={inp('paymentTerms')} value={form.paymentTerms} onChange={set('paymentTerms')} placeholder="e.g. Net 30 days" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
             <textarea rows={2} className={inp('notes')} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
-          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
+          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">{t('common.save')}</button>
         </div>
       </div>
     </div>
@@ -253,6 +256,7 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
 
 // ── Supplier Modal ───────────────────────────────────────────────────────────
 function SupplierModal({ initial, onClose, onSave }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState(initial || {
     name: '', category: 'General', contactName: '', contactPhone: '',
     contactEmail: '', address: '', country: '', currency: 'TRY', status: 'Active', notes: '',
@@ -283,13 +287,13 @@ function SupplierModal({ initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Category</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.category')}</label>
               <select className={inp('category')} value={form.category} onChange={set('category')}>
                 {SUPPLIER_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Status</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.status')}</label>
               <select className={inp('status')} value={form.status} onChange={set('status')}>
                 <option>Active</option><option>Inactive</option><option>Blacklisted</option>
               </select>
@@ -301,7 +305,7 @@ function SupplierModal({ initial, onClose, onSave }) {
               <input className={inp('contactName')} value={form.contactName} onChange={set('contactName')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Phone</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.phone')}</label>
               <input className={inp('contactPhone')} value={form.contactPhone} onChange={set('contactPhone')} />
             </div>
           </div>
@@ -311,28 +315,28 @@ function SupplierModal({ initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Country</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.country')}</label>
               <input className={inp('country')} value={form.country} onChange={set('country')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Currency</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.currency')}</label>
               <select className={inp('currency')} value={form.currency} onChange={set('currency')}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Address</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.address')}</label>
             <input className={inp('address')} value={form.address} onChange={set('address')} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
             <textarea rows={2} className={inp('notes')} value={form.notes} onChange={set('notes')} />
           </div>
         </div>
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
-          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
+          <button onClick={onClose} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
+          <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">{t('common.save')}</button>
         </div>
       </div>
     </div>
@@ -341,6 +345,7 @@ function SupplierModal({ initial, onClose, onSave }) {
 
 // ── Detail Drawer ────────────────────────────────────────────────────────────
 function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate, onAddQuotation, onSelectQuotation, onDeleteQuotation, canCreateEdit }) {
+  const { t } = useTranslation()
   const r = request
   const { user } = useAuth()
   const { userPurchasingStatusPermissions } = useData()
@@ -722,6 +727,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Purchasing() {
+  const { t } = useTranslation()
   const { token, user } = useAuth()
   const { permissions } = useData()
   const isAdmin = user?.role === 'admin'
@@ -852,8 +858,8 @@ export default function Purchasing() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Purchasing & Supply</h1>
-          <p className="text-sm text-text-muted mt-0.5">Manage purchasing processes end to end</p>
+          <h1 className="text-2xl font-bold text-on-surface">{t('purchasing.title')}</h1>
+          <p className="text-sm text-text-muted mt-0.5">{t('purchasing.subtitle')}</p>
         </div>
         {(tab === 'suppliers' ? isAdmin : canCreateEdit) && (
           <button
@@ -882,13 +888,13 @@ export default function Purchasing() {
           {[
             { key: 'requests', label: 'Purchase Requests' },
             { key: 'suppliers', label: 'Suppliers' },
-          ].map((t) => (
+          ].map((tabItem) => (
             <button
-              key={t.key}
-              onClick={() => { setTab(t.key); setSearch('') }}
-              className={`pb-3 text-sm font-semibold border-b-2 transition ${tab === t.key ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-on-surface'}`}
+              key={tabItem.key}
+              onClick={() => { setTab(tabItem.key); setSearch('') }}
+              className={`pb-3 text-sm font-semibold border-b-2 transition ${tab === tabItem.key ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-on-surface'}`}
             >
-              {t.label}
+              {tabItem.label}
             </button>
           ))}
           <div className="ml-auto flex items-center gap-3 pb-3">
@@ -896,7 +902,7 @@ export default function Purchasing() {
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-text-muted">search</span>
               <input
                 className="bg-surface-container border border-theme-border rounded-lg pl-8 pr-3 py-1.5 text-sm text-on-surface outline-none focus:border-primary w-48"
-                placeholder="Search..."
+                placeholder={t('purchasing.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -943,11 +949,11 @@ export default function Purchasing() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-container-lowest rounded-2xl shadow-xl p-8 max-w-sm w-full">
-            <h2 className="text-lg font-bold text-on-surface mb-2">Confirm Delete</h2>
-            <p className="text-sm text-text-muted mb-6">This action cannot be undone.</p>
+            <h2 className="text-lg font-bold text-on-surface mb-2">{t('common.areYouSure')}</h2>
+            <p className="text-sm text-text-muted mb-6">{t('common.cantUndo')}</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteConfirm(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Delete</button>
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
+              <button onClick={handleDelete} className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">{t('common.delete')}</button>
             </div>
           </div>
         </div>
@@ -958,10 +964,11 @@ export default function Purchasing() {
 
 // ── Request Table ─────────────────────────────────────────────────────────────
 function RequestTable({ requests, onOpen }) {
+  const { t } = useTranslation()
   if (requests.length === 0) return (
     <div className="flex flex-col items-center justify-center h-40 text-text-muted gap-2">
       <span className="material-symbols-outlined text-3xl">assignment</span>
-      <p className="text-sm">No requests found</p>
+      <p className="text-sm">{t('purchasing.noData')}</p>
     </div>
   )
 
@@ -970,14 +977,14 @@ function RequestTable({ requests, onOpen }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-text-muted border-b border-theme-border">
-            <th className="px-6 py-3 font-semibold">Code</th>
-            <th className="px-4 py-3 font-semibold">Title</th>
-            <th className="px-4 py-3 font-semibold">Department</th>
-            <th className="px-4 py-3 font-semibold">Priority</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
-            <th className="px-4 py-3 font-semibold">Estimated Amount</th>
+            <th className="px-6 py-3 font-semibold">{t('common.code')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.title')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.department')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.priority')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.status')}</th>
+            <th className="px-4 py-3 font-semibold">{t('purchasing.totalAmount')}</th>
             <th className="px-4 py-3 font-semibold">Quotes</th>
-            <th className="px-4 py-3 font-semibold">Date</th>
+            <th className="px-4 py-3 font-semibold">{t('common.date')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-theme-border">
@@ -1010,10 +1017,11 @@ function RequestTable({ requests, onOpen }) {
 
 // ── Supplier Table ────────────────────────────────────────────────────────────
 function SupplierTable({ suppliers, onEdit, onDelete }) {
+  const { t } = useTranslation()
   if (suppliers.length === 0) return (
     <div className="flex flex-col items-center justify-center h-40 text-text-muted gap-2">
       <span className="material-symbols-outlined text-3xl">storefront</span>
-      <p className="text-sm">No suppliers found</p>
+      <p className="text-sm">{t('common.noData')}</p>
     </div>
   )
 
@@ -1022,13 +1030,13 @@ function SupplierTable({ suppliers, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs text-text-muted border-b border-theme-border">
-            <th className="px-6 py-3 font-semibold">Code</th>
-            <th className="px-4 py-3 font-semibold">Company Name</th>
-            <th className="px-4 py-3 font-semibold">Category</th>
+            <th className="px-6 py-3 font-semibold">{t('common.code')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.name')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.category')}</th>
             <th className="px-4 py-3 font-semibold">Contact</th>
-            <th className="px-4 py-3 font-semibold">Country</th>
-            <th className="px-4 py-3 font-semibold">Currency</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold">{t('common.country')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.currency')}</th>
+            <th className="px-4 py-3 font-semibold">{t('common.status')}</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>

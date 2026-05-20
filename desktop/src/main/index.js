@@ -1,4 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { join } from 'path'
 import { spawn, spawnSync } from 'child_process'
 import { existsSync } from 'fs'
@@ -275,12 +276,26 @@ function createWindow() {
   }
 }
 
+ipcMain.handle('updater:install', () => autoUpdater.quitAndInstall())
+
 app.whenReady().then(() => {
   createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  if (!isDev) {
+    const sendToAll = (channel, data) =>
+      BrowserWindow.getAllWindows().forEach((w) => w.webContents.send(channel, data))
+
+    autoUpdater.autoDownload = true
+    autoUpdater.on('update-available',   (info)     => sendToAll('updater:update-available', info))
+    autoUpdater.on('download-progress',  (progress) => sendToAll('updater:download-progress', progress))
+    autoUpdater.on('update-downloaded',  (info)     => sendToAll('updater:update-downloaded', info))
+
+    autoUpdater.checkForUpdates()
+  }
 })
 
 app.on('window-all-closed', () => {
