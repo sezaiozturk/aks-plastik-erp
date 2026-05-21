@@ -84,7 +84,7 @@ function RequestModal({ initial, onClose, onSave }) {
 
   function handleSave() {
     const e = {}
-    if (!form.title.trim()) e.title = 'Required'
+    if (!form.title.trim()) e.title = t('common.required')
     if (Object.keys(e).length) { setErrors(e); return }
     onSave(form)
   }
@@ -93,13 +93,13 @@ function RequestModal({ initial, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-lg p-7 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-on-surface">{initial?.id ? 'Edit Request' : 'New Purchase Request'}</h2>
+          <h2 className="text-lg font-bold text-on-surface">{initial?.id ? t('purchasing.editRequest') : t('purchasing.newPurchaseRequest')}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
         </div>
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.title')} *</label>
-            <input className={inp('title')} value={form.title} onChange={set('title')} placeholder="e.g. CNC Machine Spare Parts Purchase" />
+            <input className={inp('title')} value={form.title} onChange={set('title')} placeholder={t('purchasing.titlePh')} />
             {errors.title && <p className="text-xs text-error mt-1">{errors.title}</p>}
           </div>
           <div>
@@ -112,7 +112,7 @@ function RequestModal({ initial, onClose, onSave }) {
               <input className={inp('department')} value={form.department} onChange={set('department')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Requested By</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.requestedBy')}</label>
               <input className={inp('requestedBy')} value={form.requestedBy} onChange={set('requestedBy')} />
             </div>
           </div>
@@ -130,13 +130,13 @@ function RequestModal({ initial, onClose, onSave }) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Budget Code</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.budgetCode')}</label>
               <input className={inp('budgetCode')} value={form.budgetCode} onChange={set('budgetCode')} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Estimated Amount</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.estimatedAmount')}</label>
               <input type="number" min="0" step="0.01" className={inp('estimatedAmount')} value={form.estimatedAmount} onChange={set('estimatedAmount')} />
             </div>
             <div>
@@ -183,40 +183,40 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-md p-7 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Edit Quotation' : 'Add New Quotation'}</h2>
+          <h2 className="text-lg font-bold text-on-surface">{initial ? t('purchasing.editQuotation') : t('purchasing.addQuotation')}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
         </div>
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.supplier')}</label>
             <select className={inp('supplierId')} value={form.supplierId} onChange={set('supplierId')}>
-              <option value="">-- Manual Entry --</option>
+              <option value="">{t('purchasing.manualEntry')}</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           {!form.supplierId && (
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Supplier Adi</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.supplierName')}</label>
               <input className={inp('supplierName')} value={form.supplierName} onChange={set('supplierName')} />
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Quote No</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.quoteNo')}</label>
               <input className={inp('quotationNo')} value={form.quotationNo} onChange={set('quotationNo')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Quote Date</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.quoteDate')}</label>
               <input type="date" className={inp('quotationDate')} value={form.quotationDate} onChange={set('quotationDate')} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Amount *</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.amount')} *</label>
               <input type="number" min="0" step="0.01" className={inp('amount')} value={form.amount} onChange={set('amount')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">VAT %</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.vat')}</label>
               <input type="number" min="0" max="100" className={inp('vat')} value={form.vat} onChange={set('vat')} />
             </div>
             <div>
@@ -228,17 +228,17 @@ function QuotationModal({ suppliers, initial, onClose, onSave }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Delivery (days)</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.deliveryDays')}</label>
               <input type="number" min="0" className={inp('deliveryDays')} value={form.deliveryDays} onChange={set('deliveryDays')} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Warranty</label>
-              <input className={inp('warranty')} value={form.warranty} onChange={set('warranty')} placeholder="e.g. 2 Years" />
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.warranty')}</label>
+              <input className={inp('warranty')} value={form.warranty} onChange={set('warranty')} placeholder={t('purchasing.warrantyPh')} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Payment Terms</label>
-            <input className={inp('paymentTerms')} value={form.paymentTerms} onChange={set('paymentTerms')} placeholder="e.g. Net 30 days" />
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.paymentTerms')}</label>
+            <input className={inp('paymentTerms')} value={form.paymentTerms} onChange={set('paymentTerms')} placeholder={t('purchasing.paymentTermsPh')} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
@@ -267,7 +267,7 @@ function SupplierModal({ initial, onClose, onSave }) {
 
   function handleSave() {
     const e = {}
-    if (!form.name.trim()) e.name = 'Required'
+    if (!form.name.trim()) e.name = t('common.required')
     if (Object.keys(e).length) { setErrors(e); return }
     onSave(form)
   }
@@ -276,12 +276,12 @@ function SupplierModal({ initial, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-lg p-7 overflow-y-auto max-h-[90vh]">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-on-surface">{initial ? 'Edit Supplier' : 'New Supplier'}</h2>
+          <h2 className="text-lg font-bold text-on-surface">{initial ? t('purchasing.editSupplier') : t('purchasing.newSupplier')}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-error"><span className="material-symbols-outlined">close</span></button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">Company Name *</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.companyName')} *</label>
             <input className={inp('name')} value={form.name} onChange={set('name')} />
             {errors.name && <p className="text-xs text-error mt-1">{errors.name}</p>}
           </div>
@@ -295,13 +295,15 @@ function SupplierModal({ initial, onClose, onSave }) {
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.status')}</label>
               <select className={inp('status')} value={form.status} onChange={set('status')}>
-                <option>Active</option><option>Inactive</option><option>Blacklisted</option>
+                <option value="Active">{t('purchasing.statusActive')}</option>
+                <option value="Inactive">{t('purchasing.statusInactive')}</option>
+                <option value="Blacklisted">{t('purchasing.statusBlacklisted')}</option>
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-text-muted mb-1">Contact Person</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">{t('purchasing.contactPerson')}</label>
               <input className={inp('contactName')} value={form.contactName} onChange={set('contactName')} />
             </div>
             <div>
@@ -310,7 +312,7 @@ function SupplierModal({ initial, onClose, onSave }) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">E-Mail</label>
+            <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.email')}</label>
             <input className={inp('contactEmail')} value={form.contactEmail} onChange={set('contactEmail')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -383,18 +385,18 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
 
   function advanceLabel() {
     const labels = {
-      'Request': 'Send to Budget Review',
-      'Budget Review': 'Approve Budget & Collect Quotes',
-      'Collecting Quotes': 'Go to Comparison',
-      'Comparison': 'Send for Management Approval',
-      'Pending Approval': 'Approve & Create PO',
-      'PO Created': 'Send to Logistics',
-      'In Logistics': 'Send to Quality Check',
-      'Quality Check': 'Accept & Match Invoice',
-      'Invoice Matching': 'Move to Payment',
-      'Payment': 'Complete',
+      'Request': t('purchasing.advReqToBudget'),
+      'Budget Review': t('purchasing.advBudgetToQuotes'),
+      'Collecting Quotes': t('purchasing.advQuotesToComp'),
+      'Comparison': t('purchasing.advCompToApproval'),
+      'Pending Approval': t('purchasing.advApprovalToPO'),
+      'PO Created': t('purchasing.advPOToLogistics'),
+      'In Logistics': t('purchasing.advLogisticsToQC'),
+      'Quality Check': t('purchasing.advQCToInvoice'),
+      'Invoice Matching': t('purchasing.advInvoiceToPayment'),
+      'Payment': t('purchasing.advComplete'),
     }
-    return labels[r.status] || 'Advance'
+    return labels[r.status] || t('purchasing.advance')
   }
 
   return (
@@ -425,7 +427,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
         <div className="px-6 py-5 space-y-5">
           {/* Progress bar */}
           <div>
-            <p className="text-xs font-semibold text-text-muted mb-2">Process Status</p>
+            <p className="text-xs font-semibold text-text-muted mb-2">{t('purchasing.processStatus')}</p>
             <div className="flex items-center gap-0.5">
               {WORKFLOW_STAGES.map((stage, i) => (
                 <div key={stage.key} className="flex items-center flex-1">
@@ -434,20 +436,20 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
               ))}
             </div>
             <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-text-muted">{WORKFLOW_STAGES[0]?.label}</span>
-              <span className="text-[10px] text-text-muted">{WORKFLOW_STAGES[WORKFLOW_STAGES.length - 1]?.label}</span>
+              <span className="text-[10px] text-text-muted">{t('purchasing.stageFirst')}</span>
+              <span className="text-[10px] text-text-muted">{t('purchasing.stageLast')}</span>
             </div>
           </div>
 
           {/* Info grid */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              ['Department', r.department],
-              ['Requested By', r.requestedBy],
-              ['Category', r.category],
-              ['Estimated Amount', `${r.currency} ${fmt(r.estimatedAmount)}`],
-              ['Budget Code', r.budgetCode],
-              ['Date', new Date(r.createdAt).toLocaleDateString('en-US')],
+              [t('common.department'), r.department],
+              [t('purchasing.requestedBy'), r.requestedBy],
+              [t('common.category'), r.category],
+              [t('purchasing.estimatedAmount'), `${r.currency} ${fmt(r.estimatedAmount)}`],
+              [t('purchasing.budgetCode'), r.budgetCode],
+              [t('common.date'), new Date(r.createdAt).toLocaleDateString('en-US')],
             ].map(([label, val]) => (
               <div key={label} className="bg-surface-container rounded-lg p-3">
                 <p className="text-[10px] font-semibold text-text-muted uppercase">{label}</p>
@@ -460,13 +462,13 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
           {r.status === 'Budget Review' && (
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4">
               <p className="text-sm font-bold text-amber-600 mb-2 flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">account_balance</span> Budget Review
+                <span className="material-symbols-outlined text-sm">account_balance</span> {t('purchasing.budgetReviewTitle')}
               </p>
-              <p className="text-xs text-text-muted mb-3">Tahmini tutar: <strong>{r.currency} {fmt(r.estimatedAmount)}</strong></p>
+              <p className="text-xs text-text-muted mb-3">{t('purchasing.budgetEstimated')} <strong>{r.currency} {fmt(r.estimatedAmount)}</strong></p>
               <textarea
                 className="w-full bg-surface-container-lowest border border-theme-border rounded-lg px-3 py-2 text-sm text-on-surface outline-none mb-2"
                 rows={2}
-                placeholder="Budget note (optional)..."
+                placeholder={t('purchasing.budgetNotePh')}
                 value={r.budgetNotes || ''}
                 onChange={(e) => onUpdate({ budgetNotes: e.target.value })}
               />
@@ -475,7 +477,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
                   onClick={() => onUpdate({ status: 'Rejected', rejectionReason: 'Budget not approved', budgetApproved: false })}
                   className="px-4 py-1.5 rounded-lg bg-error/10 text-error text-xs font-semibold hover:bg-error/20 transition"
                 >
-                  Reject Budget
+                  {t('purchasing.rejectBudget')}
                 </button>
               </div>
             </div>
@@ -487,30 +489,30 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-bold text-on-surface flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm text-purple-500">request_quote</span>
-                  Quotations ({quotations.length}/3 min.)
+                  {t('purchasing.quotationsHeader', { count: quotations.length })}
                 </p>
                 {r.status === 'Collecting Quotes' && (
                   <button onClick={onAddQuotation} className="flex items-center gap-1 text-xs text-primary hover:opacity-80 font-semibold">
-                    <span className="material-symbols-outlined text-sm">add</span> Add Quote
+                    <span className="material-symbols-outlined text-sm">add</span> {t('purchasing.addQuote')}
                   </button>
                 )}
               </div>
               {quotations.length === 0 ? (
                 <div className="border border-dashed border-theme-border rounded-lg p-6 text-center text-xs text-text-muted">
-                  No quotations added yet
+                  {t('purchasing.noQuotations')}
                 </div>
               ) : (
                 <div className="border border-theme-border rounded-xl overflow-hidden">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-surface-container text-text-muted">
-                        <th className="px-3 py-2 text-left font-semibold">Supplier</th>
-                        <th className="px-3 py-2 text-left font-semibold">Tutar</th>
-                        <th className="px-3 py-2 text-left font-semibold">KDV</th>
-                        <th className="px-3 py-2 text-left font-semibold">Total</th>
-                        <th className="px-3 py-2 text-left font-semibold">Delivery</th>
-                        <th className="px-3 py-2 text-left font-semibold">Warranty</th>
-                        <th className="px-3 py-2 text-left font-semibold">Payment</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('purchasing.supplier')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('purchasing.amount')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('purchasing.vat')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('orders.total')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('purchasing.deliveryDays')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('purchasing.warranty')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('purchasing.paymentTerms')}</th>
                         <th className="px-3 py-2" />
                       </tr>
                     </thead>
@@ -531,9 +533,9 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
                             <td className="px-3 py-2.5 text-text-muted">%{q.vat}</td>
                             <td className="px-3 py-2.5 font-mono font-semibold">
                               <span className={isBest ? 'text-green-600' : ''}>{q.currency} {fmt(total)}</span>
-                              {isBest && <span className="ml-1 text-[9px] text-green-600 font-bold">LOWEST</span>}
+                              {isBest && <span className="ml-1 text-[9px] text-green-600 font-bold">{t('purchasing.lowest')}</span>}
                             </td>
-                            <td className="px-3 py-2.5 text-text-muted">{q.deliveryDays ? `${q.deliveryDays} days` : '—'}</td>
+                            <td className="px-3 py-2.5 text-text-muted">{q.deliveryDays ? t('purchasing.deliveryDaysSuffix', { n: q.deliveryDays }) : '—'}</td>
                             <td className="px-3 py-2.5 text-text-muted">{q.warranty || '—'}</td>
                             <td className="px-3 py-2.5 text-text-muted">{q.paymentTerms || '—'}</td>
                             <td className="px-3 py-2.5">
@@ -544,7 +546,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
                                   </button>
                                 )}
                                 {r.status === 'Collecting Quotes' && (
-                                  <button onClick={() => onDeleteQuotation(q.id)} className="text-text-muted hover:text-error" title="Delete">
+                                  <button onClick={() => onDeleteQuotation(q.id)} className="text-text-muted hover:text-error" title={t('common.delete')}>
                                     <span className="material-symbols-outlined text-sm">delete</span>
                                   </button>
                                 )}
@@ -560,7 +562,7 @@ function DetailDrawer({ request, suppliers, onClose, onEdit, onDelete, onUpdate,
               {r.status === 'Collecting Quotes' && quotations.length > 0 && quotations.length < 3 && (
                 <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
                   <span className="material-symbols-outlined text-sm">warning</span>
-                  At least 3 quotations required (current: {quotations.length})
+                  {t('purchasing.minQuotesWarning', { count: quotations.length })}
                 </p>
               )}
             </div>
@@ -867,18 +869,18 @@ export default function Purchasing() {
             className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
           >
             <span className="material-symbols-outlined text-sm">add</span>
-            {tab === 'suppliers' ? 'New Supplier' : 'New Request'}
+            {tab === 'suppliers' ? t('purchasing.newSupplier') : t('purchasing.newRequest')}
           </button>
         )}
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-5 gap-3">
-        <StatCard icon="assignment" label="Total Requests" value={requests.length} sub={`${activeReqs.length} active`} />
-        <StatCard icon="pending_actions" label="In Progress" value={activeReqs.length} color="text-amber-500" />
-        <StatCard icon="check_circle" label="Completed" value={requests.filter((r) => r.status === 'Completed').length} color="text-green-500" />
-        <StatCard icon="storefront" label="Suppliers" value={suppliers.filter((s) => s.status === 'Active').length} sub={`${suppliers.length} total`} color="text-purple-500" />
-        <StatCard icon="payments" label="Total Estimated" value={`${fmt(totalEst)}`} sub="TRY" color="text-blue-500" />
+        <StatCard icon="assignment" label={t('purchasing.totalRequests')} value={requests.length} sub={t('purchasing.activeCount', { n: activeReqs.length })} />
+        <StatCard icon="pending_actions" label={t('purchasing.inProgress')} value={activeReqs.length} color="text-amber-500" />
+        <StatCard icon="check_circle" label={t('purchasing.completed')} value={requests.filter((r) => r.status === 'Completed').length} color="text-green-500" />
+        <StatCard icon="storefront" label={t('purchasing.suppliers')} value={suppliers.filter((s) => s.status === 'Active').length} sub={t('purchasing.totalCount', { n: suppliers.length })} color="text-purple-500" />
+        <StatCard icon="payments" label={t('purchasing.totalEstimated')} value={`${fmt(totalEst)}`} sub="TRY" color="text-blue-500" />
       </div>
 
 

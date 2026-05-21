@@ -41,7 +41,7 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('products.stockNo')} *</label>
-              <input className={inputCls('stockNo')} value={form.stockNo} onChange={set('stockNo')} placeholder="e.g. SKU-0012" />
+              <input className={inputCls('stockNo')} value={form.stockNo} onChange={set('stockNo')} placeholder={t('products.stockNoPh')} />
               {errors.stockNo && <p className="text-xs text-error mt-1">{errors.stockNo}</p>}
             </div>
             <div>
@@ -53,11 +53,11 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.category')}</label>
-              <input className={inputCls('category')} value={form.category} onChange={set('category')} placeholder="e.g. Electronics" />
+              <input className={inputCls('category')} value={form.category} onChange={set('category')} placeholder={t('products.categoryPh')} />
             </div>
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.unit')}</label>
-              <input className={inputCls('unit')} value={form.unit} onChange={set('unit')} placeholder="pcs / kg / m" />
+              <input className={inputCls('unit')} value={form.unit} onChange={set('unit')} placeholder={t('products.unitPh')} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -282,9 +282,9 @@ export default function Products() {
 
   function validate(f) {
     const e = {}
-    if (!f.stockNo.trim()) e.stockNo = 'Required'
-    if (!f.name.trim()) e.name = 'Required'
-    if (!f.price.toString().trim() || isNaN(parseFloat(f.price))) e.price = 'Valid price required'
+    if (!f.stockNo.trim()) e.stockNo = t('common.required')
+    if (!f.name.trim()) e.name = t('common.required')
+    if (!f.price.toString().trim() || isNaN(parseFloat(f.price))) e.price = t('products.invalidPrice')
     return e
   }
 

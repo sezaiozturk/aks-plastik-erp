@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import InitialsAvatar from '../components/InitialsAvatar'
 import jsPDF from 'jspdf'
@@ -74,124 +75,127 @@ const emptyForm = {
   gdprConsent: false,
 }
 
-const TAB_DEFS = [
-  { id: 'identity',  label: 'Identity',   icon: 'badge'                   },
-  { id: 'address',   label: 'Customer Address and Contact', icon: 'location_on' },
-  { id: 'tax',       label: 'Tax & Docs', icon: 'receipt_long'            },
-  { id: 'financial', label: 'Financial',  icon: 'account_balance_wallet'  },
-  { id: 'contact',   label: 'Contact',    icon: 'contact_phone'           },
-]
+function getTabDefs(t) {
+  return [
+    { id: 'identity',  label: t('customers.form.tabIdentity'),  icon: 'badge'                   },
+    { id: 'address',   label: t('customers.form.tabAddress'),   icon: 'location_on'             },
+    { id: 'tax',       label: t('customers.form.tabTax'),       icon: 'receipt_long'            },
+    { id: 'financial', label: t('customers.form.tabFinancial'), icon: 'account_balance_wallet'  },
+    { id: 'contact',   label: t('customers.form.tabContact'),   icon: 'contact_phone'           },
+  ]
+}
 
-function getTabFields(tabId, form) {
+function getTabFields(tabId, form, t) {
+  const f = (key) => t(`customers.form.${key}`)
   switch (tabId) {
     case 'identity':
       return [
         {
-          id: 'customerType', label: 'Customer Type', icon: 'category', type: 'select', col: 2,
-          options: [{ value: 'Company', label: 'Company – Legal Entity' }, { value: 'Individual', label: 'Individual – Person' }],
+          id: 'customerType', label: f('customerType'), icon: 'category', type: 'select', col: 2,
+          options: [{ value: 'Company', label: f('customerTypeCompany') }, { value: 'Individual', label: f('customerTypeIndividual') }],
         },
         ...(form.customerType === 'Individual'
-          ? [{ id: 'fullName', label: 'Full Name', icon: 'person', type: 'text', col: 2, placeholder: 'e.g. John Doe' }]
-          : [{ id: 'companyName', label: 'Company Name', icon: 'business', type: 'text', col: 2, placeholder: 'e.g. Acme Corporation' }]
+          ? [{ id: 'fullName', label: f('fullName'), icon: 'person', type: 'text', col: 2, placeholder: f('fullNamePh') }]
+          : [{ id: 'companyName', label: f('companyName'), icon: 'business', type: 'text', col: 2, placeholder: f('companyNamePh') }]
         ),
         {
-          id: 'mukellefTipi', label: 'Mükellef Tipi', icon: 'gavel', type: 'radio', col: 2,
+          id: 'mukellefTipi', label: f('mukellefTipi'), icon: 'gavel', type: 'radio', col: 2,
           options: [
-            { value: 'Vergi Mükellefi', label: 'Vergi Mükellefidir' },
-            { value: 'Şahıs', label: 'Şahıstır' },
+            { value: 'Vergi Mükellefi', label: f('vergiMukellef') },
+            { value: 'Şahıs', label: f('sahis') },
           ],
         },
         {
-          id: 'taxId', label: 'Tax Identification No. (TIN / TCKN)', icon: 'fingerprint', type: 'text', col: 2,
-          placeholder: form.mukellefTipi === 'Şahıs' ? '11 haneli TCKN' : '10 haneli vergi numarası',
+          id: 'taxId', label: f('taxId'), icon: 'fingerprint', type: 'text', col: 2,
+          placeholder: form.mukellefTipi === 'Şahıs' ? f('taxIdPh11') : f('taxIdPh10'),
           maxLength: form.mukellefTipi === 'Şahıs' ? 11 : 10,
         },
-        { id: 'taxOffice', label: 'Tax Office', icon: 'account_balance', type: 'text', col: 1, placeholder: 'Tax office name' },
-        { id: 'country', label: 'Country', icon: 'public', type: 'text', col: 1, placeholder: 'e.g. Turkey' },
-        { id: 'ticaretSicil', label: 'Ticaret Sicil No', icon: 'receipt', type: 'text', col: 1, placeholder: 'Ticaret sicil numarası' },
-        { id: 'mersisNo', label: 'Mersis No', icon: 'pin', type: 'text', col: 1, placeholder: 'Mersis numarası' },
-        { id: 'bolge', label: 'Bölge', icon: 'travel_explore', type: 'text', col: 1, placeholder: 'Bölge adı' },
+        { id: 'taxOffice', label: f('taxOffice'), icon: 'account_balance', type: 'text', col: 1, placeholder: f('taxOfficePh') },
+        { id: 'country', label: f('country'), icon: 'public', type: 'text', col: 1, placeholder: f('countryPh') },
+        { id: 'ticaretSicil', label: f('ticaretSicil'), icon: 'receipt', type: 'text', col: 1, placeholder: f('ticaretSicilPh') },
+        { id: 'mersisNo', label: f('mersisNo'), icon: 'pin', type: 'text', col: 1, placeholder: f('mersisNoPh') },
+        { id: 'bolge', label: f('bolge'), icon: 'travel_explore', type: 'text', col: 1, placeholder: f('bolgePh') },
         {
-          id: 'cariTip', label: 'Cari Tip', icon: 'person_search', type: 'select', col: 1,
+          id: 'cariTip', label: f('cariTip'), icon: 'person_search', type: 'select', col: 1,
           options: [
-            { value: '', label: 'Seçiniz...' },
-            { value: 'Alıcı', label: 'Alıcı' },
-            { value: 'Satıcı', label: 'Satıcı' },
-            { value: 'Alıcı/Satıcı', label: 'Alıcı/Satıcı' },
+            { value: '', label: f('select') },
+            { value: 'Alıcı', label: f('alici') },
+            { value: 'Satıcı', label: f('satici') },
+            { value: 'Alıcı/Satıcı', label: f('aliciSatici') },
           ],
         },
-        { id: 'istatistikGrup', label: 'İstatistik Grup', icon: 'bar_chart', type: 'text', col: 2, placeholder: 'İstatistik grup adı' },
+        { id: 'istatistikGrup', label: f('istatistikGrup'), icon: 'bar_chart', type: 'text', col: 2, placeholder: f('istatistikGrupPh') },
       ]
     case 'address':
       return [
-        { id: 'address', label: 'Full Address', icon: 'home', type: 'text', col: 2, placeholder: 'Street address' },
-        { id: 'city', label: 'City', icon: 'apartment', type: 'text', col: 1, placeholder: 'City' },
-        { id: 'district', label: 'District', icon: 'map', type: 'text', col: 1, placeholder: 'District / Neighbourhood' },
-        { id: 'postalCode', label: 'Postal Code', icon: 'markunread_mailbox', type: 'text', col: 1, placeholder: 'ZIP / Postal code' },
-        { id: 'phone', label: 'Phone Number', icon: 'phone', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
-        { id: 'email', label: 'Email Address', icon: 'mail', type: 'email', col: 1, placeholder: 'info@company.com' },
-        { id: 'contactPhone', label: 'Customer Phone Number', icon: 'smartphone', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
-        { id: 'contactEmail', label: 'Customer Email Address', icon: 'alternate_email', type: 'email', col: 1, placeholder: 'info@company.com' },
+        { id: 'address', label: f('address'), icon: 'home', type: 'text', col: 2, placeholder: f('addressPh') },
+        { id: 'city', label: f('city'), icon: 'apartment', type: 'text', col: 1, placeholder: f('city') },
+        { id: 'district', label: f('district'), icon: 'map', type: 'text', col: 1, placeholder: f('districtPh') },
+        { id: 'postalCode', label: f('postalCode'), icon: 'markunread_mailbox', type: 'text', col: 1, placeholder: f('postalCodePh') },
+        { id: 'phone', label: f('phoneNumber'), icon: 'phone', type: 'tel', col: 1, placeholder: f('phonePh') },
+        { id: 'email', label: f('emailAddress'), icon: 'mail', type: 'email', col: 1, placeholder: f('emailPh') },
+        { id: 'contactPhone', label: f('contactPhone'), icon: 'smartphone', type: 'tel', col: 1, placeholder: f('phonePh') },
+        { id: 'contactEmail', label: f('contactEmail'), icon: 'alternate_email', type: 'email', col: 1, placeholder: f('emailPh') },
       ]
     case 'tax':
       return [
-        { id: 'eInvoiceStatus', label: 'e-Invoice Status', icon: 'receipt', type: 'toggle', col: 1 },
-        { id: 'eArchiveStatus', label: 'e-Archive Invoice Status', icon: 'archive', type: 'toggle', col: 1 },
-        { id: 'eDispatchStatus', label: 'e-Dispatch Status', icon: 'local_shipping', type: 'toggle', col: 1 },
+        { id: 'eInvoiceStatus', label: f('eInvoiceStatus'), icon: 'receipt', type: 'toggle', col: 1 },
+        { id: 'eArchiveStatus', label: f('eArchiveStatus'), icon: 'archive', type: 'toggle', col: 1 },
+        { id: 'eDispatchStatus', label: f('eDispatchStatus'), icon: 'local_shipping', type: 'toggle', col: 1 },
         {
-          id: 'invoiceScenario', label: 'Invoice Scenario', icon: 'description', type: 'select', col: 1,
-          options: [{ value: 'Basic', label: 'Basic' }, { value: 'Commercial', label: 'Commercial' }],
+          id: 'invoiceScenario', label: f('invoiceScenario'), icon: 'description', type: 'select', col: 1,
+          options: [{ value: 'Basic', label: f('basic') }, { value: 'Commercial', label: f('commercial') }],
         },
       ]
     case 'financial':
       return [
-        { id: 'accountCode', label: 'Customer Account Code', icon: 'tag', type: 'text', col: 1, placeholder: 'Unique ID' },
+        { id: 'accountCode', label: f('accountCode'), icon: 'tag', type: 'text', col: 1, placeholder: f('accountCodePh') },
         {
-          id: 'accountType', label: 'Account Type', icon: 'manage_accounts', type: 'select', col: 1,
-          options: [{ value: 'Customer', label: 'Customer' }, { value: 'Vendor', label: 'Vendor' }, { value: 'Both', label: 'Both' }],
+          id: 'accountType', label: f('accountType'), icon: 'manage_accounts', type: 'select', col: 1,
+          options: [{ value: 'Customer', label: f('accountTypeCustomer') }, { value: 'Vendor', label: f('accountTypeVendor') }, { value: 'Both', label: f('accountTypeBoth') }],
         },
         {
-          id: 'currency', label: 'Currency', icon: 'currency_exchange', type: 'select', col: 1,
-          options: [{ value: 'TRY', label: 'TRY – Turkish Lira' }, { value: 'USD', label: 'USD – US Dollar' }, { value: 'EUR', label: 'EUR – Euro' }],
+          id: 'currency', label: f('currency'), icon: 'currency_exchange', type: 'select', col: 1,
+          options: [{ value: 'TRY', label: f('currencyTRY') }, { value: 'USD', label: f('currencyUSD') }, { value: 'EUR', label: f('currencyEUR') }],
         },
-        { id: 'paymentTerm', label: 'Payment Term', icon: 'schedule', type: 'text', col: 1, placeholder: 'e.g. Net 30' },
-        { id: 'creditLimit', label: 'Credit Limit', icon: 'credit_score', type: 'number', col: 2, placeholder: '0.00' },
-        { id: '_div_bank', label: 'Bank Information', icon: 'account_balance', type: 'divider', col: 2 },
-        { id: 'bankName', label: 'Bank Name', icon: 'account_balance', type: 'text', col: 1, placeholder: 'e.g. Garanti BBVA' },
-        { id: 'iban', label: 'IBAN', icon: 'credit_card', type: 'text', col: 1, placeholder: 'TR00 0000 0000 0000 0000 0000 00' },
-        { id: 'branchCode', label: 'Branch Name / Code', icon: 'store', type: 'text', col: 1, placeholder: 'Branch code' },
-        { id: 'accountHolder', label: 'Account Holder Name', icon: 'person', type: 'text', col: 1, placeholder: 'Name on account' },
-        { id: '_div_pay', label: 'Invoicing & Payment Settings', icon: 'payments', type: 'divider', col: 2 },
+        { id: 'paymentTerm', label: f('paymentTerm'), icon: 'schedule', type: 'text', col: 1, placeholder: f('paymentTermPh') },
+        { id: 'creditLimit', label: f('creditLimit'), icon: 'credit_score', type: 'number', col: 2, placeholder: '0.00' },
+        { id: '_div_bank', label: f('bankInfo'), icon: 'account_balance', type: 'divider', col: 2 },
+        { id: 'bankName', label: f('bankName'), icon: 'account_balance', type: 'text', col: 1, placeholder: f('bankNamePh') },
+        { id: 'iban', label: f('iban'), icon: 'credit_card', type: 'text', col: 1, placeholder: f('ibanPh') },
+        { id: 'branchCode', label: f('branchCode'), icon: 'store', type: 'text', col: 1, placeholder: f('branchCodePh') },
+        { id: 'accountHolder', label: f('accountHolder'), icon: 'person', type: 'text', col: 1, placeholder: f('accountHolderPh') },
+        { id: '_div_pay', label: f('invoicePaySettings'), icon: 'payments', type: 'divider', col: 2 },
         {
-          id: 'invoiceType', label: 'Invoice Type', icon: 'description', type: 'select', col: 1,
-          options: [{ value: '', label: 'Select...' }, { value: 'e-Invoice', label: 'e-Invoice' }, { value: 'e-Archive', label: 'e-Archive' }],
-        },
-        {
-          id: 'paymentMethod', label: 'Payment Method', icon: 'payments', type: 'select', col: 1,
-          options: [{ value: '', label: 'Select...' }, { value: 'Cash', label: 'Cash' }, { value: 'Transfer', label: 'Transfer' }, { value: 'Check', label: 'Check' }, { value: 'Note', label: 'Note' }],
+          id: 'invoiceType', label: f('invoiceType'), icon: 'description', type: 'select', col: 1,
+          options: [{ value: '', label: f('select') }, { value: 'e-Invoice', label: f('eInvoice') }, { value: 'e-Archive', label: f('eArchive') }],
         },
         {
-          id: 'paymentTerms', label: 'Payment Terms', icon: 'schedule_send', type: 'select', col: 2,
-          options: [{ value: '', label: 'Select...' }, { value: 'Cash', label: 'Cash' }, { value: 'Deferred', label: 'Deferred' }],
+          id: 'paymentMethod', label: f('paymentMethod'), icon: 'payments', type: 'select', col: 1,
+          options: [{ value: '', label: f('select') }, { value: 'Cash', label: f('cash') }, { value: 'Transfer', label: f('transfer') }, { value: 'Check', label: f('check') }, { value: 'Note', label: f('promissoryNote') }],
+        },
+        {
+          id: 'paymentTerms', label: f('paymentTerms'), icon: 'schedule_send', type: 'select', col: 2,
+          options: [{ value: '', label: f('select') }, { value: 'Cash', label: f('cash') }, { value: 'Deferred', label: f('deferred') }],
         },
       ]
     case 'contact':
       return [
-        { id: 'contactName', label: 'Contact Person Name (Finance)', icon: 'person', type: 'text', col: 2, placeholder: 'Full name' },
-        { id: 'contactPersonPhone', label: 'Contact Person Phone (Finance)', icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
-        { id: 'contactPersonEmail', label: 'Contact Person Email (Finance)', icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: 'person@company.com' },
-        { id: 'contactNamePurchasing', label: 'Contact Person Name (Purchasing)', icon: 'person', type: 'text', col: 2, placeholder: 'Full name' },
-        { id: 'contactPersonPhonePurchasing', label: 'Contact Person Phone (Purchasing)', icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: '+90 (555) 000-0000' },
-        { id: 'contactPersonEmailPurchasing', label: 'Contact Person Email (Purchasing)', icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: 'person@company.com' },
-        { id: '_div_opt', label: 'Optional Fields', icon: 'tune', type: 'divider', col: 2 },
-        { id: 'industry', label: 'Industry / Sector', icon: 'factory', type: 'text', col: 1, placeholder: 'e.g. Manufacturing' },
+        { id: 'contactName', label: f('contactName'), icon: 'person', type: 'text', col: 2, placeholder: f('contactNamePh') },
+        { id: 'contactPersonPhone', label: f('contactPersonPhone'), icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: f('personPhonePh') },
+        { id: 'contactPersonEmail', label: f('contactPersonEmail'), icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: f('personEmailPh') },
+        { id: 'contactNamePurchasing', label: f('contactNamePurchasing'), icon: 'person', type: 'text', col: 2, placeholder: f('contactNamePh') },
+        { id: 'contactPersonPhonePurchasing', label: f('contactPersonPhonePurchasing'), icon: 'phone_in_talk', type: 'tel', col: 1, placeholder: f('personPhonePh') },
+        { id: 'contactPersonEmailPurchasing', label: f('contactPersonEmailPurchasing'), icon: 'forward_to_inbox', type: 'email', col: 1, placeholder: f('personEmailPh') },
+        { id: '_div_opt', label: f('optionalFields'), icon: 'tune', type: 'divider', col: 2 },
+        { id: 'industry', label: f('industry'), icon: 'factory', type: 'text', col: 1, placeholder: f('industryPh') },
         {
-          id: 'customerCategory', label: 'Customer Category', icon: 'grade', type: 'select', col: 1,
-          options: [{ value: '', label: 'Select...' }, { value: 'A', label: 'A – Priority' }, { value: 'B', label: 'B – Standard' }, { value: 'C', label: 'C – Low Activity' }],
+          id: 'customerCategory', label: f('customerCategory'), icon: 'grade', type: 'select', col: 1,
+          options: [{ value: '', label: f('select') }, { value: 'A', label: f('catA') }, { value: 'B', label: f('catB') }, { value: 'C', label: f('catC') }],
         },
-        { id: 'salesRepName', label: 'Sales Representative', icon: 'badge', type: 'text', col: 2, placeholder: 'Sales rep name' },
-        { id: 'notes', label: 'Notes / Remarks', icon: 'edit_note', type: 'textarea', col: 2, placeholder: 'Any additional notes...' },
-        { id: 'gdprConsent', label: 'GDPR / KVKK Consent Status', icon: 'verified_user', type: 'toggle', col: 2 },
+        { id: 'salesRepName', label: f('salesRepName'), icon: 'badge', type: 'text', col: 2, placeholder: f('salesRepNamePh') },
+        { id: 'notes', label: f('notesRemarks'), icon: 'edit_note', type: 'textarea', col: 2, placeholder: f('notesPh') },
+        { id: 'gdprConsent', label: f('gdprConsent'), icon: 'verified_user', type: 'toggle', col: 2 },
       ]
     default:
       return []
@@ -199,6 +203,7 @@ function getTabFields(tabId, form) {
 }
 
 function FieldInput({ field, value, onChange, error }) {
+  const { t } = useTranslation()
   const { id, label, icon, type, placeholder, options, maxLength } = field
 
   if (type === 'divider') {
@@ -261,7 +266,7 @@ function FieldInput({ field, value, onChange, error }) {
             {value ? 'toggle_on' : 'toggle_off'}
           </span>
           <span className={`text-sm font-semibold ${value ? 'text-primary' : 'text-on-surface-variant'}`}>
-            {value ? 'Yes / Active' : 'No / Inactive'}
+            {value ? t('common.yesActive') : t('common.noInactive')}
           </span>
         </button>
       </div>
@@ -340,6 +345,8 @@ function FieldInput({ field, value, onChange, error }) {
 }
 
 function AddCustomerModal({ onClose, onSave }) {
+  const { t } = useTranslation()
+  const tabDefs = getTabDefs(t)
   const [activeTab, setActiveTab] = useState(0)
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
@@ -373,8 +380,8 @@ function AddCustomerModal({ onClose, onSave }) {
       setErrors(e)
       // jump to first tab containing an error
       const errorIds = new Set(Object.keys(e))
-      for (let i = 0; i < TAB_DEFS.length; i++) {
-        const fields = getTabFields(TAB_DEFS[i].id, form)
+      for (let i = 0; i < tabDefs.length; i++) {
+        const fields = getTabFields(tabDefs[i].id, form, t)
         if (fields.some((f) => errorIds.has(f.id))) { setActiveTab(i); break }
       }
       return
@@ -382,7 +389,7 @@ function AddCustomerModal({ onClose, onSave }) {
     onSave(form)
   }
 
-  const fields = getTabFields(TAB_DEFS[activeTab].id, form)
+  const fields = getTabFields(tabDefs[activeTab].id, form, t)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -396,8 +403,8 @@ function AddCustomerModal({ onClose, onSave }) {
               <span className="material-symbols-outlined fill-icon">person_add</span>
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-on-surface">New Customer</h2>
-              <p className="text-xs text-on-surface-variant">Add a new partner to the directory</p>
+              <h2 className="text-lg font-extrabold text-on-surface">{t('customers.newCustomer')}</h2>
+              <p className="text-xs text-on-surface-variant">{t('customers.addPartner')}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low transition-colors">
@@ -407,7 +414,7 @@ function AddCustomerModal({ onClose, onSave }) {
 
         {/* Tab bar */}
         <div className="flex items-center gap-1 px-6 pt-4 pb-0 flex-shrink-0">
-          {TAB_DEFS.map((tab, i) => (
+          {tabDefs.map((tab, i) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(i)}
@@ -450,21 +457,21 @@ function AddCustomerModal({ onClose, onSave }) {
               className="px-4 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors disabled:opacity-40 flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-base">chevron_left</span>
-              Previous
+              {t('common.prev')}
             </button>
             <button
-              onClick={() => setActiveTab((t) => Math.min(TAB_DEFS.length - 1, t + 1))}
-              disabled={activeTab === TAB_DEFS.length - 1}
+              onClick={() => setActiveTab((t) => Math.min(tabDefs.length - 1, t + 1))}
+              disabled={activeTab === tabDefs.length - 1}
               className="px-4 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors disabled:opacity-40 flex items-center gap-1"
             >
-              Next
+              {t('common.next')}
               <span className="material-symbols-outlined text-base">chevron_right</span>
             </button>
           </div>
 
           {/* Step dots */}
           <div className="flex items-center gap-1.5">
-            {TAB_DEFS.map((_, i) => (
+            {tabDefs.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setActiveTab(i)}
@@ -480,14 +487,14 @@ function AddCustomerModal({ onClose, onSave }) {
               onClick={onClose}
               className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSave}
               className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-base">save</span>
-              Save Customer
+              {t('customers.saveCustomer')}
             </button>
           </div>
         </div>
@@ -528,6 +535,7 @@ function fmtNum(n) {
 }
 
 function OrdersTab({ customerOrders }) {
+  const { t } = useTranslation()
   const [expandedId, setExpandedId] = useState(null)
 
   if (customerOrders.length === 0) {
@@ -547,9 +555,9 @@ function OrdersTab({ customerOrders }) {
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Summary bar */}
       <div className="flex items-center gap-4 px-6 py-3 bg-surface-container-low border-b border-surface-container text-xs flex-shrink-0">
-        <div className="text-on-surface-variant">Total orders: <span className="font-bold text-on-surface">{customerOrders.length}</span></div>
-        <div className="text-on-surface-variant">Open: <span className="font-bold text-on-surface">{open}</span></div>
-        <div className="text-on-surface-variant ml-auto">Total value: <span className="font-bold text-on-surface">{fmtNum(total)}</span></div>
+        <div className="text-on-surface-variant">{t('customers.totalOrders')} <span className="font-bold text-on-surface">{customerOrders.length}</span></div>
+        <div className="text-on-surface-variant">{t('customers.openOrders')} <span className="font-bold text-on-surface">{open}</span></div>
+        <div className="text-on-surface-variant ml-auto">{t('customers.totalValue')} <span className="font-bold text-on-surface">{fmtNum(total)}</span></div>
       </div>
 
       <div className="overflow-y-auto flex-1">
@@ -557,12 +565,12 @@ function OrdersTab({ customerOrders }) {
           <thead className="sticky top-0 bg-surface-container-lowest border-b border-surface-container-low z-10">
             <tr className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
               <th className="w-8" />
-              <th className="text-left px-4 py-3">Order</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">Payment</th>
+              <th className="text-left px-4 py-3">{t('orders.order')}</th>
+              <th className="text-left px-4 py-3">{t('common.status')}</th>
+              <th className="text-left px-4 py-3">{t('orders.payment')}</th>
               <th className="text-right px-4 py-3">Items</th>
-              <th className="text-left px-4 py-3">Currency</th>
-              <th className="text-right px-6 py-3">Total</th>
+              <th className="text-left px-4 py-3">{t('common.currency')}</th>
+              <th className="text-right px-6 py-3">{t('orders.total')}</th>
             </tr>
           </thead>
           <tbody>
@@ -607,11 +615,11 @@ function OrdersTab({ customerOrders }) {
                         <table className="w-full">
                           <thead>
                             <tr className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant border-b border-surface-container">
-                              <th className="text-left py-1.5 pr-4">Product</th>
-                              <th className="text-right py-1.5 pr-4">Qty</th>
-                              <th className="text-left py-1.5 pr-4">Unit</th>
-                              <th className="text-right py-1.5 pr-4">Unit Price</th>
-                              <th className="text-right py-1.5 pr-4">VAT %</th>
+                              <th className="text-left py-1.5 pr-4">{t('orders.product')}</th>
+                              <th className="text-right py-1.5 pr-4">{t('orders.qty')}</th>
+                              <th className="text-left py-1.5 pr-4">{t('common.unit')}</th>
+                              <th className="text-right py-1.5 pr-4">{t('orders.unitPrice')}</th>
+                              <th className="text-right py-1.5 pr-4">{t('orders.vat')}</th>
                               <th className="text-right py-1.5">Subtotal</th>
                             </tr>
                           </thead>
@@ -661,6 +669,8 @@ const ORDER_STATUS_CLS = {
 }
 
 function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
+  const { t } = useTranslation()
+  const tabDefs = getTabDefs(t)
   const { isAdmin, orders, financeRecords } = useData()
   const [viewTab, setViewTab] = useState('info')
   const [editing, setEditing] = useState(false)
@@ -802,7 +812,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
     setEditTab(0)
   }
 
-  const editFields = getTabFields(TAB_DEFS[editTab].id, form)
+  const editFields = getTabFields(tabDefs[editTab].id, form, t)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -818,7 +828,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
               </div>
               <div>
                 <h2 className="text-xl font-extrabold text-white leading-tight">
-                  {editing ? 'Edit Customer' : customer.name}
+                  {editing ? t('customers.editCustomer') : customer.name}
                 </h2>
                 <p className="text-blue-200 text-xs font-medium mt-0.5">ID: #{customer.id}</p>
               </div>
@@ -837,15 +847,15 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 <p className="text-white font-black text-lg leading-none">
                   {(reports || []).filter((r) => r.customerId === customer.id).length}
                 </p>
-                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Tasks</p>
+                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">{t('nav.tasks')}</p>
               </div>
               <div className="bg-surface-container-lowest/10 rounded-lg px-3 py-1.5 text-center">
                 <p className="text-white font-black text-lg leading-none">{customerOrders.length}</p>
-                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Orders</p>
+                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">{t('customers.tabOrders')}</p>
               </div>
               <div className="bg-surface-container-lowest/10 rounded-lg px-3 py-1.5 text-center">
                 <p className="text-white font-black text-lg leading-none">{customerFinance.length}</p>
-                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">Finance</p>
+                <p className="text-blue-200 text-[10px] font-bold uppercase tracking-wider mt-0.5">{t('customers.tabFinance')}</p>
               </div>
               {customer.customerType && (
                 <span className="bg-surface-container-lowest/10 text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg">
@@ -860,7 +870,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
               {customer.flagged && (
                 <span className="ml-auto bg-tertiary-fixed text-tertiary text-[10px] font-black uppercase px-3 py-1.5 rounded-lg flex items-center gap-1">
                   <span className="material-symbols-outlined text-sm">warning</span>
-                  Review Required
+                  {t('customers.reviewRequired')}
                 </span>
               )}
             </div>
@@ -873,9 +883,9 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
             {/* Sub-tab bar */}
             <div className="flex items-center gap-1 px-6 pt-3 pb-0 border-b border-surface-container-low flex-shrink-0">
               {[
-                { key: 'info',    label: 'Info',    icon: 'person' },
-                { key: 'orders',  label: 'Orders',  icon: 'shopping_bag',           count: customerOrders.length },
-                { key: 'finance', label: 'Finance', icon: 'account_balance_wallet', count: customerFinance.length },
+                { key: 'info',    label: t('customers.tabInfo'),    icon: 'person' },
+                { key: 'orders',  label: t('customers.tabOrders'),  icon: 'shopping_bag',           count: customerOrders.length },
+                { key: 'finance', label: t('customers.tabFinance'), icon: 'account_balance_wallet', count: customerFinance.length },
               ].map((t) => (
                 <button
                   key={t.key}
@@ -937,9 +947,9 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                   </span>
                   <div className="flex-1 h-px bg-surface-container-high" />
                 </div>
-                <DetailRow icon="receipt"      label="e-Invoice"         value={customer.eInvoiceStatus ? 'Active' : 'Inactive'} />
-                <DetailRow icon="archive"      label="e-Archive Invoice" value={customer.eArchiveStatus ? 'Active' : 'Inactive'} />
-                <DetailRow icon="local_shipping" label="e-Dispatch"      value={customer.eDispatchStatus ? 'Active' : 'Inactive'} />
+                <DetailRow icon="receipt"      label="e-Invoice"         value={customer.eInvoiceStatus ? t('common.active') : t('common.inactive')} />
+                <DetailRow icon="archive"      label="e-Archive Invoice" value={customer.eArchiveStatus ? t('common.active') : t('common.inactive')} />
+                <DetailRow icon="local_shipping" label="e-Dispatch"      value={customer.eDispatchStatus ? t('common.active') : t('common.inactive')} />
                 <DetailRow icon="description"  label="Invoice Scenario"  value={customer.invoiceScenario} />
                 <div className="flex items-center gap-3 py-2">
                   <div className="flex-1 h-px bg-surface-container-high" />
@@ -1072,10 +1082,10 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
 
                   return (
                     <div className="flex items-center gap-4 px-6 py-3 bg-surface-container-low border-b border-surface-container text-xs flex-shrink-0">
-                      <div className="text-on-surface-variant">Records: <span className="font-bold text-on-surface">{customerFinance.length}</span></div>
-                      <div className="text-on-surface-variant">Income: <span className="font-bold text-primary">{fmt2(income)}</span></div>
-                      <div className="text-on-surface-variant">Expense: <span className="font-bold text-error">{fmt2(expense)}</span></div>
-                      <div className="text-on-surface-variant">Net: <span className={`font-bold ${net >= 0 ? 'text-primary' : 'text-error'}`}>{fmt2(net)}</span></div>
+                      <div className="text-on-surface-variant">{t('finance.records')}: <span className="font-bold text-on-surface">{customerFinance.length}</span></div>
+                      <div className="text-on-surface-variant">{t('finance.income')}: <span className="font-bold text-primary">{fmt2(income)}</span></div>
+                      <div className="text-on-surface-variant">{t('finance.expense')}: <span className="font-bold text-error">{fmt2(expense)}</span></div>
+                      <div className="text-on-surface-variant">{t('dashboard.net')}: <span className={`font-bold ${net >= 0 ? 'text-primary' : 'text-error'}`}>{fmt2(net)}</span></div>
                       <div className="ml-auto flex items-center gap-1.5">
                         <button
                           onClick={exportFinanceExcel}
@@ -1108,12 +1118,12 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 bg-surface-container-lowest border-b border-surface-container-low z-10">
                         <tr className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                          <th className="text-left px-6 py-3">Code</th>
-                          <th className="text-left px-4 py-3">Type</th>
-                          <th className="text-left px-4 py-3">Category</th>
-                          <th className="text-left px-4 py-3">Order</th>
-                          <th className="text-left px-4 py-3">Date</th>
-                          <th className="text-right px-6 py-3">Amount</th>
+                          <th className="text-left px-6 py-3">{t('common.code')}</th>
+                          <th className="text-left px-4 py-3">{t('common.type')}</th>
+                          <th className="text-left px-4 py-3">{t('common.category')}</th>
+                          <th className="text-left px-4 py-3">{t('orders.order')}</th>
+                          <th className="text-left px-4 py-3">{t('common.date')}</th>
+                          <th className="text-right px-6 py-3">{t('common.amount')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1159,7 +1169,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
         {editing && (
           <>
             <div className="flex items-center gap-1 px-6 pt-4 flex-shrink-0">
-              {TAB_DEFS.map((tab, i) => (
+              {tabDefs.map((tab, i) => (
                 <button
                   key={tab.id}
                   onClick={() => setEditTab(i)}
@@ -1199,8 +1209,8 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-on-error-container">warning</span>
               <div>
-                <p className="text-sm font-bold text-on-error-container">Delete this customer?</p>
-                <p className="text-xs text-on-error-container/70 mt-0.5">This action cannot be undone.</p>
+                <p className="text-sm font-bold text-on-error-container">{t('customers.deleteCustomer')}</p>
+                <p className="text-xs text-on-error-container/70 mt-0.5">{t('common.cantUndo')}</p>
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
@@ -1208,14 +1218,14 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 onClick={() => setConfirming(false)}
                 className="px-4 py-2 rounded-xl text-on-error-container text-xs font-bold hover:bg-error-container/60 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => onDelete(customer.id)}
                 className="px-4 py-2 rounded-xl bg-error text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm">delete</span>
-                Yes, Delete
+                {t('common.yesDelete')}
               </button>
             </div>
           </div>
@@ -1231,7 +1241,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                   className="px-5 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined text-base">edit</span>
-                  Edit
+                  {t('common.edit')}
                 </button>
                 {isAdmin && (
                   <button
@@ -1243,7 +1253,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                     }`}
                   >
                     <span className="material-symbols-outlined text-base">delete</span>
-                    Delete
+                    {t('common.delete')}
                   </button>
                 )}
               </div>
@@ -1251,7 +1261,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 onClick={onClose}
                 className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
               >
-                Close
+                {t('common.close')}
               </button>
             </>
           ) : (
@@ -1260,14 +1270,14 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
                 onClick={handleCancel}
                 className="px-5 py-2.5 rounded-xl text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 className="px-6 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">save</span>
-                Save Changes
+                {t('common.saveChanges')}
               </button>
             </>
           )}
@@ -1278,6 +1288,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
 }
 
 export default function Customers() {
+  const { t } = useTranslation()
   const { customers, addCustomer, updateCustomer, deleteCustomer, reports } = useData()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -1379,10 +1390,10 @@ export default function Customers() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div className="max-w-2xl">
           <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">
-            Customer Directory
+            {t('customers.title')}
           </h1>
           <p className="text-on-surface-variant text-base">
-            Manage customers and review regional service coverage across your global accounts.
+            {t('customers.subtitle')}
           </p>
         </div>
         <button
@@ -1390,7 +1401,7 @@ export default function Customers() {
           className="px-6 py-2.5 rounded-xl primary-gradient text-white font-bold text-sm flex items-center gap-2 shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined text-xl">person_add</span>
-          Add Customer
+          {t('customers.addCustomer')}
         </button>
       </div>
 
@@ -1401,9 +1412,9 @@ export default function Customers() {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {[
-              { label: 'Customers',        value: customers.length, icon: 'groups',        color: 'bg-surface-tint'      },
-              { label: 'Service Countries', value: uniqueCountries,  icon: 'public',        color: 'bg-primary-container' },
-              { label: 'Service Cities',    value: uniqueCities,     icon: 'location_city', color: 'bg-secondary'         },
+              { label: t('nav.customers'),            value: customers.length, icon: 'groups',        color: 'bg-surface-tint'      },
+              { label: t('customers.serviceCountries'), value: uniqueCountries,  icon: 'public',        color: 'bg-primary-container' },
+              { label: t('customers.serviceCities'),    value: uniqueCities,     icon: 'location_city', color: 'bg-secondary'         },
             ].map(({ label, value, icon, color }) => (
               <div key={label} className="bg-surface-container-lowest rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-1 h-full ${color}`} />
@@ -1425,7 +1436,7 @@ export default function Customers() {
         <span className="material-symbols-outlined text-on-surface-variant text-lg">search</span>
         <input
           type="text"
-          placeholder="Search customers..."
+          placeholder={t('customers.searchPlaceholder')}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400"
@@ -1437,7 +1448,7 @@ export default function Customers() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-surface-container-low">
-              {['Customer', 'Contact Person', 'City & Country', 'Tasks', 'Details'].map(
+              {[t('customers.colCustomer'), t('customers.colContact'), t('customers.colCity'), t('customers.colTasks'), t('customers.colDetails')].map(
                 (h, i) => (
                   <th key={h} className={`px-6 py-4 text-xs font-bold text-on-surface-variant uppercase tracking-widest ${i === 4 ? 'text-right' : ''}`}>
                     {h}
@@ -1474,10 +1485,10 @@ export default function Customers() {
                   {(() => {
                     const ct = (reports || []).filter((r) => r.customerId === customer.id)
                     const counts = [
-                      { label: 'Open',    col: 'open',        cls: 'status-cancelled-badge' },
-                      { label: 'In Prog', col: 'in-progress', cls: 'status-progress-badge'  },
-                      { label: 'Review',  col: 'review',      cls: 'status-scheduled-badge' },
-                      { label: 'Done',    col: 'completed',   cls: 'status-completed-badge' },
+                      { label: t('customers.open'),    col: 'open',        cls: 'status-cancelled-badge' },
+                      { label: t('customers.inProg'),  col: 'in-progress', cls: 'status-progress-badge'  },
+                      { label: t('customers.review'),  col: 'review',      cls: 'status-scheduled-badge' },
+                      { label: t('customers.done'),    col: 'completed',   cls: 'status-completed-badge' },
                     ]
                     return (
                       <div className="flex items-center gap-1.5">
@@ -1499,7 +1510,7 @@ export default function Customers() {
                     onClick={(e) => { e.stopPropagation(); setSelectedCustomer(customer) }}
                     className="text-primary font-bold text-sm px-4 py-2 hover:bg-primary/5 rounded-lg transition-colors"
                   >
-                    View Details
+                    {t('customers.viewDetails')}
                   </button>
                 </td>
               </tr>
@@ -1512,8 +1523,7 @@ export default function Customers() {
       {totalPages > 1 && (
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6 px-2">
           <p className="text-sm text-on-surface-variant">
-            Showing {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)} of{' '}
-            <span className="font-bold">{filtered.length}</span> customers
+            {t('customers.showingOf', { from: (page - 1) * ITEMS_PER_PAGE + 1, to: Math.min(page * ITEMS_PER_PAGE, filtered.length), total: filtered.length })}
           </p>
           <div className="flex items-center gap-1">
             <button

@@ -38,5 +38,22 @@ electron.contextBridge.exposeInMainWorld("api", {
     const handler = (_, entry) => cb(entry);
     electron.ipcRenderer.on("stm32:log", handler);
     return () => electron.ipcRenderer.removeListener("stm32:log", handler);
-  }
+  },
+  // Auto-updater
+  onUpdateAvailable: (cb) => {
+    const handler = (_, info) => cb(info);
+    electron.ipcRenderer.on("updater:update-available", handler);
+    return () => electron.ipcRenderer.removeListener("updater:update-available", handler);
+  },
+  onDownloadProgress: (cb) => {
+    const handler = (_, p) => cb(p);
+    electron.ipcRenderer.on("updater:download-progress", handler);
+    return () => electron.ipcRenderer.removeListener("updater:download-progress", handler);
+  },
+  onUpdateDownloaded: (cb) => {
+    const handler = (_, info) => cb(info);
+    electron.ipcRenderer.on("updater:update-downloaded", handler);
+    return () => electron.ipcRenderer.removeListener("updater:update-downloaded", handler);
+  },
+  installUpdate: () => electron.ipcRenderer.invoke("updater:install")
 });

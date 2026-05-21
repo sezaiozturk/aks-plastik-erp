@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { API_URL } from '../config'
 
 export default function Users() {
+  const { t } = useTranslation()
   const { token } = useAuth()
   const { roles } = useData()
   const [users, setUsers] = useState([])
@@ -275,7 +277,7 @@ export default function Users() {
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <button type="button" onClick={() => { setShowForm(false); setError('') }} className="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit" className="px-5 py-2.5 rounded-lg primary-gradient text-white text-sm font-bold hover:opacity-90 flex items-center gap-2">
               <span className="material-symbols-outlined text-base">person_add</span>
@@ -370,11 +372,11 @@ export default function Users() {
                   )}
                   <div className="flex gap-3 justify-end pt-2">
                     <button onClick={closeEdit} className="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button onClick={() => setConfirmEdit(true)} className="px-5 py-2.5 rounded-lg primary-gradient text-white text-sm font-bold hover:opacity-90 flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">save</span>
-                      Save Changes
+                      {t('common.saveChanges')}
                     </button>
                   </div>
                 </>
@@ -383,15 +385,15 @@ export default function Users() {
                   <div className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center mx-auto mb-4">
                     <span className="material-symbols-outlined text-3xl text-on-surface-variant">help</span>
                   </div>
-                  <p className="text-base font-bold text-on-surface mb-1">Are you sure?</p>
+                  <p className="text-base font-bold text-on-surface mb-1">{t('common.areYouSure')}</p>
                   <p className="text-sm text-on-surface-variant mb-6">This will update the user's information.</p>
                   <div className="flex gap-3 justify-center">
                     <button onClick={() => setConfirmEdit(false)} className="px-5 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors">
-                      Go Back
+                      {t('common.goBack')}
                     </button>
                     <button onClick={handleUpdate} className="px-5 py-2.5 rounded-lg primary-gradient text-white text-sm font-bold hover:opacity-90 flex items-center gap-2">
                       <span className="material-symbols-outlined text-base">check</span>
-                      Confirm
+                      {t('common.confirm')}
                     </button>
                   </div>
                 </div>
@@ -436,7 +438,7 @@ export default function Users() {
                   <span className="material-symbols-outlined text-on-surface-variant text-[18px]">mail</span>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Email</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{t('common.email')}</p>
                   <p className="text-sm font-medium text-on-surface">{viewUser.email}</p>
                 </div>
               </div>
@@ -445,7 +447,7 @@ export default function Users() {
                   <span className="material-symbols-outlined text-on-surface-variant text-[18px]">phone</span>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Phone</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{t('common.phone')}</p>
                   <p className="text-sm font-medium text-on-surface">{viewUser.phone || '—'}</p>
                 </div>
               </div>
@@ -455,7 +457,7 @@ export default function Users() {
                     <span className="material-symbols-outlined text-on-surface-variant text-[18px]">apartment</span>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Department</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{t('common.department')}</p>
                     <p className="text-sm font-medium text-on-surface">{viewUser.department}</p>
                   </div>
                 </div>
@@ -503,13 +505,13 @@ export default function Users() {
                   onClick={() => { setViewUser(null); setResetEmailStatus(null); startEdit(viewUser) }}
                   className="flex-1 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-bold hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-base">edit</span>Edit
+                  <span className="material-symbols-outlined text-base">edit</span>{t('common.edit')}
                 </button>
                 <button
                   onClick={() => { setViewUser(null); setResetEmailStatus(null) }}
                   className="flex-1 py-2.5 rounded-xl primary-gradient text-white text-sm font-bold hover:opacity-90 transition-opacity"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </div>
@@ -526,20 +528,20 @@ export default function Users() {
               <span className="material-symbols-outlined text-3xl text-error">delete_forever</span>
             </div>
             <p className="text-base font-bold text-on-surface mb-1">Delete this user?</p>
-            <p className="text-sm text-on-surface-variant mb-6">This action cannot be undone.</p>
+            <p className="text-sm text-on-surface-variant mb-6">{t('common.cantUndo')}</p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setConfirmDeleteId(null)}
                 className="flex-1 px-4 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-container-low transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => handleDelete(confirmDeleteId)}
                 className="flex-1 px-4 py-2.5 rounded-lg bg-error text-white text-sm font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-base">delete</span>
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           </div>
@@ -550,11 +552,11 @@ export default function Users() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-theme-border-light">
-              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">Name</th>
-              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">Email</th>
-              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">Phone</th>
+              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">{t('common.name')}</th>
+              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">{t('common.email')}</th>
+              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">{t('common.phone')}</th>
               <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">Role</th>
-              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">Created</th>
+              <th className="text-left px-6 py-3.5 text-xs font-medium text-text-muted uppercase tracking-wider">{t('common.created')}</th>
               <th className="px-6 py-3.5"></th>
             </tr>
           </thead>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
 import { useAuth } from '../context/AuthContext'
 import Users from './Users'
@@ -23,6 +24,7 @@ function emptyForm() {
 
 // ─── Machine View Modal ──────────────────────────────────────────────────────
 function MachineViewModal({ machine, onClose, onEdit }) {
+  const { t } = useTranslation()
   const { downloadMachineManual } = useData()
   const yearTasks = (machine.monthlyMaintenance || []).filter((t) => t.year === new Date().getFullYear())
   const doneTasks = yearTasks.filter((t) => t.completed).length
@@ -59,7 +61,7 @@ function MachineViewModal({ machine, onClose, onEdit }) {
           <div className="flex items-center gap-2">
             <button onClick={onEdit} className="flex items-center gap-1.5 border border-theme-border px-3 py-1.5 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
               <span className="material-symbols-outlined text-base">edit</span>
-              Edit
+              {t('common.edit')}
             </button>
             <button onClick={onClose} className="text-text-muted hover:text-on-surface transition">
               <span className="material-symbols-outlined">close</span>
@@ -181,7 +183,7 @@ function MachineViewModal({ machine, onClose, onEdit }) {
         {/* Footer */}
         <div className="px-6 py-4 border-t border-theme-border flex justify-end shrink-0">
           <button onClick={onClose} className="border border-theme-border rounded-xl px-6 py-2 text-sm text-text-muted hover:bg-hover-bg transition">
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>
@@ -191,6 +193,7 @@ function MachineViewModal({ machine, onClose, onEdit }) {
 
 // ─── Machine Modal ────────────────────────────────────────────────────────────
 function MachineModal({ machine, onClose, onSave }) {
+  const { t } = useTranslation()
   const { uploadMachineManual, downloadMachineManual, deleteMachineManual } = useData()
   const [tab, setTab] = useState('basic')
   const [form, setForm] = useState(machine ? {
@@ -263,7 +266,7 @@ function MachineModal({ machine, onClose, onSave }) {
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-primary">precision_manufacturing</span>
             <div>
-              <h2 className="text-base font-bold text-on-surface">{isNew ? 'Add Machine' : machine.name}</h2>
+              <h2 className="text-base font-bold text-on-surface">{isNew ? t('settings.addMachine') : machine.name}</h2>
               {!isNew && <p className="text-xs text-text-muted">{machine.code}</p>}
             </div>
           </div>
@@ -296,15 +299,15 @@ function MachineModal({ machine, onClose, onSave }) {
               <div>
                 <label className="block text-xs font-semibold text-text-muted mb-1">Machine Code <span className="text-error">*</span></label>
                 <input className={errInp('code')} value={form.code} onChange={set('code')} placeholder="e.g. MCH-001" />
-                {errors.code && <p className="text-xs text-error mt-0.5">Required</p>}
+                {errors.code && <p className="text-xs text-error mt-0.5">{t('common.required')}</p>}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-text-muted mb-1">Machine Name <span className="text-error">*</span></label>
                 <input className={errInp('name')} value={form.name} onChange={set('name')} placeholder="e.g. CNC Lathe" />
-                {errors.name && <p className="text-xs text-error mt-0.5">Required</p>}
+                {errors.name && <p className="text-xs text-error mt-0.5">{t('common.required')}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Status</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.status')}</label>
                 <select className={inp()} value={form.status} onChange={set('status')}>
                   {MACHINE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -314,19 +317,19 @@ function MachineModal({ machine, onClose, onSave }) {
                 <input className={inp()} value={form.location} onChange={set('location')} placeholder="e.g. Hall A" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Production Year</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('settings.productionYear')}</label>
                 <input type="number" className={inp()} value={form.productionYear} onChange={set('productionYear')} placeholder="e.g. 2019" min="1900" max="2099" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Warranty Expiry</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('settings.warrantyExpiry')}</label>
                 <input type="date" className={inp()} value={form.warrantyExpiry} onChange={set('warrantyExpiry')} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Next Maintenance Due</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('settings.nextMaintenance')}</label>
                 <input type="date" className={inp()} value={form.nextMaintenanceDue} onChange={set('nextMaintenanceDue')} />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
                 <textarea rows={3} className={inp()} value={form.notes} onChange={set('notes')} placeholder="Any additional notes…" />
               </div>
             </div>
@@ -336,11 +339,11 @@ function MachineModal({ machine, onClose, onSave }) {
           {tab === 'manufacturer' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-text-muted mb-1">Manufacturer Name</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('settings.manufacturer')}</label>
                 <input className={inp()} value={form.manufacturer} onChange={set('manufacturer')} placeholder="e.g. Mazak Corporation" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Country of Origin</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.country')}</label>
                 <input className={inp()} value={form.manufacturerCountry} onChange={set('manufacturerCountry')} placeholder="e.g. Japan" />
               </div>
               <div>
@@ -404,17 +407,17 @@ function MachineModal({ machine, onClose, onSave }) {
         {(tab === 'basic' || tab === 'manufacturer') && (
           <div className="px-6 py-4 border-t border-theme-border flex gap-3 shrink-0">
             <button onClick={onClose} className="flex-1 border border-theme-border rounded-xl py-2 text-sm text-text-muted hover:bg-hover-bg transition">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-white rounded-xl py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-40">
-              {saving ? 'Saving…' : isNew ? 'Add Machine' : 'Save Changes'}
+              {saving ? 'Saving…' : isNew ? t('settings.addMachine') : t('common.saveChanges')}
             </button>
           </div>
         )}
         {tab === 'manual' && (
           <div className="px-6 py-4 border-t border-theme-border flex justify-end shrink-0">
             <button onClick={onClose} className="border border-theme-border rounded-xl px-6 py-2 text-sm text-text-muted hover:bg-hover-bg transition">
-              Close
+              {t('common.close')}
             </button>
           </div>
         )}
@@ -510,6 +513,7 @@ function EmployeeAssignModal({ employee, allEmployees, onClose, onSave }) {
 
 // ─── Departments Tab ──────────────────────────────────────────────────────────
 function UserRolesTab() {
+  const { t } = useTranslation()
   const { token } = useAuth()
   const { roles, addRole, renameRole, deleteRole } = useData()
   const [employees, setEmployees] = useState([])
@@ -598,7 +602,7 @@ function UserRolesTab() {
           className="flex items-center gap-1.5 primary-gradient text-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined text-base">add</span>
-          Add
+          {t('common.add')}
         </button>
       </div>
       {addError && <p className="text-xs text-error -mt-2">{addError}</p>}
@@ -715,13 +719,13 @@ function UserRolesTab() {
             />
             {renameError && <p className="text-xs text-error mb-2">{renameError}</p>}
             <div className="flex gap-3 mt-4">
-              <button onClick={() => { setRenamingRole(null); setRenameText(''); setRenameError('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+              <button onClick={() => { setRenamingRole(null); setRenameText(''); setRenameError('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
               <button
                 onClick={handleRenameDept}
                 disabled={!renameText.trim() || renameText.trim() === renamingRole.name}
                 className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Rename
+                {t('common.edit')}
               </button>
             </div>
           </div>
@@ -753,13 +757,13 @@ function UserRolesTab() {
               autoFocus
             />
             <div className="flex gap-3">
-              <button onClick={() => { setDeletingRole(null); setDeleteConfirmText('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
+              <button onClick={() => { setDeletingRole(null); setDeleteConfirmText('') }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
               <button
                 onClick={handleDeleteDept}
                 disabled={deleteConfirmText !== deletingRole.name}
                 className="flex-1 bg-error text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           </div>
@@ -937,6 +941,7 @@ function PermissionsTab() {
 
 // ─── Machines Tab ─────────────────────────────────────────────────────────────
 function MachinesTab() {
+  const { t } = useTranslation()
   const { machines, addMachine, updateMachine, deleteMachine } = useData()
   const [modal, setModal] = useState(null) // null | 'new' | machine object
   const [viewMachine, setViewMachine] = useState(null)
@@ -990,7 +995,7 @@ function MachinesTab() {
           className="flex items-center gap-1.5 primary-gradient text-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined text-base">add</span>
-          Add Machine
+          {t('settings.addMachine')}
         </button>
       </div>
 
@@ -1008,7 +1013,7 @@ function MachinesTab() {
 
       {filtered.length === 0 ? (
         <p className="text-center py-16 text-sm text-text-muted">
-          {machines.length === 0 ? 'No machines added yet. Click "Add Machine" to get started.' : 'No machines match your search.'}
+          {machines.length === 0 ? t('settings.noMachines') : t('common.noResults')}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3">
@@ -1059,8 +1064,8 @@ function MachinesTab() {
                   </button>
                   {deletingId === m.id ? (
                     <span className="flex items-center gap-1">
-                      <button onClick={async () => { await deleteMachine(m.id); setDeletingId(null) }} className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">Yes</button>
-                      <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1 transition">No</button>
+                      <button onClick={async () => { await deleteMachine(m.id); setDeletingId(null) }} className="text-xs font-semibold text-white bg-error px-2 py-1 rounded-lg transition">{t('common.yes')}</button>
+                      <button onClick={() => setDeletingId(null)} className="text-xs text-text-muted px-1 transition">{t('common.no')}</button>
                     </span>
                   ) : (
                     <button onClick={() => setDeletingId(m.id)} className="p-1.5 rounded-lg hover:bg-hover-bg text-text-muted hover:text-error transition">
@@ -1260,6 +1265,7 @@ const purchasingStatusColor = {
 }
 
 function PurchasingStatusTab() {
+  const { t } = useTranslation()
   const { token } = useAuth()
   const { userPurchasingStatusPermissions, updateUserPurchasingStatusPermissions } = useData()
   const [users, setUsers] = useState([])
@@ -1356,13 +1362,13 @@ function PurchasingStatusTab() {
                 onClick={() => setPending(null)}
                 className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={confirmAssign}
                 className="flex-1 bg-primary text-on-primary rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition"
               >
-                Confirm
+                {t('common.confirm')}
               </button>
             </div>
           </div>
@@ -1372,21 +1378,22 @@ function PurchasingStatusTab() {
   )
 }
 
-const TABS = [
-  { key: 'users',               label: 'Users',                    icon: 'manage_accounts' },
-  { key: 'roles',               label: 'Departments',              icon: 'corporate_fare' },
-  { key: 'order-status',        label: 'Order Status',             icon: 'swap_horiz' },
-  { key: 'purchasing-status',   label: 'Purchasing Status',        icon: 'shopping_cart' },
-  { key: 'machines',            label: 'Machines',                 icon: 'precision_manufacturing' },
-]
-
 export default function Settings() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('roles')
+
+  const TABS = [
+    { key: 'users',               label: t('settings.users'),    icon: 'manage_accounts' },
+    { key: 'roles',               label: 'Departments',          icon: 'corporate_fare' },
+    { key: 'order-status',        label: 'Order Status',         icon: 'swap_horiz' },
+    { key: 'purchasing-status',   label: 'Purchasing Status',    icon: 'shopping_cart' },
+    { key: 'machines',            label: t('settings.machines'), icon: 'precision_manufacturing' },
+  ]
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface">Settings</h1>
+        <h1 className="text-2xl font-bold text-on-surface">{t('settings.title')}</h1>
         <p className="text-sm text-text-muted mt-0.5">System configuration</p>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -46,6 +47,7 @@ const statusBadge = {
 
 // ── My Attendance Tab ────────────────────────────────────────────────────────
 function MyAttendanceTab({ employeeId, token }) {
+  const { t } = useTranslation()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
@@ -143,12 +145,12 @@ function MyAttendanceTab({ employeeId, token }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-5 py-3 font-semibold">Date</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('common.date')}</th>
               <th className="text-left px-5 py-3 font-semibold">Day</th>
-              <th className="text-left px-5 py-3 font-semibold">Check In</th>
-              <th className="text-left px-5 py-3 font-semibold">Check Out</th>
-              <th className="text-left px-5 py-3 font-semibold">Hours</th>
-              <th className="text-left px-5 py-3 font-semibold">Notes</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.checkIn')}</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.checkOut')}</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.hours')}</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('common.notes')}</th>
               <th className="text-right px-5 py-3 font-semibold w-16"></th>
             </tr>
           </thead>
@@ -198,21 +200,21 @@ function MyAttendanceTab({ employeeId, token }) {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Check In</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('attendance.checkIn')}</label>
                 <input type="time" className="w-full bg-surface-container-lowest border border-theme-border rounded px-3 py-2 text-sm text-on-surface outline-none focus:border-primary" value={editForm.checkIn} onChange={(e) => setEditForm((f) => ({ ...f, checkIn: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Check Out</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('attendance.checkOut')}</label>
                 <input type="time" className="w-full bg-surface-container-lowest border border-theme-border rounded px-3 py-2 text-sm text-on-surface outline-none focus:border-primary" value={editForm.checkOut} onChange={(e) => setEditForm((f) => ({ ...f, checkOut: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.notes')}</label>
                 <input className="w-full bg-surface-container-lowest border border-theme-border rounded px-3 py-2 text-sm text-on-surface outline-none focus:border-primary" value={editForm.notes} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => setEditDate(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
-              <button onClick={saveEdit} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
+              <button onClick={() => setEditDate(null)} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
+              <button onClick={saveEdit} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">{t('common.save')}</button>
             </div>
           </div>
         </div>
@@ -223,6 +225,7 @@ function MyAttendanceTab({ employeeId, token }) {
 
 // ── My Leave Requests Tab ────────────────────────────────────────────────────
 function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
+  const { t } = useTranslation()
   const [requests, setRequests] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState(null)
@@ -314,7 +317,7 @@ function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
           <span className="material-symbols-outlined text-base">add</span>
-          New Request
+          {t('attendance.requestLeave')}
         </button>
       </div>
 
@@ -322,12 +325,12 @@ function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-5 py-3 font-semibold">Type</th>
-              <th className="text-left px-5 py-3 font-semibold">Start</th>
-              <th className="text-left px-5 py-3 font-semibold">End</th>
-              <th className="text-center px-5 py-3 font-semibold">Days</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.leaveType')}</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.startDate')}</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.endDate')}</th>
+              <th className="text-center px-5 py-3 font-semibold">{t('attendance.days')}</th>
               <th className="text-left px-5 py-3 font-semibold">Reason</th>
-              <th className="text-left px-5 py-3 font-semibold">Status</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('common.status')}</th>
               <th className="text-left px-5 py-3 font-semibold">Reviewed By</th>
               <th className="text-right px-5 py-3 font-semibold w-20"></th>
             </tr>
@@ -385,19 +388,19 @@ function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-text-muted mb-1">Type</label>
+                <label className="block text-xs font-semibold text-text-muted mb-1">{t('attendance.leaveType')}</label>
                 <select className={inputCls('type')} value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-                  {LEAVE_TYPES.map((t) => <option key={t}>{t}</option>)}
+                  {LEAVE_TYPES.map((lt) => <option key={lt}>{lt}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-text-muted mb-1">Start Date *</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">{t('attendance.startDate')} *</label>
                   <input type="date" className={inputCls('startDate')} value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
                   {errors.startDate && <p className="text-xs text-error mt-1">{errors.startDate}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-text-muted mb-1">End Date *</label>
+                  <label className="block text-xs font-semibold text-text-muted mb-1">{t('attendance.endDate')} *</label>
                   <input type="date" className={inputCls('endDate')} value={form.endDate} onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))} />
                   {errors.endDate && <p className="text-xs text-error mt-1">{errors.endDate}</p>}
                 </div>
@@ -413,8 +416,8 @@ function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => { setShowForm(false); setEditItem(null) }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">Cancel</button>
-              <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">Save</button>
+              <button onClick={() => { setShowForm(false); setEditItem(null) }} className="flex-1 border border-theme-border rounded-lg py-2 text-sm text-text-muted hover:bg-hover-bg transition">{t('common.cancel')}</button>
+              <button onClick={handleSave} className="flex-1 bg-primary text-white rounded-lg py-2 text-sm font-semibold hover:opacity-90 transition">{t('attendance.submitLeave')}</button>
             </div>
           </div>
         </div>
@@ -425,6 +428,7 @@ function MyLeaveTab({ employeeId, token, isManager, autoOpen }) {
 
 // ── Team Requests Tab (Supervisor / Admin) ───────────────────────────────────
 function TeamRequestsTab({ employeeId, token, isAdmin }) {
+  const { t } = useTranslation()
   const [requests, setRequests] = useState([])
 
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -489,14 +493,14 @@ function TeamRequestsTab({ employeeId, token, isAdmin }) {
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:opacity-90 transition"
           >
             <span className="material-symbols-outlined text-sm">check</span>
-            Approve
+            {t('attendance.approve')}
           </button>
           <button
             onClick={() => handleReview(r.id, 'Rejected')}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-error text-error text-xs font-semibold hover:bg-error/10 transition"
           >
             <span className="material-symbols-outlined text-sm">close</span>
-            Reject
+            {t('attendance.reject')}
           </button>
         </div>
       </div>
@@ -544,12 +548,12 @@ function TeamRequestsTab({ employeeId, token, isAdmin }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-theme-border text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-5 py-3 font-semibold">Employee</th>
-              <th className="text-left px-5 py-3 font-semibold">Type</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('common.employee')}</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('attendance.leaveType')}</th>
               <th className="text-left px-5 py-3 font-semibold">Period</th>
-              <th className="text-center px-5 py-3 font-semibold">Days</th>
+              <th className="text-center px-5 py-3 font-semibold">{t('attendance.days')}</th>
               <th className="text-left px-5 py-3 font-semibold">Reason</th>
-              <th className="text-left px-5 py-3 font-semibold">Status</th>
+              <th className="text-left px-5 py-3 font-semibold">{t('common.status')}</th>
               <th className="text-left px-5 py-3 font-semibold">Reviewed By</th>
             </tr>
           </thead>
@@ -586,12 +590,8 @@ function TeamRequestsTab({ employeeId, token, isAdmin }) {
 }
 
 // ── Main Page ────────────────────────────────────────────────────────────────
-const TABS = [
-  { key: 'attendance', label: 'My Attendance', icon: 'schedule' },
-  { key: 'leaves', label: 'My Leave Requests', icon: 'event_available' },
-]
-
 export default function Attendance() {
+  const { t } = useTranslation()
   const { user, token, isAdmin } = useAuth()
   const { employees } = useData()
   const [searchParams] = useSearchParams()
@@ -613,14 +613,19 @@ export default function Attendance() {
   )
   const showTeam = isAdmin || hasSubordinates
 
+  const TABS = [
+    { key: 'attendance', label: t('attendance.myTab'), icon: 'schedule' },
+    { key: 'leaves', label: t('attendance.leaveTab'), icon: 'event_available' },
+  ]
+
   const allTabs = showTeam
-    ? [...TABS, { key: 'team', label: 'Team Requests', icon: 'group' }]
+    ? [...TABS, { key: 'team', label: t('attendance.teamTab'), icon: 'group' }]
     : TABS
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface">Attendance</h1>
+        <h1 className="text-2xl font-bold text-on-surface">{t('attendance.title')}</h1>
         <p className="text-sm text-text-muted mt-0.5">
           {myEmployee ? myEmployee.name : 'Personnel attendance & leave management'}
         </p>

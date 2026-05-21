@@ -1,5 +1,6 @@
 "use strict";
 const electron = require("electron");
+const electronUpdater = require("electron-updater");
 const path = require("path");
 const child_process = require("child_process");
 const fs = require("fs");
@@ -376,11 +377,20 @@ function createWindow() {
     win.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 }
+electron.ipcMain.handle("updater:install", () => electronUpdater.autoUpdater.quitAndInstall());
 electron.app.whenReady().then(() => {
   createWindow();
   electron.app.on("activate", () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+  if (!isDev) {
+    const sendToAll = (channel, data) => electron.BrowserWindow.getAllWindows().forEach((w) => w.webContents.send(channel, data));
+    electronUpdater.autoUpdater.autoDownload = true;
+    electronUpdater.autoUpdater.on("update-available", (info) => sendToAll("updater:update-available", info));
+    electronUpdater.autoUpdater.on("download-progress", (progress) => sendToAll("updater:download-progress", progress));
+    electronUpdater.autoUpdater.on("update-downloaded", (info) => sendToAll("updater:update-downloaded", info));
+    electronUpdater.autoUpdater.checkForUpdates();
+  }
 });
 electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") electron.app.quit();

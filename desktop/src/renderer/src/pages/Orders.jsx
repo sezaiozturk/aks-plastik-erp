@@ -289,7 +289,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.customer')} *</label>
               <select className={inputCls(errors.customerId)} value={form.customerId} onChange={set('customerId')}>
-                <option value="">— Select customer —</option>
+                <option value="">{t('orders.selectCustomer')}</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               {errors.customerId && <p className="text-xs text-error mt-1">{errors.customerId}</p>}
@@ -313,7 +313,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
                 return (
                   <>
                     <select className={inputCls(errors.salesRepId)} value={form.salesRepId || ''} onChange={(e) => setForm((f) => ({ ...f, salesRepId: e.target.value }))}>
-                      <option value="">— Select sales rep —</option>
+                      <option value="">{t('orders.selectSalesRep')}</option>
                       {options.map((u) => (
                         <option key={u.id} value={u.id}>{u.name} — {u.department}</option>
                       ))}
@@ -334,12 +334,12 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             </div>
             {errors.items && <p className="text-xs text-error mb-2">{errors.items}</p>}
             <div className="flex items-center gap-2 mb-1 px-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted flex-1">Product</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-14 text-center">Qty</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-12 text-center">Unit</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-28 text-center">Unit Price</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-16 text-center">VAT %</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-24 text-right">Total</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted flex-1">{t('orders.product')}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-14 text-center">{t('orders.qty')}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-12 text-center">{t('common.unit')}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-28 text-center">{t('orders.unitPrice')}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-16 text-center">{t('orders.vat')}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted w-24 text-right">{t('orders.total')}</span>
               <span className="w-5" />
             </div>
             <div className="space-y-2">
@@ -353,7 +353,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
                     value={item.productId || ''}
                     onChange={(e) => fillFromProduct(idx, e.target.value)}
                   >
-                    <option value="">— Select product —</option>
+                    <option value="">{t('orders.selectProduct')}</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.stockNo ? `${p.stockNo} — ${p.name}` : p.name}
@@ -407,7 +407,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             </div>
             <div className="mt-3 flex justify-end">
               <span className="font-bold text-on-surface border-t border-theme-border pt-1">
-                Total: {displayCurrency} {total.toFixed(2)}
+                {t('orders.total')}: {displayCurrency} {total.toFixed(2)}
               </span>
             </div>
           </div>
@@ -416,14 +416,14 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('orders.shipmentType')} *</label>
               <select className={inputCls(errors.shipmentType)} value={form.shipmentType} onChange={set('shipmentType')}>
-                {SHIPMENT_TYPES.map((s) => <option key={s} value={s}>{s || '— Select shipment type —'}</option>)}
+                {SHIPMENT_TYPES.map((s) => <option key={s} value={s}>{s || t('orders.selectShipment')}</option>)}
               </select>
               {errors.shipmentType && <p className="text-xs text-error mt-1">{errors.shipmentType}</p>}
             </div>
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('orders.paymentMethod')} *</label>
               <select className={inputCls(errors.paymentMethod)} value={form.paymentMethod} onChange={set('paymentMethod')}>
-                {PAYMENT_METHODS.map((p) => <option key={p} value={p}>{p || '— Select payment method —'}</option>)}
+                {PAYMENT_METHODS.map((p) => <option key={p} value={p}>{p || t('orders.selectPayment')}</option>)}
               </select>
               {errors.paymentMethod && <p className="text-xs text-error mt-1">{errors.paymentMethod}</p>}
             </div>
@@ -700,19 +700,19 @@ export default function Orders() {
 
   function validate(f) {
     const e = {}
-    if (!f.customerId) e.customerId = 'Customer is required'
+    if (!f.customerId) e.customerId = t('orders.errCustomer')
     const isAdminOrManager = isAdmin || currentUser?.department === 'Sales Manager'
-    if (!f.salesRepId && isAdminOrManager) e.salesRepId = 'Sales rep is required'
-    if (!f.shipmentType) e.shipmentType = 'Shipment type is required'
-    if (!f.paymentMethod) e.paymentMethod = 'Payment method is required'
+    if (!f.salesRepId && isAdminOrManager) e.salesRepId = t('orders.errSalesRep')
+    if (!f.shipmentType) e.shipmentType = t('orders.errShipment')
+    if (!f.paymentMethod) e.paymentMethod = t('orders.errPayment')
     const validItems = f.items.filter((it) => it.productName.trim())
     if (!validItems.length) {
-      e.items = 'At least one product is required'
+      e.items = t('orders.errNoProduct')
     } else {
       const missingPrice = validItems.some((it) => it.unitPrice === '' || it.unitPrice === undefined)
-      if (missingPrice) e.items = 'All line items must have a unit price'
+      if (missingPrice) e.items = t('orders.errUnitPrice')
       const missingQty = validItems.some((it) => !parseInt(it.quantity) || parseInt(it.quantity) < 1)
-      if (missingQty) e.items = 'All line items must have a valid quantity'
+      if (missingQty) e.items = t('orders.errQty')
     }
     return e
   }
