@@ -16,6 +16,7 @@ build/
 # Gizli Bilgiler
 .env
 .env.*
+!.env.example
 
 # Prisma
 desktop/backend/prisma/migrations/
