@@ -40,20 +40,78 @@ model Customer {
   code         String   @unique
   name         String
   initials     String
+
+  // Identity
+  customerType   String  @default("Company")
+  fullName       String?
+  taxId          String?
+  taxOffice      String?
+  ticaretSicil   String?
+  mersisNo       String?
+  bolge          String?
+  cariTip        String?
+  istatistikGrup String?
+  mukellefTipi   String?
+
+  // Contact
   contact      String   @default("—")
   contactRole  String   @default("—")
   contactName  String?
   contactPhone String?
   contactEmail String?
-  region       String?
-  address      String?
-  city         String?
-  postalCode   String?
-  country      String?
-  phone        String?
-  email        String?
-  latitude     Float?
-  longitude    Float?
+  contactPersonPhone           String?
+  contactPersonEmail           String?
+  contactNamePurchasing        String?
+  contactPersonPhonePurchasing String?
+  contactPersonEmailPurchasing String?
+  contactPosition              String?
+
+  // Address
+  region     String?
+  address    String?
+  city       String?
+  district   String?
+  postalCode String?
+  country    String?
+  phone      String?
+  email      String?
+
+  // Location
+  latitude  Float?
+  longitude Float?
+
+  // Tax & e-Documents
+  eInvoiceStatus  Boolean @default(false)
+  eArchiveStatus  Boolean @default(false)
+  eDispatchStatus Boolean @default(false)
+  invoiceScenario String  @default("Basic")
+
+  // Financial
+  accountCode String?
+  accountType String  @default("Customer")
+  currency    String  @default("TRY")
+  paymentTerm String?
+  creditLimit Float?
+
+  // Bank
+  bankName      String?
+  iban          String?
+  branchCode    String?
+  accountHolder String?
+
+  // Invoicing & Payment
+  invoiceType   String?
+  paymentMethod String?
+  paymentTerms  String?
+
+  // Optional
+  industry         String?
+  customerCategory String?
+  salesRepName     String?
+  notes            String?
+  gdprConsent      Boolean @default(false)
+
+  // Stats
   totalOrders  Int      @default(0)
   activeOrders Int      @default(0)
   badge        String   @default("0 OPEN")
