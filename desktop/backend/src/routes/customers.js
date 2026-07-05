@@ -1,8 +1,10 @@
 const { Router } = require('express')
 const { PrismaClient } = require('@prisma/client')
+const vioSync = require('../lib/customerVioSync')
 
 const prisma = new PrismaClient()
 const router = Router()
+
 
 // GET all customers
 router.get('/', async (req, res) => {
@@ -123,9 +125,13 @@ function buildCustomerData(body) {
 router.post('/', async (req, res) => {
   try {
     const code = `CX-${String(Date.now()).slice(-4)}`
+    
     const customer = await prisma.customer.create({
       data: { code, ...buildCustomerData(req.body) },
     })
+    // Asenkron olarak Vio'ya gönder
+    vioSync.syncCustomer(customer).catch(console.error);
+
     res.status(201).json(customer)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -135,10 +141,40 @@ router.post('/', async (req, res) => {
 // PUT update customer
 router.put('/:id', async (req, res) => {
   try {
+    const existingCustomer = await prisma.customer.findUnique({ where: { id: req.params.id } })
+    if (!existingCustomer) {
+      return res.status(404).json({ error: 'Customer not found' })
+    }
+
+    let dataToSave = buildCustomerData(req.body)
+
+    // Vio'dan güncel durumu çek ve harmanla (merge)
+    const vioCustomer = await vioSync.fetchSingleVioCustomer(existingCustomer.code)
+
+    if (vioCustomer) {
+      for (const [key, vioValue] of Object.entries(vioCustomer)) {
+        if (vioValue === undefined) continue
+
+        const dbValue = existingCustomer[key] === null ? '' : existingCustomer[key]
+        const userValue = dataToSave[key] === null ? '' : dataToSave[key]
+
+        // Eğer kullanıcı arayüzde bu alanı "değiştirmediyse", Vio'daki güncel değeri baz al.
+        // Eğer değiştirdiyse, kullanıcının yazdığı yeni değer geçerli olur ve Vio'yu ezer.
+        const userChangedField = dbValue !== userValue
+        if (!userChangedField) {
+          dataToSave[key] = vioValue
+        }
+      }
+    }
+
     const customer = await prisma.customer.update({
       where: { id: req.params.id },
-      data: buildCustomerData(req.body),
+      data: dataToSave,
     })
+
+    // Asenkron olarak Vio'ya gönder (Birleştirilmiş yeni haliyle)
+    vioSync.syncCustomer(customer).catch(console.error);
+
     res.json(customer)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -151,7 +187,13 @@ router.delete('/:id', (req, res, next) => {
   next()
 }, async (req, res) => {
   try {
-    await prisma.customer.delete({ where: { id: req.params.id } })
+    const deletedCustomer = await prisma.customer.delete({ where: { id: req.params.id } })
+    
+    // Silinen kaydı Vio'dan da sil
+    if (deletedCustomer && deletedCustomer.code) {
+      await vioSync.deleteCustomerFromVio(deletedCustomer.code)
+    }
+
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

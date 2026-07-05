@@ -32,3 +32,9 @@ Thumbs.db
 
 # Git
 .git/
+
+# Developments
+desktop/developments/
+
+# Test dosyaları
+desktop/backend/test-*.js

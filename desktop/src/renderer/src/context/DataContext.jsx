@@ -170,7 +170,7 @@ export function DataProvider({ children }) {
       refreshPermissions()
       refreshStatusPermissions()
       refreshMachines()
-    }, 5 * 60 * 1000)
+    }, 30 * 60 * 1000)
     return () => clearInterval(interval)
   }, [refreshCustomers, refreshReports, refreshSiteVisits, refreshProducts, refreshEmployees, refreshOrders, refreshFinanceRecords, refreshRoles, refreshPermissions, refreshStatusPermissions, refreshMachines])
 
@@ -188,6 +188,7 @@ export function DataProvider({ children }) {
     setReports((prev) => prev.map((r) => r.customerId !== id ? r : { ...r, customer: { ...(r.customer || {}), name: updated.name } }))
     setSiteVisits((prev) => prev.map((v) => v.customerId !== id ? v : { ...v, customerName: updated.name, customer: { ...(v.customer || {}), name: updated.name } }))
     setOrders((prev) => prev.map((o) => o.customerId !== id ? o : { ...o, customer: { ...(o.customer || {}), name: updated.name } }))
+    return updated
   }
 
   async function deleteCustomer(id) {
@@ -507,7 +508,7 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      customers, addCustomer, updateCustomer, deleteCustomer,
+      customers, addCustomer, updateCustomer, deleteCustomer, refreshCustomers,
       reports, addReport, updateReport, deleteReport, moveReport,
       siteVisits, addSiteVisit, updateSiteVisit, deleteSiteVisit,
       products, addProduct, updateProduct, deleteProduct,

@@ -54,7 +54,7 @@ async function main() {
     { code: 'TECH-6613', name: 'Omar Hassan', initials: 'OH', status: 'Off-Duty', specialization: 'HVAC Systems', certification: 'Refrigerant Specialist', assignment: 'Shift starts 6AM', assignmentIcon: null, rating: 4.5 },
   ]
 
-  const createdTechs = {}
+  /*const createdTechs = {}
   for (const t of technicians) {
     const tech = await prisma.technician.upsert({
       where: { code: t.code },
@@ -65,7 +65,7 @@ async function main() {
   }
   console.log(`  ${technicians.length} technicians seeded`)
 
-  console.log('Seeding complete!')
+  console.log('Seeding complete!')*/
 }
 
 main()

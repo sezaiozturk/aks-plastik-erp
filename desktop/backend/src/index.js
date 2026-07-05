@@ -3,7 +3,9 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
+const cron = require('node-cron')
 const { authenticate } = require('./middleware/auth')
+const { pullCustomersFromVio } = require('./lib/customerVioSync')
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '..', 'uploads')
@@ -66,4 +68,16 @@ app.use('/api/sync', authenticate, syncRoutes)
 
 app.listen(PORT, () => {
   console.log(`AKS ERP API running on http://localhost:${PORT}`)
+  
+  // 30 minute cron for Vio Sync using node-cron
+  console.log('Starting 30-minute Vio sync cron job (*/30 * * * *)...')
+  cron.schedule('*/30 * * * *', async () => {
+    try {
+      console.log(`[CRON] ${new Date().toISOString()} - Running Vio customer sync...`)
+      await pullCustomersFromVio()
+      console.log(`[CRON] ${new Date().toISOString()} - Vio customer sync completed.`)
+    } catch (err) {
+      console.error(`[CRON] Vio sync failed:`, err.message)
+    }
+  })
 })

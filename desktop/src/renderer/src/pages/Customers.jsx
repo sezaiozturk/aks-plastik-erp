@@ -1,11 +1,54 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useData } from '../context/DataContext'
+import { useAuth } from '../context/AuthContext'
 import InitialsAvatar from '../components/InitialsAvatar'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import { addLogoToPDF } from '../utils/pdfLogo'
+
+const BOLGE_OPTIONS = [
+  { value: '', label: 'Seçiniz' },
+  { value: '01', label: 'İç Anadolu' },
+  { value: '21', label: 'Güney Batı Akdeniz' },
+  { value: '31', label: 'Kuzey Anadolu' },
+  { value: '41', label: 'İstanbul - Avrupa' },
+  { value: '42', label: 'İstanbul - Anadolu' },
+  { value: '51', label: 'Batı Anadolu' },
+  { value: '61', label: 'Doğu ve Güneydoğu' }
+];
+
+const CITY_OPTIONS = [
+  { value: '', label: 'Seçiniz' },
+  { value: '01', label: 'ADANA' }, { value: '02', label: 'ADIYAMAN' }, { value: '03', label: 'AFYON' },
+  { value: '04', label: 'AĞRI' }, { value: '05', label: 'AMASYA' }, { value: '06', label: 'ANKARA' },
+  { value: '07', label: 'ANTALYA' }, { value: '08', label: 'ARTVİN' }, { value: '09', label: 'AYDIN' },
+  { value: '10', label: 'BALIKESİR' }, { value: '11', label: 'BİLECİK' }, { value: '12', label: 'BİNGÖL' },
+  { value: '13', label: 'BİTLİS' }, { value: '14', label: 'BOLU' }, { value: '15', label: 'BURDUR' },
+  { value: '16', label: 'BURSA' }, { value: '17', label: 'ÇANAKKALE' }, { value: '18', label: 'ÇANKIRI' },
+  { value: '19', label: 'ÇORUM' }, { value: '20', label: 'DENİZLİ' }, { value: '21', label: 'DİYARBAKIR' },
+  { value: '22', label: 'EDİRNE' }, { value: '23', label: 'ELAZIĞ' }, { value: '24', label: 'ERZİNCAN' },
+  { value: '25', label: 'ERZURUM' }, { value: '26', label: 'ESKİŞEHİR' }, { value: '27', label: 'GAZİANTEP' },
+  { value: '28', label: 'GİRESUN' }, { value: '29', label: 'GÜMÜŞHANE' }, { value: '30', label: 'HAKKARİ' },
+  { value: '31', label: 'HATAY' }, { value: '32', label: 'ISPARTA' }, { value: '33', label: 'İÇEL' },
+  { value: '34', label: 'İSTANBUL' }, { value: '35', label: 'İZMİR' }, { value: '36', label: 'KARS' },
+  { value: '37', label: 'KASTAMONU' }, { value: '38', label: 'KAYSERİ' }, { value: '39', label: 'KIRKLARELİ' },
+  { value: '40', label: 'KIRŞEHİR' }, { value: '41', label: 'KOCAELİ' }, { value: '42', label: 'KONYA' },
+  { value: '43', label: 'KÜTAHYA' }, { value: '44', label: 'MALATYA' }, { value: '45', label: 'MANİSA' },
+  { value: '46', label: 'KAHRAMANMARAŞ' }, { value: '47', label: 'MARDİN' }, { value: '48', label: 'MUĞLA' },
+  { value: '49', label: 'MUŞ' }, { value: '50', label: 'NEVŞEHİR' }, { value: '51', label: 'NİĞDE' },
+  { value: '52', label: 'ORDU' }, { value: '53', label: 'RİZE' }, { value: '54', label: 'SAKARYA' },
+  { value: '55', label: 'SAMSUN' }, { value: '56', label: 'SİİRT' }, { value: '57', label: 'SİNOP' },
+  { value: '58', label: 'SİVAS' }, { value: '59', label: 'TEKİRDAĞ' }, { value: '60', label: 'TOKAT' },
+  { value: '61', label: 'TRABZON' }, { value: '62', label: 'TUNCELİ' }, { value: '63', label: 'ŞANLIURFA' },
+  { value: '64', label: 'UŞAK' }, { value: '65', label: 'VAN' }, { value: '66', label: 'YOZGAT' },
+  { value: '67', label: 'ZONGULDAK' }, { value: '68', label: 'AKSARAY' }, { value: '69', label: 'BAYBURT' },
+  { value: '70', label: 'KARAMAN' }, { value: '71', label: 'KIRIKKALE' }, { value: '72', label: 'BATMAN' },
+  { value: '73', label: 'ŞIRNAK' }, { value: '74', label: 'BARTIN' }, { value: '75', label: 'ARDAHAN' },
+  { value: '76', label: 'IĞDIR' }, { value: '77', label: 'YALOVA' }, { value: '78', label: 'KARABÜK' },
+  { value: '79', label: 'KİLİS' }, { value: '80', label: 'OSMANİYE' }, { value: '81', label: 'DÜZCE' }
+];
 
 const badgeStyles = {
   active: 'bg-primary-fixed text-on-primary-fixed-variant',
@@ -114,7 +157,7 @@ function getTabFields(tabId, form, t) {
         { id: 'country', label: f('country'), icon: 'public', type: 'text', col: 1, placeholder: f('countryPh') },
         { id: 'ticaretSicil', label: f('ticaretSicil'), icon: 'receipt', type: 'text', col: 1, placeholder: f('ticaretSicilPh') },
         { id: 'mersisNo', label: f('mersisNo'), icon: 'pin', type: 'text', col: 1, placeholder: f('mersisNoPh') },
-        { id: 'bolge', label: f('bolge'), icon: 'travel_explore', type: 'text', col: 1, placeholder: f('bolgePh') },
+        { id: 'bolge', label: f('bolge'), icon: 'travel_explore', type: 'select', col: 1, options: BOLGE_OPTIONS },
         {
           id: 'cariTip', label: f('cariTip'), icon: 'person_search', type: 'select', col: 1,
           options: [
@@ -128,8 +171,8 @@ function getTabFields(tabId, form, t) {
       ]
     case 'address':
       return [
-        { id: 'address', label: f('address'), icon: 'home', type: 'text', col: 2, placeholder: f('addressPh') },
-        { id: 'city', label: f('city'), icon: 'apartment', type: 'text', col: 1, placeholder: f('city') },
+        { id: 'address', label: f('address'), icon: 'home', type: 'text', col: 2, placeholder: f('addressPh'), maxLength: 50 },
+        { id: 'city', label: f('city'), icon: 'apartment', type: 'select', col: 1, options: CITY_OPTIONS },
         { id: 'district', label: f('district'), icon: 'map', type: 'text', col: 1, placeholder: f('districtPh') },
         { id: 'postalCode', label: f('postalCode'), icon: 'markunread_mailbox', type: 'text', col: 1, placeholder: f('postalCodePh') },
         { id: 'phone', label: f('phoneNumber'), icon: 'phone', type: 'tel', col: 1, placeholder: f('phonePh') },
@@ -733,6 +776,61 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
     gdprConsent:     customer.gdprConsent     || false,
   })
 
+  useEffect(() => {
+    if (!editing) {
+      setForm({
+        customerType:    customer.customerType    || 'Company',
+        fullName:        customer.fullName        || '',
+        companyName:     customer.name            || '',
+        taxId:           customer.taxId           || '',
+        taxOffice:       customer.taxOffice       || '',
+        country:         customer.country         || '',
+        ticaretSicil:    customer.ticaretSicil    || '',
+        mersisNo:        customer.mersisNo        || '',
+        bolge:           customer.bolge           || '',
+        cariTip:         customer.cariTip         || '',
+        istatistikGrup:  customer.istatistikGrup  || '',
+        mukellefTipi:    customer.mukellefTipi    || 'Vergi Mükellefi',
+        address:         customer.address         || '',
+        city:            customer.city            || '',
+        district:        customer.district        || '',
+        postalCode:      customer.postalCode      || '',
+        phone:           customer.phone           || '',
+        email:           customer.email           || '',
+        eInvoiceStatus:  customer.eInvoiceStatus  || false,
+        eArchiveStatus:  customer.eArchiveStatus  || false,
+        eDispatchStatus: customer.eDispatchStatus || false,
+        invoiceScenario: customer.invoiceScenario || 'Basic',
+        accountCode:     customer.accountCode     || '',
+        accountType:     customer.accountType     || 'Customer',
+        currency:        customer.currency        || 'TRY',
+        paymentTerm:     customer.paymentTerm     || '',
+        creditLimit:     customer.creditLimit != null ? String(customer.creditLimit) : '',
+        bankName:        customer.bankName        || '',
+        iban:            customer.iban            || '',
+        branchCode:      customer.branchCode      || '',
+        accountHolder:   customer.accountHolder   || '',
+        invoiceType:     customer.invoiceType     || '',
+        paymentMethod:   customer.paymentMethod   || '',
+        paymentTerms:    customer.paymentTerms    || '',
+        contactName:                  customer.contactName                  || '',
+        contactPersonPhone:           customer.contactPersonPhone           || '',
+        contactPersonEmail:           customer.contactPersonEmail           || '',
+        contactNamePurchasing:        customer.contactNamePurchasing        || '',
+        contactPersonPhonePurchasing: customer.contactPersonPhonePurchasing || '',
+        contactPersonEmailPurchasing: customer.contactPersonEmailPurchasing || '',
+        contactPhone:                 customer.contactPhone                 || '',
+        contactEmail:        customer.contactEmail        || '',
+        contactPosition:     customer.contactPosition     || '',
+        industry:        customer.industry        || '',
+        customerCategory: customer.customerCategory || '',
+        salesRepName:    customer.salesRepName    || '',
+        notes:           customer.notes           || '',
+        gdprConsent:     customer.gdprConsent     || false,
+      })
+    }
+  }, [customer, editing])
+
   const set = (field) => (val) => setForm((f) => ({ ...f, [field]: val }))
 
   function validate() {
@@ -752,10 +850,10 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
     return e
   }
 
-  function handleSave() {
+  async function handleSave() {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave(customer.id, form)
+    await onSave(customer.id, form)
     setEditing(false)
     setErrors({})
   }
@@ -1289,11 +1387,16 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
 
 export default function Customers() {
   const { t } = useTranslation()
-  const { customers, addCustomer, updateCustomer, deleteCustomer, reports } = useData()
+  const { customers, addCustomer, updateCustomer, deleteCustomer, reports, user, refreshCustomers } = useData()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  
+  const { token } = useAuth()
+  const isAdmin = user?.role === 'admin'
+
+
 
   function handleSave(form) {
     addCustomer(form)
@@ -1324,63 +1427,12 @@ export default function Customers() {
           customer={selectedCustomer}
           reports={reports}
           onClose={() => setSelectedCustomer(null)}
-          onSave={(id, form) => {
-            updateCustomer(id, form)
-            setSelectedCustomer((prev) => ({
-              ...prev,
-              name:            form.customerType === 'Individual' ? form.fullName : form.companyName,
-              customerType:    form.customerType,
-              fullName:        form.fullName,
-              taxId:           form.taxId,
-              taxOffice:       form.taxOffice,
-              country:         form.country,
-              ticaretSicil:    form.ticaretSicil,
-              mersisNo:        form.mersisNo,
-              bolge:           form.bolge,
-              cariTip:         form.cariTip,
-              istatistikGrup:  form.istatistikGrup,
-              mukellefTipi:    form.mukellefTipi,
-              address:         form.address,
-              city:            form.city,
-              district:        form.district,
-              postalCode:      form.postalCode,
-              region:          `${form.city}, ${form.postalCode}`,
-              phone:           form.phone,
-              email:           form.email,
-              eInvoiceStatus:  form.eInvoiceStatus,
-              eArchiveStatus:  form.eArchiveStatus,
-              eDispatchStatus: form.eDispatchStatus,
-              invoiceScenario: form.invoiceScenario,
-              accountCode:     form.accountCode,
-              accountType:     form.accountType,
-              currency:        form.currency,
-              paymentTerm:     form.paymentTerm,
-              creditLimit:     form.creditLimit ? parseFloat(form.creditLimit) : null,
-              bankName:        form.bankName,
-              iban:            form.iban,
-              branchCode:      form.branchCode,
-              accountHolder:   form.accountHolder,
-              invoiceType:     form.invoiceType,
-              paymentMethod:   form.paymentMethod,
-              paymentTerms:    form.paymentTerms,
-              contactName:                  form.contactName,
-              contactPersonPhone:           form.contactPersonPhone,
-              contactPersonEmail:           form.contactPersonEmail,
-              contactNamePurchasing:        form.contactNamePurchasing,
-              contactPersonPhonePurchasing: form.contactPersonPhonePurchasing,
-              contactPersonEmailPurchasing: form.contactPersonEmailPurchasing,
-              contactPhone:                 form.contactPhone,
-              contactEmail:       form.contactEmail,
-              contactPosition:    form.contactPosition,
-              industry:        form.industry,
-              customerCategory: form.customerCategory,
-              salesRepName:    form.salesRepName,
-              notes:           form.notes,
-              gdprConsent:     form.gdprConsent,
-            }))
+          onSave={async (id, form) => {
+            const updated = await updateCustomer(id, form)
+            if (updated) setSelectedCustomer(updated)
           }}
-          onDelete={(id) => {
-            deleteCustomer(id)
+          onDelete={async (id) => {
+            await deleteCustomer(id)
             setSelectedCustomer(null)
           }}
         />
@@ -1396,13 +1448,15 @@ export default function Customers() {
             {t('customers.subtitle')}
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-6 py-2.5 rounded-xl primary-gradient text-white font-bold text-sm flex items-center gap-2 shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
-        >
-          <span className="material-symbols-outlined text-xl">person_add</span>
-          {t('customers.addCustomer')}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 py-2.5 rounded-xl primary-gradient text-white font-bold text-sm flex items-center gap-2 shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"
+          >
+            <span className="material-symbols-outlined text-xl">person_add</span>
+            {t('customers.addCustomer')}
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
