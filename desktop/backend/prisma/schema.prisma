@@ -172,6 +172,7 @@ model Product {
   price       Float    @default(0)
   stock       Int      @default(0)
   minStock    Int      @default(0)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -217,6 +218,7 @@ model Order {
   notes       String   @default("")
   shipmentType  String   @default("")
   paymentMethod String   @default("")
+  orderDate   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

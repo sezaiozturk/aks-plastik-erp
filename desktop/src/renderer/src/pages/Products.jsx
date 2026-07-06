@@ -6,20 +6,36 @@ import { useData } from '../context/DataContext'
 const ITEMS_PER_PAGE = 10
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'TRY', 'AED', 'SAR', 'JPY', 'CNY', 'INR', 'CAD', 'AUD']
+const UNITS = ['ADET', 'KG', 'GR', 'METRE', 'LT', 'KUTU', 'PAKET', 'TAKIM', 'CUVAL', 'RULO']
+
+const CATEGORIES = [
+  { id: '', name: 'Kategorisiz' },
+  { id: '001', name: 'ET ÜRÜNLERİ' },
+  { id: '002', name: 'SÜT ÜRÜNLERİ' },
+  { id: '003', name: 'TEMİZLİK ÜRÜNLERİ' },
+  { id: '004', name: 'İŞLENMİŞ ET ÜRÜNLERİ' },
+  { id: '005', name: 'HAZIR GIDA ÜRÜNLERİ' },
+  { id: '006', name: 'İÇECEK ÜRÜNLERİ' },
+  { id: '007', name: 'DİĞER GIDA ÜRÜNLERİ' },
+  { id: '008', name: 'TEMEL GIDA ÜRÜNLERİ' },
+  { id: '009', name: 'DİĞER ÜRÜNLER' },
+  { id: '03', name: 'SARAY (SÜT ÜRÜNLERİ)' },
+  { id: '10', name: 'BELPINAR ÜRÜNLERİ' },
+  { id: "BEE'O", name: 'SBS BİL.' }
+]
 
 const emptyForm = {
   stockNo: '',
   name: '',
-  description: '',
   category: '',
-  unit: 'pcs',
+  unit: 'ADET',
   currency: 'USD',
   price: '',
   stock: '',
   minStock: '',
 }
 
-function Modal({ title, form, setForm, onClose, onSave, errors }) {
+function Modal({ title, form, setForm, onClose, onSave, errors, isEdit }) {
   const { t } = useTranslation()
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
@@ -41,7 +57,7 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('products.stockNo')} *</label>
-              <input className={inputCls('stockNo')} value={form.stockNo} onChange={set('stockNo')} placeholder={t('products.stockNoPh')} />
+              <input disabled={isEdit} className={`${inputCls('stockNo')} ${isEdit ? 'opacity-50 cursor-not-allowed bg-surface-container-high' : ''}`} value={form.stockNo} onChange={set('stockNo')} placeholder={t('products.stockNoPh')} />
               {errors.stockNo && <p className="text-xs text-error mt-1">{errors.stockNo}</p>}
             </div>
             <div>
@@ -53,11 +69,15 @@ function Modal({ title, form, setForm, onClose, onSave, errors }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.category')}</label>
-              <input className={inputCls('category')} value={form.category} onChange={set('category')} placeholder={t('products.categoryPh')} />
+              <select className={inputCls('category')} value={form.category} onChange={set('category')}>
+                {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-1">{t('common.unit')}</label>
-              <input className={inputCls('unit')} value={form.unit} onChange={set('unit')} placeholder={t('products.unitPh')} />
+              <select className={inputCls('unit')} value={form.unit} onChange={set('unit')}>
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -191,7 +211,9 @@ function ProductDetailModal({ product, onClose, onEdit, onDelete, isAdmin }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface-container-low rounded-xl p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.category')}</p>
-              <p className="text-sm font-semibold text-on-surface">{product.category || '—'}</p>
+              <p className="text-sm font-semibold text-on-surface">
+                {CATEGORIES.find((c) => c.id === product.category)?.name || product.category || '—'}
+              </p>
             </div>
             <div className="bg-surface-container-low rounded-xl p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">{t('common.unit')}</p>
@@ -468,7 +490,9 @@ export default function Products() {
                   <tr key={p.id} onClick={() => setViewProduct(p)} className="border-b border-theme-border hover:bg-hover-bg transition-colors cursor-pointer">
                     <td className="px-6 py-4 font-mono text-xs font-semibold text-on-surface">{p.stockNo || '—'}</td>
                     <td className="px-6 py-4 font-semibold text-on-surface">{p.name}</td>
-                    <td className="px-6 py-4 text-text-muted">{p.category || '—'}</td>
+                    <td className="px-6 py-4 text-text-muted">
+                      {CATEGORIES.find((c) => c.id === p.category)?.name || p.category || '—'}
+                    </td>
                     <td className="px-6 py-4 text-right font-medium text-on-surface">
                       <span className="text-xs text-text-muted mr-1">{p.currency || 'USD'}</span>
                       {parseFloat(p.price).toFixed(2)}
@@ -503,7 +527,7 @@ export default function Products() {
         <Modal title={t('products.addProduct')} form={form} setForm={setForm} errors={errors} onClose={() => setShowAdd(false)} onSave={handleAdd} />
       )}
       {editItem && (
-        <Modal title={t('products.editProduct')} form={form} setForm={setForm} errors={errors} onClose={() => setEditItem(null)} onSave={handleEdit} />
+        <Modal title={t('products.editProduct')} form={form} setForm={setForm} errors={errors} onClose={() => setEditItem(null)} onSave={handleEdit} isEdit={true} />
       )}
       {viewProduct && (
         <ProductDetailModal

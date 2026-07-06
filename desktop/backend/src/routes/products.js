@@ -1,5 +1,6 @@
 const { Router } = require('express')
 const { PrismaClient } = require('@prisma/client')
+const { syncProductToVio, deleteProductFromVio, fetchSingleVioProduct, mapVioStokToErpData } = require('../lib/productVioSync')
 
 const prisma = new PrismaClient()
 const router = Router()
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
         stockNo: stockNo || '',
         name,
         description: description || '',
-        category: category || 'General',
+        category: category || '',
         unit: unit || 'pcs',
         currency: currency || 'USD',
         price: parseFloat(price) || 0,
@@ -41,6 +42,10 @@ router.post('/', async (req, res) => {
         minStock: parseInt(minStock) || 0,
       },
     })
+    
+    // Sync the new product to Vio
+    await syncProductToVio(product)
+    
     res.status(201).json(product)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -49,21 +54,61 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { name, stockNo, description, category, unit, currency, price, stock, minStock } = req.body
+    const { name, stockNo, description, category, unit, currency, price, stock, minStock, isActive } = req.body
+    
+    // Değişen alanları bulmak için eski kaydı çek
+    const existing = await prisma.product.findUnique({ where: { id: req.params.id } })
+    if (!existing) return res.status(404).json({ error: 'Product not found' })
+
+    let dataToSave = {
+      stockNo: existing.stockNo, // Kullanıcı arayüzde değiştiremez, mevcut olanı al
+      name,
+      description: description || '',
+      category: category || '',
+      unit: unit || 'pcs',
+      currency: currency || 'USD',
+      price: parseFloat(price) || 0,
+      stock: parseInt(stock) || 0,
+      minStock: parseInt(minStock) || 0,
+      ...(isActive !== undefined && { isActive })
+    }
+
+    // 1. Kullanıcının arayüzde gerçekten hangi alanları değiştirdiğini tespit et (Merge işleminden ÖNCE)
+    const userChangedFields = []
+    if (existing.name !== dataToSave.name) userChangedFields.push('name')
+    if (existing.description !== dataToSave.description) userChangedFields.push('description')
+    if (existing.category !== dataToSave.category) userChangedFields.push('category')
+    if (existing.unit !== dataToSave.unit) userChangedFields.push('unit')
+    if (existing.currency !== dataToSave.currency) userChangedFields.push('currency')
+    if (existing.price !== dataToSave.price) userChangedFields.push('price')
+    if (existing.isActive !== dataToSave.isActive && isActive !== undefined) userChangedFields.push('isActive')
+
+    // 2. Vio'dan güncel durumu çek ve harmanla (merge)
+    const vioProductRaw = await fetchSingleVioProduct(existing.stockNo)
+    if (vioProductRaw) {
+      const vioProduct = mapVioStokToErpData(vioProductRaw)
+      const fieldsToMerge = ['name', 'description', 'category', 'unit', 'currency', 'price', 'isActive']
+      
+      for (const key of fieldsToMerge) {
+        if (vioProduct[key] === undefined) continue
+
+        // Eğer kullanıcı bu alanı arayüzde DEĞİŞTİRMEDİYSE, Vio'daki değeri doğru kabul et ve ERP'yi güncelle
+        if (!userChangedFields.includes(key)) {
+          dataToSave[key] = vioProduct[key]
+        }
+      }
+    }
+
+    // 3. Harmanlanmış (Vio'dan gelenler + Kullanıcının değiştirdikleri) veriyi DB'ye kaydet
     const product = await prisma.product.update({
       where: { id: req.params.id },
-      data: {
-        stockNo: stockNo || '',
-        name,
-        description: description || '',
-        category: category || 'General',
-        unit: unit || 'pcs',
-        currency: currency || 'USD',
-        price: parseFloat(price) || 0,
-        stock: parseInt(stock) || 0,
-        minStock: parseInt(minStock) || 0,
-      },
+      data: dataToSave,
     })
+    
+    // 4. Vio'ya SADECE kullanıcının arayüzde değiştirdiği alanları yolla! (Partial Update)
+    // Böylece Vio'nun içindeki diğer alanlar (muhkod, kdv vb.) ASLA ezilmez.
+    await syncProductToVio(product, userChangedFields)
+    
     res.json(product)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -75,7 +120,13 @@ router.delete('/:id', (req, res, next) => {
   next()
 }, async (req, res) => {
   try {
-    await prisma.product.delete({ where: { id: req.params.id } })
+    const product = await prisma.product.findUnique({ where: { id: req.params.id } })
+    if (product) {
+      // First delete from Vio (if possible)
+      await deleteProductFromVio(product.code)
+      // Then delete from ERP
+      await prisma.product.delete({ where: { id: req.params.id } })
+    }
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: err.message })

@@ -5,7 +5,9 @@ const path = require('path')
 const fs = require('fs')
 const cron = require('node-cron')
 const { authenticate } = require('./middleware/auth')
+const { pullProductsFromVio } = require('./lib/productVioSync')
 const { pullCustomersFromVio } = require('./lib/customerVioSync')
+const { pullOrdersFromVio } = require('./lib/orderVioSync')
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '..', 'uploads')
@@ -72,12 +74,20 @@ app.listen(PORT, () => {
   // 30 minute cron for Vio Sync using node-cron
   console.log('Starting 30-minute Vio sync cron job (*/30 * * * *)...')
   cron.schedule('*/30 * * * *', async () => {
+    console.log('[CRON] Vio Senkronizasyonları başlatılıyor...')
     try {
-      console.log(`[CRON] ${new Date().toISOString()} - Running Vio customer sync...`)
+      // 1. Önce ürünleri senkronize et (siparişler vs için foreign key)
+      await pullProductsFromVio()
+      
+      // 2. Sonra müşterileri senkronize et
       await pullCustomersFromVio()
-      console.log(`[CRON] ${new Date().toISOString()} - Vio customer sync completed.`)
+      
+      // 3. Alt yapı tamamsa siparişleri senkronize et (Son 1 günlük çekim)
+      await pullOrdersFromVio(1)
+      
+      console.log('[CRON] Vio Senkronizasyonları başarıyla tamamlandı.')
     } catch (err) {
-      console.error(`[CRON] Vio sync failed:`, err.message)
+      console.error('[CRON] Vio Sync Hatası:', err)
     }
   })
 })
