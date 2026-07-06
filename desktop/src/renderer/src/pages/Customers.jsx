@@ -31,7 +31,7 @@ const CITY_OPTIONS = [
   { value: '22', label: 'EDİRNE' }, { value: '23', label: 'ELAZIĞ' }, { value: '24', label: 'ERZİNCAN' },
   { value: '25', label: 'ERZURUM' }, { value: '26', label: 'ESKİŞEHİR' }, { value: '27', label: 'GAZİANTEP' },
   { value: '28', label: 'GİRESUN' }, { value: '29', label: 'GÜMÜŞHANE' }, { value: '30', label: 'HAKKARİ' },
-  { value: '31', label: 'HATAY' }, { value: '32', label: 'ISPARTA' }, { value: '33', label: 'İÇEL' },
+  { value: '31', label: 'HATAY' }, { value: '32', label: 'ISPARTA' }, { value: '33', label: 'MERSİN' },
   { value: '34', label: 'İSTANBUL' }, { value: '35', label: 'İZMİR' }, { value: '36', label: 'KARS' },
   { value: '37', label: 'KASTAMONU' }, { value: '38', label: 'KAYSERİ' }, { value: '39', label: 'KIRKLARELİ' },
   { value: '40', label: 'KIRŞEHİR' }, { value: '41', label: 'KOCAELİ' }, { value: '42', label: 'KONYA' },

@@ -38,3 +38,5 @@ desktop/developments/
 
 # Test dosyaları
 desktop/backend/test-*.js
+desktop/backend/tests/
+*.test.js
