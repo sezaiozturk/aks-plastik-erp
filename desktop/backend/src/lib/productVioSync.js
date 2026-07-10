@@ -69,9 +69,64 @@ async function fetchProductsFromVio() {
     }
 
     return rows;
-    return rows;
   } catch (error) {
     console.error('Error fetching stkmst from Vio:', error);
+    return [];
+  }
+}
+
+/**
+ * Vio'dan stok miktarlarını çeken fonksiyon (sonstok tablosu)
+ */
+async function fetchStockFromVio() {
+  try {
+    const url = getCrutUrl();
+    const payload = {
+      trn: false,
+      queries: [
+        {
+          tip: 'select',
+          table: 'sonstok son',
+          keys: ['son.stokkod stokKod', 'SUM(son.sonmiktar) topMiktar'],
+          groupByListe: ['son.stokkod']
+        }
+      ]
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Vio API Error: ${response.statusText}`);
+    }
+
+    const responseText = await response.text();
+    let data;
+    try {
+      data = (responseText && responseText.trim()) ? JSON.parse(responseText.trim()) : {};
+    } catch (e) {
+      throw new Error('Geçersiz JSON yanıtı alındı');
+    }
+
+    let rows = [];
+    if (Array.isArray(data)) {
+       if (data[0] && Array.isArray(data[0])) {
+           rows = data[0];
+       } else if (data[0] && data[0].rows && Array.isArray(data[0].rows)) {
+           rows = data[0].rows;
+       } else {
+           rows = data;
+       }
+    } else if (data && data.rows && Array.isArray(data.rows)) {
+       rows = data.rows;
+    }
+
+    return rows;
+  } catch (error) {
+    console.error('Error fetching sonstok from Vio:', error);
     return [];
   }
 }
@@ -150,6 +205,9 @@ function mapVioStokToErpData(row) {
 
   // Kategori (grupkod üzerinden) - 'General' yerine '' (boş) kullanıyoruz ki FK hatası vermesin
   const category = (row.grupkod || '').trim();
+  
+  // Stok miktarı varsa al, yoksa 0 (fetchStockFromVio'dan eklenecek)
+  const stock = row.topMiktar ? parseFloat(row.topMiktar) : 0;
 
   return {
     code: (row.kod || '').trim(), // İç kod olarak da Vio kodunu tutuyoruz
@@ -160,7 +218,7 @@ function mapVioStokToErpData(row) {
     unit: (row.brm || 'ADET').trim(),
     currency: currency,
     price: price,
-    stock: 0, // Stok miktarı stkmst tablosunda bulunmaz
+    stock: stock,
     minStock: 0,
     isActive: isActive,
   };
@@ -171,13 +229,35 @@ function mapVioStokToErpData(row) {
  */
 async function pullProductsFromVio() {
   console.log('\n--- Vio\'dan Tüm Ürünler (Stok Kartları) Çekiliyor ---');
-  const rows = await fetchProductsFromVio();
-  console.log(`Vio'dan toplam ${rows.length} ürün kaydı geldi.`);
+  const products = await fetchProductsFromVio();
+  console.log(`Vio'dan toplam ${products.length} ürün kaydı geldi.`);
+
+  console.log('--- Vio\'dan Stok Miktarları (sonstok) Çekiliyor ---');
+  const stocks = await fetchStockFromVio();
+  console.log(`Vio'dan toplam ${stocks.length} stok kaydı geldi.`);
+
+  // Stok miktarlarını bir Map'te tut (hızlı arama için)
+  const stockMap = new Map();
+  for (const st of stocks) {
+    if (st.stokKod) {
+      stockMap.set(st.stokKod.trim(), st.topMiktar);
+    }
+  }
+
+  // Ürünlere stok miktarını ekle
+  for (const p of products) {
+    const pCode = (p.kod || '').trim();
+    if (stockMap.has(pCode)) {
+      p.topMiktar = stockMap.get(pCode);
+    } else {
+      p.topMiktar = 0;
+    }
+  }
 
   let createdCount = 0;
   let updatedCount = 0;
 
-  for (const row of rows) {
+  for (const row of products) {
     const productCode = (row.kod || '').trim();
     if (!productCode) continue; // Stok kodu boşsa atla
 
@@ -205,7 +285,7 @@ async function pullProductsFromVio() {
       // Ürün DB'de VAR => Değişen alan var mı kontrol et
       const diff = {};
       const fieldsToCheck = [
-        'name', 'description', 'category', 'unit', 'currency', 'price', 'isActive', 'code'
+        'name', 'description', 'category', 'unit', 'currency', 'price', 'isActive', 'code', 'stock'
       ];
 
       for (const field of fieldsToCheck) {
