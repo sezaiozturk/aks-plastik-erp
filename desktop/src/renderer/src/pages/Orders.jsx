@@ -48,7 +48,7 @@ const PAYMENT_METHODS = [
   'PayPal / Online Payment',
 ]
 
-const emptyItem = { productName: '', quantity: 1, unitPrice: '', currency: 'USD', vat: '0', unit: '' }
+const emptyItem = { productName: '', quantity: 1, unitPrice: '', currency: 'TRY', vat: '0', unit: '' }
 
 function emptyForm() {
   return { customerId: '', salesRepId: '', status: 'Processing', notes: '', shipmentType: '', paymentMethod: '', items: [{ ...emptyItem }] }
@@ -76,7 +76,7 @@ function OrderDetailModal({ order, onClose, currentUser, onStatusChange }) {
   const canAdvanceFromCurrent = isAdmin || (userStatusPermissions[currentUser?.id] || []).includes(localStatus)
   const canChangeStatus = isAdmin || canAdvanceFromCurrent
 
-  const currency = order.items?.[0]?.currency || 'USD'
+  const currency = order.items?.[0]?.currency || 'TRY'
 
   function confirmStatusChange() {
     setLocalStatus(pendingStatus)
@@ -272,7 +272,7 @@ function OrderModal({ title, form, setForm, onClose, onSave, errors, saveError, 
     const vatRate = parseFloat(it.vat) || 0
     return s + qty * price * (1 + vatRate / 100)
   }, 0)
-  const displayCurrency = form.items.find((it) => it.currency)?.currency || 'USD'
+  const displayCurrency = form.items.find((it) => it.currency)?.currency || 'TRY'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -498,7 +498,7 @@ function loadImageAsBase64(url) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Orders() {
   const { t } = useTranslation()
-  const { orders, addOrder, updateOrder, deleteOrder, refreshOrders, customers, employees, products, isAdmin, permissions } = useData()
+  const { orders, addOrder, updateOrder, deleteOrder, syncAndRefreshOrders, customers, employees, products, isAdmin, permissions } = useData()
   const { user: currentUser, token } = useAuth()
   const [salesTeam, setSalesTeam] = useState([])
   const canDelete = isAdmin || currentUser?.department === 'Sales Manager'
@@ -611,7 +611,7 @@ export default function Orders() {
       margin: { left: margin, right: margin },
       head: [['Order Code', 'Customer', 'Sales Rep', 'Items', 'Total', 'Status']],
       body: toExport.map((o) => {
-        const cur = o.items?.[0]?.currency || 'USD'
+        const cur = o.items?.[0]?.currency || 'TRY'
         return [
           o.code,
           o.customer?.name || '—',
@@ -645,7 +645,7 @@ export default function Orders() {
       if (!o.items?.length) continue
       if (y > pageH - 50) { doc.addPage(); y = 16 }
 
-      const cur = o.items?.[0]?.currency || 'USD'
+      const cur = o.items?.[0]?.currency || 'TRY'
 
       doc.setFont(tf, 'bold')
       doc.setFontSize(9)
@@ -847,7 +847,7 @@ export default function Orders() {
           <p className="text-sm text-text-muted mt-0.5">{t('orders.totalOrders', { count: orders.length })}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={refreshOrders} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
+          <button onClick={syncAndRefreshOrders} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-base">refresh</span>
             {t('common.refresh')}
           </button>
@@ -960,7 +960,7 @@ export default function Orders() {
               </tr>
             ) : (
               paginated.map((o) => {
-                const currency = o.items?.[0]?.currency || 'USD'
+                const currency = o.items?.[0]?.currency || 'TRY'
                 const createdAt = o.createdAt ? new Date(o.createdAt) : null
                 const dateStr = createdAt ? createdAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
                 const timeStr = createdAt ? createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'

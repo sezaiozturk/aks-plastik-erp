@@ -38,8 +38,8 @@ router.post('/', async (req, res) => {
         unit: unit || 'pcs',
         currency: currency || 'USD',
         price: parseFloat(price) || 0,
-        stock: parseInt(stock) || 0,
-        minStock: parseInt(minStock) || 0,
+        stock: parseFloat(stock) || 0,
+        minStock: parseFloat(minStock) || 0,
       },
     })
     
@@ -129,6 +129,9 @@ router.delete('/:id', (req, res, next) => {
     }
     res.json({ success: true })
   } catch (err) {
+    if (err.message && (err.message.includes('REFERENCE constraint') || err.message.includes('SqlException'))) {
+      return res.status(400).json({ error: 'Bu ürün Vio üzerinde geçmiş siparişlerde kullanıldığı için silinemez. Lütfen silmek yerine Vio üzerinden ürünü "Pasif" duruma alınız.' })
+    }
     res.status(500).json({ error: err.message })
   }
 })

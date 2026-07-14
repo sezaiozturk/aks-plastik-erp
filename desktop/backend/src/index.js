@@ -43,10 +43,13 @@ app.use(express.json())
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
 // Public routes
-app.use('/api/auth', authRoutes)
+// Basic health check route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' })
+  res.json({ status: 'ok', time: new Date() })
 })
+
+// Routes
+app.use('/api/auth', authRoutes)
 
 // Protected routes
 app.use('/api/customers', authenticate, customerRoutes)
@@ -73,8 +76,9 @@ app.listen(PORT, () => {
   
   // 30 minute cron for Vio Sync using node-cron
   console.log('Starting 30-minute Vio sync cron job (*/30 * * * *)...')
-  cron.schedule('*/30 * * * *', async () => {
-    console.log('[CRON] Vio Senkronizasyonları başlatılıyor...')
+  
+  const runSync = async () => {
+    console.log('[CRON/STARTUP] Vio Senkronizasyonları başlatılıyor...')
     try {
       // 1. Önce ürünleri senkronize et (siparişler vs için foreign key)
       await pullProductsFromVio()
@@ -82,12 +86,18 @@ app.listen(PORT, () => {
       // 2. Sonra müşterileri senkronize et
       await pullCustomersFromVio()
       
-      // 3. Alt yapı tamamsa siparişleri senkronize et (Son 1 günlük çekim)
+      // 3. Siparişleri senkronize et
       await pullOrdersFromVio(1)
       
-      console.log('[CRON] Vio Senkronizasyonları başarıyla tamamlandı.')
+      console.log('[CRON/STARTUP] Vio Senkronizasyonları başarıyla tamamlandı.')
     } catch (err) {
-      console.error('[CRON] Vio Sync Hatası:', err)
+      console.error('[CRON/STARTUP] Vio Sync Hatası:', err)
     }
-  })
+  }
+
+  // İlk açılışta hemen bir kez çalıştır
+  runSync();
+
+  // Sonrasında her 30 dakikada bir çalıştır
+  cron.schedule('*/30 * * * *', runSync)
 })

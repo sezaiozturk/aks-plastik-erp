@@ -1387,7 +1387,7 @@ function CustomerDetailModal({ customer, reports, onClose, onSave, onDelete }) {
 
 export default function Customers() {
   const { t } = useTranslation()
-  const { customers, addCustomer, updateCustomer, deleteCustomer, reports, user, refreshCustomers } = useData()
+  const { customers, addCustomer, updateCustomer, deleteCustomer, syncAndRefreshCustomers, reports, user } = useData()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showModal, setShowModal] = useState(false)
@@ -1449,6 +1449,10 @@ export default function Customers() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button onClick={syncAndRefreshCustomers} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
+            <span className="material-symbols-outlined text-base">sync</span>
+            {t('common.refresh', 'Yenile/Senkronize Et')}
+          </button>
           <button
             onClick={() => setShowModal(true)}
             className="px-6 py-2.5 rounded-xl primary-gradient text-white font-bold text-sm flex items-center gap-2 shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity"

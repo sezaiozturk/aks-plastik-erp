@@ -1,8 +1,11 @@
 const { Router } = require('express')
 const { PrismaClient } = require('@prisma/client')
+const { pushOrderToVio } = require('../lib/orderVioSync')
+const { pullProductsFromVio } = require('../lib/productVioSync')
 
 const prisma = new PrismaClient()
 const router = Router()
+
 
 router.get('/', async (req, res) => {
   try {
@@ -35,7 +38,12 @@ router.get('/:id', async (req, res) => {
   try {
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },
-      include: { customer: true, employee: true, items: { include: { product: true } } },
+      include: { 
+        customer: true, 
+        employee: true, 
+        salesRep: { select: { id: true, name: true } },
+        items: { include: { product: true } } 
+      },
     })
     if (!order) return res.status(404).json({ error: 'Order not found' })
     res.json(order)
@@ -47,7 +55,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { customerId, employeeId, salesRepId, status, notes, items, shipmentType, paymentMethod } = req.body
-    const code = `ORD-${String(Date.now()).slice(-6)}`
+    const code = `WEB-TEMP-${String(Date.now()).slice(-5)}` // Geçici kod artık WEB-TEMP- ile başlıyor
 
     const totalAmount = (items || []).reduce((sum, item) => {
       const qty = parseInt(item.quantity) || 1
@@ -91,6 +99,15 @@ router.post('/', async (req, res) => {
     )
     order.shipmentType = shipmentType || ''
     order.paymentMethod = paymentMethod || ''
+
+    // Sipariş oluşur oluşmaz Vio'ya yolla ve stok tutarlılığı için ürünleri tekrar çek
+    pushOrderToVio(order.id).then(success => {
+      if (success) {
+        console.log('[ERP] Sipariş Vio\'ya iletildi. Stok tutarlılığı için ürünler senkronize ediliyor...')
+        pullProductsFromVio().catch(err => console.error('Failed to sync products after order push:', err))
+      }
+    }).catch(err => console.error('Failed to sync new order to Vio:', err))
+
     res.status(201).json(order)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -101,9 +118,10 @@ router.put('/:id', async (req, res) => {
   try {
     const { customerId, employeeId, salesRepId, status, notes, items, shipmentType, paymentMethod } = req.body
 
+    const current = await prisma.order.findUnique({ where: { id: req.params.id }, select: { status: true } })
+
     // Sales Managers can only set status to 'Confirmed'
     if (req.user.department === 'Sales Manager' && status) {
-      const current = await prisma.order.findUnique({ where: { id: req.params.id }, select: { status: true } })
       if (status !== 'Confirmed' && status !== current?.status) {
         return res.status(403).json({ error: 'Sales Managers can only change status to Confirmed' })
       }
@@ -154,6 +172,10 @@ router.put('/:id', async (req, res) => {
     )
     order.shipmentType = shipmentType || ''
     order.paymentMethod = paymentMethod || ''
+
+    // Vio'ya artık sadece sipariş ilk oluştuğunda (POST) gönderiyoruz. 
+    // PUT işleminde tekrar gönderirsek Vio'da mükerrer (çift) kayıt oluşur.
+    
     res.json(order)
   } catch (err) {
     res.status(500).json({ error: err.message })

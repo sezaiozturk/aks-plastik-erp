@@ -1,31 +1,50 @@
 const { Router } = require('express')
+const { pullProductsFromVio } = require('../lib/productVioSync')
+const { pullCustomersFromVio } = require('../lib/customerVioSync')
+const { pullOrdersFromVio } = require('../lib/orderVioSync')
 
 const router = Router()
 
-// POST /api/sync/customers
-// Called by the frontend on startup. Triggers the endpoint server to pull
-// customers from the external ERP and upsert them into the database.
-// Fails silently if the endpoint server or external ERP is unreachable.
-router.post('/customers', async (req, res) => {
-  const endpointUrl = process.env.ENDPOINT_URL   || 'http://localhost:3002'
-  const apiKey      = process.env.ENDPOINT_API_KEY || ''
-
+// POST /api/sync/all
+router.post('/all', async (req, res) => {
   try {
-    const response = await fetch(`${endpointUrl}/api/endpoint/sync/customers`, {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key':    apiKey,
-      },
-      body: JSON.stringify({}),
-      signal: AbortSignal.timeout(20000),
-    })
-
-    const data = await response.json()
-    res.json(data)
+    await pullProductsFromVio()
+    await pullCustomersFromVio()
+    const orders = await pullOrdersFromVio(1)
+    res.json({ success: true, ordersSynced: orders.length })
   } catch (err) {
-    // Endpoint server may not be running — return ok so the app still loads
-    res.json({ ok: false, skipped: true, reason: err.message })
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/sync/products
+router.post('/products', async (req, res) => {
+  try {
+    await pullProductsFromVio()
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/sync/customers
+router.post('/customers', async (req, res) => {
+  try {
+    await pullCustomersFromVio()
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /api/sync/orders
+router.post('/orders', async (req, res) => {
+  try {
+    const days = parseInt(req.body.days) || parseInt(req.query.days) || 1
+    const orders = await pullOrdersFromVio(days)
+    res.json({ success: true, count: orders.length })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 

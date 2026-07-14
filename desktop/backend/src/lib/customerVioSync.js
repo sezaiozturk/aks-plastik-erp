@@ -143,9 +143,7 @@ async function syncCustomer(customer) {
       ]
     };
 
-    console.log('\n--- Vio\'ya Eşleştirilmiş ve Gönderilen Data (carmst) ---');
-    console.log(JSON.stringify(carmstData, null, 2));
-    console.log('------------------------------------------------------\n');
+    console.log(`[VIO PUSH] Gönderilen Müşteri: ${customer.code}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -170,7 +168,7 @@ async function syncCustomer(customer) {
       data = responseText;
     }
     
-    console.log(`[VIO SYNC SUCCESS] Customer ${customer.code} synced successfully. Response:`, data);
+    console.log(`[VIO SYNC SUCCESS] Customer ${customer.code} synced successfully.`);
     return true;
 
   } catch (error) {
@@ -200,9 +198,7 @@ async function deleteCustomerFromVio(customerCode) {
       ]
     };
 
-    console.log(`\n--- Vio'dan Silinecek Müşteri ---`);
-    console.log(`Kodu (must): ${mustCode}`);
-    console.log('---------------------------------\n');
+    console.log(`[VIO DELETE] Müşteri Vio'dan siliniyor: ${mustCode}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -227,7 +223,7 @@ async function deleteCustomerFromVio(customerCode) {
       data = responseText;
     }
     
-    console.log(`[VIO SYNC SUCCESS] Customer ${customerCode} deleted successfully from Vio. Response:`, data);
+    console.log(`[VIO SYNC SUCCESS] Customer ${customerCode} deleted successfully from Vio.`);
     return true;
 
   } catch (error) {
@@ -296,7 +292,8 @@ async function pullCustomersFromVio() {
     const { PrismaClient } = require('@prisma/client');
     const prisma = new PrismaClient();
     
-    let successCount = 0;
+    let createdCount = 0;
+    let updatedCount = 0;
     
     for (const row of rows) {
       if (!row.must) continue;
@@ -330,7 +327,7 @@ async function pullCustomersFromVio() {
             where: { code },
             data: diff
           });
-          successCount++;
+          updatedCount++;
         }
       } else {
         // Yeni müşteri ekle
@@ -341,21 +338,32 @@ async function pullCustomersFromVio() {
           .map((w) => w[0]?.toUpperCase() || '')
           .join('');
 
-        await prisma.customer.create({
-          data: {
-            code,
-            ...updateData,
-            initials
+        try {
+          await prisma.customer.create({
+            data: {
+              code,
+              ...updateData,
+              initials
+            }
+          });
+          createdCount++;
+        } catch (e) {
+          if (e.code === 'P2002') {
+            console.log(`[VIO SYNC] Race condition avoided for customer ${code}. It was created by another concurrent sync.`);
+          } else {
+            throw e;
           }
-        });
-        successCount++;
+        }
       }
     }
     
     await prisma.$disconnect();
     
-    console.log(`[VIO SYNC] Successfully imported ${successCount} customers from Vio.`);
-    return { success: true, count: successCount };
+    console.log(`[VIO SYNC] Yeni Eklenen Cari: ${createdCount}`);
+    console.log(`[VIO SYNC] Güncellenen Cari: ${updatedCount}`);
+    console.log('--- Cari Senkronizasyonu Tamamlandı ---\n');
+    
+    return { success: true, count: createdCount + updatedCount };
 
   } catch (error) {
     console.error(`[VIO SYNC CRITICAL ERROR] Could not pull customers from Vio:`, error.stack);

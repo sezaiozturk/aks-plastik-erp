@@ -290,7 +290,7 @@ const PRODUCT_COLUMNS = ['Stock No', 'Name', 'Category', 'Unit', 'Currency', 'Pr
 
 export default function Products() {
   const { t } = useTranslation()
-  const { products, addProduct, updateProduct, deleteProduct, isAdmin } = useData()
+  const { products, addProduct, updateProduct, deleteProduct, syncAndRefreshProducts, isAdmin, permissions, orders } = useData()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showAdd, setShowAdd] = useState(false)
@@ -347,8 +347,13 @@ export default function Products() {
   }
 
   async function handleDelete() {
-    await deleteProduct(deleteTarget.id)
-    setDeleteTarget(null)
+    try {
+      await deleteProduct(deleteTarget.id)
+      setDeleteTarget(null)
+    } catch (err) {
+      alert(err.message)
+      setDeleteTarget(null)
+    }
   }
 
   function handleExport() {
@@ -444,6 +449,10 @@ export default function Products() {
           <button onClick={handleExport} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
             <span className="material-symbols-outlined text-base">table_view</span>
             {t('common.export')}
+          </button>
+          <button onClick={syncAndRefreshProducts} className="flex items-center gap-1.5 border border-theme-border px-3 py-2 rounded-xl text-sm text-text-muted hover:bg-hover-bg transition">
+            <span className="material-symbols-outlined text-base">sync</span>
+            {t('common.refresh', 'Yenile/Senkronize Et')}
           </button>
           <button onClick={openAdd} className="flex items-center gap-2 primary-gradient text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-primary/10 hover:opacity-90 transition-opacity">
             <span className="material-symbols-outlined text-base">add</span>

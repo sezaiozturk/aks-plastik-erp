@@ -277,10 +277,18 @@ async function pullProductsFromVio() {
 
     if (!existingProduct) {
       // Ürün DB'de YENİ => Kaydet
-      await prisma.product.create({
-        data: mappedData,
-      });
-      createdCount++;
+        try {
+          await prisma.product.create({
+            data: mappedData,
+          });
+          createdCount++;
+        } catch (e) {
+          if (e.code === 'P2002') {
+            console.log(`[VIO SYNC] Race condition avoided for product ${productCode}. Created by another sync.`);
+          } else {
+            throw e;
+          }
+        }
     } else {
       // Ürün DB'de VAR => Değişen alan var mı kontrol et
       const diff = {};
@@ -365,9 +373,7 @@ async function syncProductToVio(product, changedFields = null) {
       ]
     };
 
-    console.log('\n--- Vio\'ya Eşleştirilmiş ve Gönderilen Data (stkmst) ---');
-    console.log(JSON.stringify(stkmstData, null, 2));
-    console.log('------------------------------------------------------\n');
+    console.log(`[VIO PUSH] Gönderilen Ürün: ${product.code}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -392,7 +398,7 @@ async function syncProductToVio(product, changedFields = null) {
       data = responseText;
     }
     
-    console.log(`[VIO SYNC SUCCESS] Product ${product.code} synced successfully. Response:`, data);
+    console.log(`[VIO SYNC SUCCESS] Product ${product.code} synced successfully.`);
     return true;
 
   } catch (error) {
@@ -421,9 +427,7 @@ async function deleteProductFromVio(productCode) {
       ]
     };
 
-    console.log(`\n--- Vio'dan Silinecek Ürün ---`);
-    console.log(`Kodu: ${kod}`);
-    console.log('---------------------------------\n');
+    console.log(`[VIO DELETE] Ürün Vio'dan siliniyor: ${kod}`);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -437,7 +441,7 @@ async function deleteProductFromVio(productCode) {
       console.error(`[VIO SYNC ERROR] Failed to delete product ${productCode}: HTTP ${response.status}`);
       const text = await response.text();
       console.error(`[VIO SYNC RESPONSE] ${text}`);
-      return false;
+      throw new Error(text);
     }
 
     const responseText = await response.text();
@@ -448,12 +452,12 @@ async function deleteProductFromVio(productCode) {
       data = responseText;
     }
     
-    console.log(`[VIO SYNC SUCCESS] Product ${productCode} deleted successfully from Vio. Response:`, data);
+    console.log(`[VIO SYNC SUCCESS] Product ${productCode} deleted successfully from Vio.`);
     return true;
 
   } catch (error) {
     console.error(`[VIO SYNC CRITICAL ERROR] Could not delete product ${productCode} from Vio:`, error.message);
-    return false;
+    throw error;
   }
 }
 

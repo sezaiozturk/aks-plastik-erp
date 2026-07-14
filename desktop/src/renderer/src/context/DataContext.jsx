@@ -33,15 +33,17 @@ export function DataProvider({ children }) {
       .catch(() => setReady(true))
   }, [token])
 
-  // On startup: sync customers from external ERP, then refresh the list
-  useEffect(() => {
-    if (!token) return
-    fetch(`${API_URL}/sync/customers`, { method: 'POST', headers })
-      .then(() => refreshCustomers())
-      .catch(() => refreshCustomers())
-  }, [token])
-
   useEffect(() => { refreshCustomers() }, [token])
+
+  const syncAndRefreshCustomers = useCallback(async () => {
+    try {
+      await fetch(`${API_URL}/sync/customers`, { method: 'POST', headers: authHeaders });
+    } catch (err) {
+      console.error('Customers sync trigger failed:', err);
+    } finally {
+      refreshCustomers();
+    }
+  }, [refreshCustomers])
 
   const refreshReports = useCallback(() => {
     fetch(`${API_URL}/reports`, { headers: authHeaders })
@@ -84,6 +86,16 @@ export function DataProvider({ children }) {
   }, [token])
   useEffect(() => { refreshProducts() }, [token])
 
+  const syncAndRefreshProducts = useCallback(async () => {
+    try {
+      await fetch(`${API_URL}/sync/products`, { method: 'POST', headers: authHeaders });
+    } catch (err) {
+      console.error('Products sync trigger failed:', err);
+    } finally {
+      refreshProducts();
+    }
+  }, [refreshProducts])
+
   const refreshEmployees = useCallback(() => {
     fetch(`${API_URL}/employees`, { headers: authHeaders })
       .then((r) => r.json())
@@ -99,6 +111,16 @@ export function DataProvider({ children }) {
       .catch(() => {})
   }, [token])
   useEffect(() => { refreshOrders() }, [token])
+
+  const syncAndRefreshOrders = useCallback(async () => {
+    try {
+      await fetch(`${API_URL}/sync/orders`, { method: 'POST', headers: authHeaders });
+    } catch (err) {
+      console.error('Sync trigger failed:', err);
+    } finally {
+      refreshOrders();
+    }
+  }, [refreshOrders])
 
   const refreshFinanceRecords = useCallback(() => {
     fetch(`${API_URL}/finance`, { headers: authHeaders })
@@ -252,7 +274,11 @@ export function DataProvider({ children }) {
   }
 
   async function deleteProduct(id) {
-    await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', headers: authHeaders })
+    const res = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE', headers: authHeaders })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Ürün silinirken bir hata oluştu.')
+    }
     setProducts((prev) => prev.filter((p) => p.id !== id))
   }
 
@@ -306,6 +332,20 @@ export function DataProvider({ children }) {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Failed to create order')
     setOrders((prev) => [data, ...prev])
+
+    // Arka planda sipariş Vio'ya gidip kalıcı kodunu (WEB-16 vb.) alacağı için,
+    // arayüzü 2 saniye sonra tazeleyerek o güncel kodu ekrana yansıtıyoruz.
+    setTimeout(async () => {
+      try {
+        const fetchRes = await fetch(`${API_URL}/orders/${data.id}`, { headers: authHeaders })
+        if (fetchRes.ok) {
+          const updatedOrder = await fetchRes.json()
+          setOrders(prev => prev.map(o => o.id === data.id ? updatedOrder : o))
+        }
+      } catch (e) {
+        console.error("Vio update fetch failed:", e)
+      }
+    }, 2000)
   }
 
   async function updateOrder(id, form) {
@@ -508,12 +548,12 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      customers, addCustomer, updateCustomer, deleteCustomer, refreshCustomers,
+      customers, addCustomer, updateCustomer, deleteCustomer, refreshCustomers, syncAndRefreshCustomers,
       reports, addReport, updateReport, deleteReport, moveReport,
       siteVisits, addSiteVisit, updateSiteVisit, deleteSiteVisit,
-      products, addProduct, updateProduct, deleteProduct,
+      products, addProduct, updateProduct, deleteProduct, refreshProducts, syncAndRefreshProducts,
       employees, addEmployee, updateEmployee, deleteEmployee, uploadEmployeePhoto,
-      orders, addOrder, updateOrder, deleteOrder, refreshOrders,
+      orders, addOrder, updateOrder, deleteOrder, refreshOrders, syncAndRefreshOrders,
       financeRecords, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord, refreshFinanceRecords,
       roles, addRole, renameRole, deleteRole,
       permissions, updateRolePermissions, refreshPermissions,
