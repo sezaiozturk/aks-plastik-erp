@@ -77,8 +77,8 @@ app.listen(PORT, () => {
   // 30 minute cron for Vio Sync using node-cron
   console.log('Starting 30-minute Vio sync cron job (*/30 * * * *)...')
   
-  const runSync = async () => {
-    console.log('[CRON/STARTUP] Vio Senkronizasyonları başlatılıyor...')
+  const runSync = async (isCron = false) => {
+    console.log(`[CRON/STARTUP] Vio Senkronizasyonları başlatılıyor... (isCron: ${isCron})`)
     try {
       // 1. Önce ürünleri senkronize et (siparişler vs için foreign key)
       await pullProductsFromVio()
@@ -87,7 +87,11 @@ app.listen(PORT, () => {
       await pullCustomersFromVio()
       
       // 3. Siparişleri senkronize et
-      await pullOrdersFromVio(1)
+      if (isCron) {
+        await pullOrdersFromVio(1)
+      } else {
+        await pullOrdersFromVio()
+      }
       
       console.log('[CRON/STARTUP] Vio Senkronizasyonları başarıyla tamamlandı.')
     } catch (err) {
@@ -96,8 +100,8 @@ app.listen(PORT, () => {
   }
 
   // İlk açılışta hemen bir kez çalıştır
-  runSync();
+  runSync(false);
 
   // Sonrasında her 30 dakikada bir çalıştır
-  cron.schedule('*/30 * * * *', runSync)
+  cron.schedule('*/30 * * * *', () => runSync(true))
 })

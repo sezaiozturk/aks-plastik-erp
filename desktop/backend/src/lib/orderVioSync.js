@@ -42,15 +42,21 @@ function parseVioDate(vioDate) {
 /**
  * PULL ORDERS FROM VIO
  */
-async function pullOrdersFromVio(days = 1) {
+async function pullOrdersFromVio(days) {
   try {
-    const end = new Date();
-    const start = new Date(end);
-    start.setDate(end.getDate() - days);
-    const startDateStr = start.toISOString().split('T')[0];
+    let headersUrl;
+    if (days) {
+      const end = new Date();
+      const start = new Date(end);
+      start.setDate(end.getDate() - days);
+      const startDateStr = start.toISOString().split('T')[0];
 
-    console.log(`\n--- Pulling orders from Vio (since ${startDateStr}) ---`);
-    const headersUrl = getVioRestUrl('siparisler', { tarihBasi: startDateStr });
+      console.log(`\n--- Pulling orders from Vio (since ${startDateStr}) ---`);
+      headersUrl = getVioRestUrl('siparisler', { tarihBasi: startDateStr });
+    } else {
+      console.log(`\n--- Pulling ALL orders from Vio ---`);
+      headersUrl = getVioRestUrl('siparisler');
+    }
 
     const response = await fetch(headersUrl, {
       method: 'GET',

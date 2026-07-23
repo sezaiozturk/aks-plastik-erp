@@ -10,7 +10,7 @@ router.post('/all', async (req, res) => {
   try {
     await pullProductsFromVio()
     await pullCustomersFromVio()
-    const orders = await pullOrdersFromVio(1)
+    const orders = await pullOrdersFromVio()
     res.json({ success: true, ordersSynced: orders.length })
   } catch (err) {
     res.status(500).json({ error: err.message })
